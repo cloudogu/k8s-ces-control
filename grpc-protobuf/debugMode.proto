@@ -1,0 +1,22 @@
+syntax = "proto3";
+package maintenance;
+option go_package = "github.com/cloudogu/cesappd/generated/maintenance";
+import "response.proto";
+import "request.proto";
+
+// The SupportMode service provides endpoints to manage the support mode.
+service DebugMode {
+  rpc Enable(ToggleDebugModeRequest) returns (types.BasicResponse);
+  rpc Disable(ToggleDebugModeRequest) returns (types.BasicResponse);
+  rpc Status(types.BasicRequest) returns (DebugModeStatusResponse);
+}
+
+message ToggleDebugModeRequest {
+  bool withMaintenanceMode = 1;
+  int32 timer = 2;
+}
+
+message DebugModeStatusResponse {
+  bool isEnabled = 1;
+  int64 DisableAtTimestamp = 2;
+}

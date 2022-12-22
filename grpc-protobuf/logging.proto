@@ -1,0 +1,17 @@
+syntax = "proto3";
+package logging;
+option go_package = "github.com/cloudogu/cesappd/generated/logging";
+import 'response.proto';
+
+service DoguLogMessages {
+  rpc GetForDogu(DoguLogMessageRequest) returns (stream types.ChunkedDataResponse);
+}
+
+message DoguLogMessageRequest {
+  // dogu_name contains the name of the dogu for which log lines should be returned in the response. Must not be empty.
+  string dogu_name = 1;
+  // line_count provides a hint with the maximum count of log lines to be returned. The response contains the actual
+  // number of lines (which can be less if the request asks for more lines than there really are).
+  // A value of 0 means that all lines should be returned (use with care).
+  uint32 line_count = 2;
+}

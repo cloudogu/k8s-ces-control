@@ -1,0 +1,11 @@
+syntax = "proto3";
+package types;
+option go_package = "github.com/cloudogu/cesappd/generated/types";
+
+message BasicResponse{
+
+}
+
+message ChunkedDataResponse {
+  bytes data = 1;
+}

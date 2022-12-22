@@ -1,0 +1,36 @@
+syntax = "proto3";
+package doguAdministration;
+option go_package = "github.com/cloudogu/cesappd/generated/doguAdministration";
+import "response.proto";
+
+// getDoguList defines methods to retrieve a list of dogus
+service DoguAdministration {
+  // getDogusToAdminList returns the list of dogus to administrate
+  rpc GetDoguList(DoguListRequest) returns (DoguListResponse);
+  // StartDogu starts a dogu
+  rpc StartDogu(DoguAdministrationRequest) returns (types.BasicResponse);
+  // StopDogu stops a dogu
+  rpc StopDogu(DoguAdministrationRequest) returns (types.BasicResponse);
+  // RestartDogu restarts a dogu
+  rpc RestartDogu(DoguAdministrationRequest) returns (types.BasicResponse);
+}
+
+// DoguListRequest is empty and is used instead of google.protobuf.Empty because of backward compability
+message DoguListRequest {}
+
+message DoguListResponse {
+  // list of dogus
+  repeated Dogu dogus = 1;
+}
+
+message DoguAdministrationRequest{
+  string dogu_name = 1;
+}
+
+message Dogu {
+  string name = 1;
+  string displayName = 2;
+  string version = 3;
+  string description = 4;
+  repeated string tags = 5;
+}
