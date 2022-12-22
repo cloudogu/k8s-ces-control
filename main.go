@@ -2,12 +2,15 @@ package main
 
 import (
 	"fmt"
+	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"net"
 	"os"
+
+	pbLogging "github.com/cloudogu/k8s-ces-control/generated/logging"
 )
 
 const (
@@ -97,37 +100,7 @@ func configureApplication(cliCtx *cli.Context) error {
 }
 
 func registerServices(grpcServer *grpc.Server) error {
-	//pbLogging.RegisterDoguLogMessagesServer(grpcServer, loggingService.NewLoggingService())
-	//adminService, err := doguAdministration.NewDoguAdministrationService()
-	//if err != nil {
-	//	return fmt.Errorf("failed to create new dogu administration service: %w", err)
-	//}
-
-	//pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, adminService)
-	//healthService, err := health.NewDoguHealthService()
-	//if err != nil {
-	//	return fmt.Errorf("failed to create new dogu health service: %w", err)
-	//}
-
-	//pbHealth.RegisterDoguHealthServer(grpcServer, healthService)
-	//backupService, err := backup.NewBackupManagementService()
-	//if err != nil {
-	//	return fmt.Errorf("failed to create new backup service: %w", err)
-	//}
-
-	//pbBackup.RegisterBackupManagementServer(grpcServer, backupService)
-	//maintenanceService, err := maintenance.NewDebugModeService()
-	//if err != nil {
-	//	return fmt.Errorf("failed to create new maintenance service: %w", err)
-	//}
-
-	//pbMaintenance.RegisterDebugModeServer(grpcServer, maintenanceService)
-	//supportArchiveService, err := maintenance.NewSupportArchiveService()
-	//if err != nil {
-	//	return fmt.Errorf("failed to create new support archive service: %w", err)
-	//}
-
-	//pbMaintenance.RegisterSupportArchiveServer(grpcServer, supportArchiveService)
+	pbLogging.RegisterDoguLogMessagesServer(grpcServer, logging.NewLoggingService())
 	return nil
 }
 
