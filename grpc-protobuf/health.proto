@@ -1,6 +1,6 @@
 syntax = "proto3";
 package health;
-option go_package = "github.com/cloudogu/cesappd/generated/health";
+option go_package = "github.com/cloudogu/k8s-ces-control/generated/health";
 
 // The DoguHealth service provides endpoints to retrieve health information for installed dogus.
 service DoguHealth {

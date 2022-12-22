@@ -1,6 +1,6 @@
 syntax = "proto3";
 package logging;
-option go_package = "github.com/cloudogu/cesappd/generated/logging";
+option go_package = "github.com/cloudogu/k8s-ces-control/generated/logging";
 import 'response.proto';
 
 service DoguLogMessages {

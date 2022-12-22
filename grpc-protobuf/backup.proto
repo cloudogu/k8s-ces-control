@@ -1,6 +1,6 @@
 syntax = "proto3";
 package backup;
-option go_package = "github.com/cloudogu/cesappd/generated/backup";
+option go_package = "github.com/cloudogu/k8s-ces-control/generated/backup";
 
 // The Backup service provides endpoints to retrieve information about backups.
 service BackupManagement {

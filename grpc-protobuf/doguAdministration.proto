@@ -1,6 +1,6 @@
 syntax = "proto3";
 package doguAdministration;
-option go_package = "github.com/cloudogu/cesappd/generated/doguAdministration";
+option go_package = "github.com/cloudogu/k8s-ces-control/generated/doguAdministration";
 import "response.proto";
 
 // getDoguList defines methods to retrieve a list of dogus
