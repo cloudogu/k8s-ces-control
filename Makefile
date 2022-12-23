@@ -3,11 +3,19 @@ ARTIFACT_ID=k8s-ces-control
 VERSION=0.0.0
 GOTAG=1.19
 
+## Image URL to use all building/pushing image targets
+IMAGE_DEV=${K3CES_REGISTRY_URL_PREFIX}/${ARTIFACT_ID}:${VERSION}
+IMAGE=cloudogu/${ARTIFACT_ID}:${VERSION}
+LINT_VERSION=v1.45.2
+STAGE?=production
+
 MAKEFILES_VERSION=7.0.1
 .DEFAULT_GOAL:=default
 GENERATION_TARGET_DIR=generated
 GENERATION_SOURCE_DIR=grpc-protobuf
 INTEGRATION_TEST_NAME_PATTERN=.*_inttest$$
+# make sure to create a statically linked binary
+GO_BUILD_FLAGS=-mod=vendor -a -tags netgo,osusergo $(LDFLAGS) -o $(BINARY)
 
 # You may want to overwrite existing variables for pre/post target actions to fit into your project.
 PREPARE_PACKAGE=$(DEBIAN_CONTENT_DIR)/control/postinst $(DEBIAN_CONTENT_DIR)/control/postrm $(DEBIAN_CONTENT_DIR)/control/prerm
@@ -22,6 +30,7 @@ include build/make/digital-signature.mk
 include build/make/self-update.mk
 include build/make/release.mk
 include build/make/bats.mk
+include build/make/k8s.mk
 
 default: package signature
 

@@ -65,7 +65,7 @@ func createGlobalFlags() []cli.Flag {
 }
 
 func printCallWithArguments() {
-	logrus.Debugf("Executing command: %s; cesappd version: %s", os.Args, Version)
+	logrus.Debugf("Executing command: %s; k8s-ces-control version: %s", os.Args, Version)
 }
 
 func configureApplication(_ *cli.Context) error {
@@ -107,7 +107,7 @@ func startServerAction(_ *cli.Context) error {
 	}
 
 	if config.IsDevelopmentStage() {
-		logrus.Debugln("register service discovery")
+		logrus.Debugln("Register k8s-ces-control to be used with the service discovery")
 		registerServerForServiceDiscovery(grpcServer)
 	}
 
