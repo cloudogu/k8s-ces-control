@@ -1,7 +1,8 @@
 package main
 
 import (
-	"fmt"
+	pbLogging "github.com/cloudogu/k8s-ces-control/generated/logging"
+	"github.com/cloudogu/k8s-ces-control/packages/config"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -9,13 +10,10 @@ import (
 	"google.golang.org/grpc/reflection"
 	"net"
 	"os"
-
-	pbLogging "github.com/cloudogu/k8s-ces-control/generated/logging"
 )
 
 const (
-	port           = ":50051"
-	environmentDev = "development"
+	port = ":50051"
 )
 
 var (
@@ -24,6 +22,23 @@ var (
 )
 
 func main() {
+	err := startCesControl()
+
+	if err != nil {
+		logrus.Errorf("%+v\n", err)
+		os.Exit(1)
+	}
+
+	logrus.Infoln("Gracefully exited k8s-ces-control")
+	os.Exit(0)
+}
+
+func startCesControl() error {
+	err := config.ConfigureApplication()
+	if err != nil {
+		return err
+	}
+
 	app := cli.NewApp()
 	app.Name = "k8s-ces-control"
 	app.Usage = "Control you EcoSystem with ease!"
@@ -35,17 +50,13 @@ func main() {
 		startServerCommand(),
 	}
 
-	err := app.Run(os.Args)
-	os.Exit(checkMainError(err))
+	logrus.Infoln("Starting k8s-ces-control")
+	err = app.Run(os.Args)
+	return err
 }
 
 func createGlobalFlags() []cli.Flag {
 	return []cli.Flag{
-		&cli.StringFlag{
-			Name:  "log-level",
-			Usage: "define log level",
-			Value: "warn",
-		},
 		&cli.BoolFlag{
 			Name:  "show-stack",
 			Usage: "show stacktrace on errors",
@@ -53,48 +64,11 @@ func createGlobalFlags() []cli.Flag {
 	}
 }
 
-func configureLogging(logLevel string) error {
-	logLevelParsed, err := logrus.ParseLevel(logLevel)
-	if err != nil {
-		return fmt.Errorf("could not parse log level %s to logrus level: %w", logLevel, err)
-	}
-
-	logrus.StandardLogger().SetLevel(logLevelParsed)
-	return nil
-}
-
-func isPrintStack() bool {
-	for _, arg := range os.Args {
-		if arg == "--show-stack" {
-			return true
-		}
-	}
-	return false
-}
-
-func checkMainError(err error) int {
-	if err != nil {
-		if isPrintStack() {
-			logrus.Errorf("%+v\n", err)
-		} else {
-			logrus.Errorf("%+s\n", err)
-		}
-		return 1
-	}
-	return 0
-}
-
 func printCallWithArguments() {
 	logrus.Debugf("Executing command: %s; cesappd version: %s", os.Args, Version)
 }
 
-func configureApplication(cliCtx *cli.Context) error {
-	logLevel := cliCtx.String("log-level")
-	err := configureLogging(logLevel)
-	if err != nil {
-		return err
-	}
-
+func configureApplication(_ *cli.Context) error {
 	printCallWithArguments()
 	return nil
 }
@@ -114,29 +88,16 @@ func startServerCommand() *cli.Command {
 		Aliases:   []string{"s"},
 		Usage:     "starts the service and listens on port 50051",
 		ArgsUsage: "",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  "env",
-				Usage: "define execution environment",
-				Value: "production",
-			},
-		},
-		Action: startServerAction,
+		Flags:     []cli.Flag{},
+		Action:    startServerAction,
 	}
 }
 
-func startServerAction(ctx *cli.Context) error {
-	executionEnvironment := ctx.String("env")
-	logrus.Infof("starting cesappd in %s environment...", executionEnvironment)
+func startServerAction(_ *cli.Context) error {
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		logrus.Fatalf("failed to listen: %v", err)
 	}
-
-	//creds, err := credentials.NewServerTLSFromFile("/etc/ces/cesappd/server.crt", "/etc/ces/cesappd/server.key")
-	//if err != nil {
-	//	logrus.Fatalf("Failed to setup TLS: %v", err)
-	//}
 
 	grpcServer := grpc.NewServer()
 	err = registerServices(grpcServer)
@@ -145,7 +106,7 @@ func startServerAction(ctx *cli.Context) error {
 		return err
 	}
 
-	if executionEnvironment == environmentDev {
+	if config.IsDevelopmentStage() {
 		logrus.Debugln("register service discovery")
 		registerServerForServiceDiscovery(grpcServer)
 	}

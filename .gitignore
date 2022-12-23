@@ -19,3 +19,6 @@ vendor/
 
 ## Ignore utility bin downloaded by the makefiles
 .bin
+
+## Ignore generated files from air
+tmp
