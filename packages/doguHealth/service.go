@@ -60,15 +60,18 @@ func (s *server) GetByNames(_ context.Context, request *pbHealth.DoguHealthListR
 	//doguHealthList, allDogusAreHealthy := processCheckResults(healthCheckResults)
 
 	logrus.Debugf("Check healthy state of dogus [%s]", request.Dogus)
-	doguHealthList := map[string]*pbHealth.DoguHealthResponse{
-		"test1": {
-			FullName:    "test1",
-			ShortName:   "t1",
-			DisplayName: "Fake Dogu 1",
+	doguHealthList := map[string]*pbHealth.DoguHealthResponse{}
+
+	for _, dogu := range request.Dogus {
+		doguHealthList[dogu] = &pbHealth.DoguHealthResponse{
+			FullName:    dogu,
+			ShortName:   dogu,
+			DisplayName: dogu,
 			Healthy:     true,
 			Results:     nil,
-		},
+		}
 	}
+
 	return &pbHealth.DoguHealthMapResponse{
 		AllHealthy: true,
 		Results:    doguHealthList,

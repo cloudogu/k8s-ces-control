@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"os"
@@ -17,16 +18,31 @@ const (
 	stageDevelopment           = "development"
 )
 
+type ClusterClient struct {
+	EcoSystemApi ecoSystem.EcoSystemV1Alpha1Interface
+	kubernetes.Interface
+}
+
 var currentStage = "development"
 
-// GetClusterClient creates a new kubernetes.Interface given the locally available cluster configurations.
-func GetClusterClient() (kubernetes.Interface, error) {
+// CreateClusterClient creates a new kubernetes.Interface given the locally available cluster configurations.
+func CreateClusterClient() (ClusterClient, error) {
 	clusterConfig, err := ctrl.GetConfig()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load cluster configuration: %w", err)
+		return ClusterClient{}, fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
-	return kubernetes.NewForConfig(clusterConfig)
+	k8sClient, err := kubernetes.NewForConfig(clusterConfig)
+	if err != nil {
+		return ClusterClient{}, fmt.Errorf("failed to create kubernetes client")
+	}
+
+	doguClient, err := ecoSystem.NewForConfig(clusterConfig)
+	if err != nil {
+		return ClusterClient{}, fmt.Errorf("failed to create dogu client")
+	}
+
+	return ClusterClient{EcoSystemApi: doguClient, Interface: k8sClient}, nil
 }
 
 // ConfigureApplication performs the default configuration for the control app including configuring the logging and

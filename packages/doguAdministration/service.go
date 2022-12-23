@@ -2,44 +2,42 @@ package doguAdministration
 
 import (
 	"context"
-	"github.com/cloudogu/cesapp-lib/core"
+	"fmt"
 	pb "github.com/cloudogu/k8s-ces-control/generated/doguAdministration"
 	"github.com/cloudogu/k8s-ces-control/generated/types"
+	"github.com/cloudogu/k8s-ces-control/packages/config"
+	v1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
+	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func NewDoguAdministrationServer() *server {
-	return &server{}
+func NewDoguAdministrationServer() (*server, error) {
+	client, err := config.CreateClusterClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cluster client")
+	}
+
+	return &server{client: client}, nil
 }
 
 type server struct {
 	pb.UnimplementedDoguAdministrationServer
+	client config.ClusterClient
 }
 
 // GetDoguList returns the list of dogus to administrate (all)
-func (s *server) GetDoguList(_ context.Context, _ *pb.DoguListRequest) (*pb.DoguListResponse, error) {
-	//dogus, err := s.administrator.getDoguList()
-	//if err != nil {
-	//	log.Error(err)
-	//	return nil, status.Error(codes.Internal, err.Error())
-	//}
-	//if len(dogus) < 1 {
-	//	return &pb.DoguListResponse{}, nil
-	//}
-	//
-	//return createDoguListResponse(dogus), nil
-
-	fakeDoguList := []*pb.Dogu{
-		{
-			Name:        "test1",
-			DisplayName: "Fake Dogu 1",
-			Version:     "Fake Version",
-			Description: "Fake Dogu Description",
-			Tags:        nil,
-		},
+func (s *server) GetDoguList(ctx context.Context, _ *pb.DoguListRequest) (*pb.DoguListResponse, error) {
+	list, err := s.client.EcoSystemApi.Dogus("ecosystem").List(ctx, metav1.ListOptions{})
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
 	}
-	return &pb.DoguListResponse{
-		Dogus: fakeDoguList,
-	}, nil
+
+	if len(list.Items) < 1 {
+		return &pb.DoguListResponse{}, nil
+	}
+
+	return createDoguListResponse(list), nil
 }
 
 // StartDogu starts the specified dogu
@@ -94,15 +92,15 @@ func (s *server) RestartDogu(_ context.Context, request *pb.DoguAdministrationRe
 	return &types.BasicResponse{}, nil
 }
 
-func createDoguListResponse(dogus []*core.Dogu) *pb.DoguListResponse {
+func createDoguListResponse(dogus *v1.DoguList) *pb.DoguListResponse {
 	var result []*pb.Dogu
-	for _, dogu := range dogus {
+	for _, dogu := range dogus.Items {
 		result = append(result, &pb.Dogu{
-			Name:        dogu.GetSimpleName(),
-			DisplayName: dogu.DisplayName,
-			Version:     dogu.Version,
-			Description: dogu.Description,
-			Tags:        dogu.Tags,
+			Name:        dogu.Name,
+			DisplayName: dogu.Spec.Name,
+			Version:     dogu.Spec.Version,
+			Description: dogu.Spec.Name,
+			Tags:        []string{dogu.Spec.Name},
 		})
 	}
 
