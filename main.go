@@ -2,10 +2,14 @@ package main
 
 import (
 	pbDoguAdministration "github.com/cloudogu/k8s-ces-control/generated/doguAdministration"
+	pgHealth "github.com/cloudogu/k8s-ces-control/generated/health"
 	pbLogging "github.com/cloudogu/k8s-ces-control/generated/logging"
+	pbMaintenance "github.com/cloudogu/k8s-ces-control/generated/maintenance"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
+	"github.com/cloudogu/k8s-ces-control/packages/doguHealth"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
+	"github.com/cloudogu/k8s-ces-control/packages/maintenance"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
@@ -80,6 +84,8 @@ func configureApplication(_ *cli.Context) error {
 func registerServices(grpcServer *grpc.Server) error {
 	pbLogging.RegisterDoguLogMessagesServer(grpcServer, logging.NewLoggingService())
 	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministration.NewDoguAdministrationServer())
+	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService())
+	pbMaintenance.RegisterDebugModeServer(grpcServer, maintenance.NewDebugModeService())
 
 	// health endpoint used to determine the healthiness of the app
 	grpc_health_v1.RegisterHealthServer(grpcServer, health.NewServer())
