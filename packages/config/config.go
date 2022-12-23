@@ -3,7 +3,9 @@ package config
 import (
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
 	"os"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 const (
@@ -16,6 +18,16 @@ const (
 )
 
 var currentStage = "development"
+
+// GetClusterClient creates a new kubernetes.Interface given the locally available cluster configurations.
+func GetClusterClient() (kubernetes.Interface, error) {
+	clusterConfig, err := ctrl.GetConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load cluster configuration: %w", err)
+	}
+
+	return kubernetes.NewForConfig(clusterConfig)
+}
 
 // ConfigureApplication performs the default configuration for the control app including configuring the logging and
 // current stage of the system.

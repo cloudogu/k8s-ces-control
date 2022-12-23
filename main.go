@@ -1,8 +1,10 @@
 package main
 
 import (
+	pbDoguAdministration "github.com/cloudogu/k8s-ces-control/generated/doguAdministration"
 	pbLogging "github.com/cloudogu/k8s-ces-control/generated/logging"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
+	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -77,6 +79,9 @@ func configureApplication(_ *cli.Context) error {
 
 func registerServices(grpcServer *grpc.Server) error {
 	pbLogging.RegisterDoguLogMessagesServer(grpcServer, logging.NewLoggingService())
+	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministration.NewDoguAdministrationServer())
+
+	// health endpoint used to determine the healthiness of the app
 	grpc_health_v1.RegisterHealthServer(grpcServer, health.NewServer())
 	return nil
 }

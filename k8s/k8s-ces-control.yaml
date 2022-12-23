@@ -6,12 +6,11 @@ metadata:
     app: k8s-ces-control
     app.kubernetes.io/name: k8s-ces-control
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
     - name: grpc
       port: 50051
       targetPort: grpc-port
-      nodePort: 50051
   selector:
     app.kubernetes.io/name: k8s-ces-control
 ---
