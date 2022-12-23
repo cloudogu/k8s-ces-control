@@ -7,6 +7,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 	"net"
 	"os"
@@ -75,6 +77,7 @@ func configureApplication(_ *cli.Context) error {
 
 func registerServices(grpcServer *grpc.Server) error {
 	pbLogging.RegisterDoguLogMessagesServer(grpcServer, logging.NewLoggingService())
+	grpc_health_v1.RegisterHealthServer(grpcServer, health.NewServer())
 	return nil
 }
 
