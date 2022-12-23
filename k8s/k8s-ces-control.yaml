@@ -1,0 +1,114 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-ces-control
+  labels:
+    app: k8s-ces-control
+    app.kubernetes.io/name: k8s-ces-control
+spec:
+  type: NodePort
+  ports:
+    - name: grpc
+      port: 50051
+      targetPort: grpc-port
+      nodePort: 50051
+  selector:
+    app.kubernetes.io/name: k8s-ces-control
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: k8s-ces-control
+  labels:
+    app: k8s-ces-control
+    app.kubernetes.io/name: k8s-ces-control
+rules:
+  - apiGroups:
+      - "*"
+    resources:
+      - "*"
+    verbs:
+      - "*"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: k8s-ces-control
+  labels:
+    app: k8s-ces-control
+    app.kubernetes.io/name: k8s-ces-control
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: k8s-ces-control
+  labels:
+    app: k8s-ces-control
+    app.kubernetes.io/name: k8s-ces-control
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: k8s-ces-control
+subjects:
+  - kind: ServiceAccount
+    name: k8s-ces-control
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-ces-control
+  labels:
+    app: k8s-ces-control
+    app.kubernetes.io/name: k8s-ces-control
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: k8s-ces-control
+  template:
+    metadata:
+      labels:
+        app: k8s-ces-control
+        app.kubernetes.io/name: k8s-ces-control
+    spec:
+      containers:
+        - name: k8s-ces-control
+          image: "cloudogu/k8s-ces-control:0.0.0"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: LOG_LEVEL
+              value: '{{.LOG_LEVEL}}'
+            - name: STAGE
+              value: '{{.STAGE}}'
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          startupProbe:
+            grpc:
+              port: 50051
+            failureThreshold: 60
+            periodSeconds: 10
+          livenessProbe:
+            grpc:
+              port: 50051
+            failureThreshold: 5
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          readinessProbe:
+            grpc:
+              port: 50051
+            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          ports:
+            - name: grpc-port
+              containerPort: 8080
+              protocol: TCP
+      serviceAccountName: k8s-ces-control
+      nodeSelector:
+        kubernetes.io/os: linux

@@ -1,5 +1,5 @@
 FROM golang:1.19.3-alpine3.17 AS backendBuilder
-RUN apk add --no-cache build-base git
+RUN apk add --no-cache build-base git bash
 
 ENV WORKDIR=/k8s-ces-control
 RUN mkdir -p ${WORKDIR}
@@ -22,7 +22,7 @@ RUN go mod vendor
 RUN make compile-generic
 
 FROM alpine:20221110
-RUN apk add --no-cache git
+RUN apk add --no-cache git bash
 
 ENV WORKDIR=/k8s-ces-control
 RUN mkdir -p ${WORKDIR}
