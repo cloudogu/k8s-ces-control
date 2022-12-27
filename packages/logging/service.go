@@ -2,6 +2,7 @@ package logging
 
 import (
 	"archive/zip"
+	"bufio"
 	"bytes"
 	"fmt"
 	pb "github.com/cloudogu/k8s-ces-control/generated/logging"
@@ -9,6 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -50,17 +53,39 @@ func (s *loggingService) GetForDogu(request *pb.DoguLogMessageRequest, server pb
 	return nil
 }
 
+// TODO implement count
+// TODO return all logs?
 func (s *loggingService) readLogs(name string, count int) ([]byte, error) {
-	logFileData := name + `
- OMG Im starting...
-calculating...
-damn...	
-`
-	if count > 0 {
-		logFileData += "\nonly some lines"
-		return []byte(logFileData), nil
+	baseUrl, err := url.Parse("http://loki-gateway.monitoring.svc.cluster.local:80")
+	if err != nil {
+		return nil, err
 	}
-	return []byte(logFileData), nil
+
+	baseUrl.Path += "loki/api/v1/query"
+
+	params := url.Values{}
+	queryParam := fmt.Sprintf("{pod=~\"%s.*\"}", name)
+	params.Add("query", queryParam)
+	baseUrl.RawQuery = params.Encode()
+
+	req, err := http.Get(baseUrl.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get request with url [%s]: %w", baseUrl.String(), err)
+	}
+	defer req.Body.Close()
+
+	if req.StatusCode > 300 {
+		return nil, fmt.Errorf("status: %s, code: %d", req.Status, req.StatusCode)
+	}
+
+	scanner := bufio.NewScanner(req.Body)
+	var reqBytes []byte
+	for scanner.Scan() {
+		println(scanner.Text())
+		reqBytes = append(reqBytes, scanner.Bytes()...)
+	}
+
+	return reqBytes, nil
 }
 
 func compressMessages(doguName string, logLines []byte) ([]byte, error) {
