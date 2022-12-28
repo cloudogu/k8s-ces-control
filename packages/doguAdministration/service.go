@@ -52,20 +52,38 @@ func (s *server) StartDogu(ctx context.Context, request *pb.DoguAdministrationRe
 		return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguname)
 	}
 
-	deployment, err := s.getDeployment(ctx, doguName)
-	if err != nil {
-		return nil, err
+	err := s.scaleDeployment(ctx, doguName, 1)
+
+	return &types.BasicResponse{}, err
+}
+
+// StopDogu stops the specified dogu
+func (s *server) StopDogu(ctx context.Context, request *pb.DoguAdministrationRequest) (*types.BasicResponse, error) {
+	doguName := request.DoguName
+	if doguName == "" {
+		return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguname)
 	}
 
-	oneReplica := int32(1)
-	deployment.Spec.Replicas = &oneReplica
+	err := s.scaleDeployment(ctx, doguName, 0)
+
+	return &types.BasicResponse{}, err
+}
+
+func (s *server) scaleDeployment(ctx context.Context, doguName string, replicas int) error {
+	deployment, err := s.getDeployment(ctx, doguName)
+	if err != nil {
+		return err
+	}
+
+	replicas32 := int32(replicas)
+	deployment.Spec.Replicas = &replicas32
 
 	err = s.updateDeployment(ctx, deployment, doguName)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &types.BasicResponse{}, nil
+	return nil
 }
 
 func (s *server) getDeployment(ctx context.Context, doguName string) (*appsv1.Deployment, error) {
@@ -84,40 +102,6 @@ func (s *server) updateDeployment(ctx context.Context, deployment *appsv1.Deploy
 	}
 
 	return nil
-}
-
-// StopDogu stops the specified dogu
-func (s *server) StopDogu(ctx context.Context, request *pb.DoguAdministrationRequest) (*types.BasicResponse, error) {
-	// doguName := request.DoguName
-	// if doguName == "" {
-	//	return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguname)
-	// }
-	// message, err := s.administrator.stopDogu(doguName)
-	// log.Info(message)
-	// if err != nil {
-	//	log.Error(err)
-	//	return nil, status.Error(codes.Internal, err.Error())
-	// }
-	doguName := request.DoguName
-	println(doguName)
-	if doguName == "" {
-		return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguname)
-	}
-
-	deployment, err := s.getDeployment(ctx, doguName)
-	if err != nil {
-		return nil, err
-	}
-
-	zeroReplicas := int32(0)
-	deployment.Spec.Replicas = &zeroReplicas
-
-	err = s.updateDeployment(ctx, deployment, doguName)
-	if err != nil {
-		return nil, err
-	}
-
-	return &types.BasicResponse{}, nil
 }
 
 // RestartDogu restarts the specified dogu
