@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	appsv1 "k8s.io/api/apps/v1"
+	scalingv1 "k8s.io/api/autoscaling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -69,60 +70,58 @@ func (s *server) StopDogu(ctx context.Context, request *pb.DoguAdministrationReq
 	return &types.BasicResponse{}, err
 }
 
-func (s *server) scaleDeployment(ctx context.Context, doguName string, replicas int) error {
-	deployment, err := s.getDeployment(ctx, doguName)
-	if err != nil {
-		return err
+// RestartDogu restarts the specified dogu
+func (s *server) RestartDogu(ctx context.Context, request *pb.DoguAdministrationRequest) (*types.BasicResponse, error) {
+	doguName := request.DoguName
+	if doguName == "" {
+		return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguname)
 	}
 
-	replicas32 := int32(replicas)
-	deployment.Spec.Replicas = &replicas32
-
-	err = s.updateDeployment(ctx, deployment, doguName)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *server) getDeployment(ctx context.Context, doguName string) (*appsv1.Deployment, error) {
+	zeroReplicas := int32(0)
 	deployment, err := s.client.AppsV1().Deployments("ecosystem").Get(ctx, doguName, metav1.GetOptions{})
 	if err != nil {
 		return nil, status.Errorf(codes.Unknown, "failed to get deployment for dogu %s: %w", doguName, err)
 	}
+	println(deployment.Spec.Replicas)
+	if *deployment.Spec.Replicas == zeroReplicas {
+		return &types.BasicResponse{}, s.scaleDeployment(ctx, doguName, 1)
+	}
 
-	return deployment, nil
+	err = s.scaleDeployment(ctx, doguName, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	deployLabel := fmt.Sprintf("dogu.name=%s", doguName)
+	watchInterface, err := s.client.AppsV1().Deployments("ecosystem").
+		Watch(ctx, metav1.ListOptions{LabelSelector: deployLabel})
+	if err != nil {
+		return nil, status.Errorf(codes.Unknown, "failed create watch for deployment wit label %s: %w", deployLabel, err)
+	}
+
+	for {
+		event := <-watchInterface.ResultChan()
+		deployment, ok := event.Object.(*appsv1.Deployment)
+		if !ok {
+			return nil, status.Error(codes.Unknown, "watch object is not type of deployment")
+		}
+
+		if *deployment.Spec.Replicas == zeroReplicas {
+			return &types.BasicResponse{}, s.scaleDeployment(ctx, doguName, 1)
+		} else {
+			continue
+		}
+	}
 }
 
-func (s *server) updateDeployment(ctx context.Context, deployment *appsv1.Deployment, doguName string) error {
-	_, err := s.client.AppsV1().Deployments("ecosystem").Update(ctx, deployment, metav1.UpdateOptions{})
+func (s *server) scaleDeployment(ctx context.Context, doguName string, replicas int32) error {
+	scale := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: doguName, Namespace: "ecosystem"}, Spec: scalingv1.ScaleSpec{Replicas: replicas}}
+	_, err := s.client.AppsV1().Deployments("ecosystem").UpdateScale(ctx, doguName, scale, metav1.UpdateOptions{})
 	if err != nil {
-		return status.Errorf(codes.Unknown, "failed to update deployment for dogu %s: %w", doguName, err)
+		return status.Errorf(codes.Unknown, "failed to scale deployment to %d: %w", replicas, err)
 	}
 
 	return nil
-}
-
-// RestartDogu restarts the specified dogu
-func (s *server) RestartDogu(_ context.Context, request *pb.DoguAdministrationRequest) (*types.BasicResponse, error) {
-	// doguName := request.DoguName
-	// if doguName == "" {
-	//	return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguname)
-	// }
-	// messageStopDogu, err := s.administrator.stopDogu(doguName)
-	// log.Info(messageStopDogu)
-	// if err != nil {
-	//	log.Error(err)
-	//	return nil, status.Error(codes.Internal, err.Error())
-	// }
-	// messsageStartDogu, err := s.administrator.startDogu(doguName)
-	// log.Info(messsageStartDogu)
-	// if err != nil {
-	//	log.Error(err)
-	//	return nil, status.Error(codes.Internal, err.Error())
-	// }
-	return &types.BasicResponse{}, nil
 }
 
 func createDoguListResponse(dogus *v1.DoguList) *pb.DoguListResponse {
