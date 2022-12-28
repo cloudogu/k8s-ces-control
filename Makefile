@@ -56,8 +56,12 @@ monitoring-namespace:
 	@kubectl create namespace monitoring || true
 
 .PHONY: install-promtail
-install-promtail: monitoring-namespace
+install-promtail: monitoring-namespace loki-example-credentials
 	@kubectl apply -f ${WORKDIR}/loki-stack/promtail --namespace=${MONITORING_NAMESPACE}
+
+.PHONY: loki-example-credentials
+loki-example-credentials: monitoring-namespace
+	@kubectl create secret generic loki-credentials --from-literal=username=loki --from-literal=password=loki  --namespace=${MONITORING_NAMESPACE} || true
 
 .PHONY: delete-promtail
 delete-promtail: monitoring-namespace

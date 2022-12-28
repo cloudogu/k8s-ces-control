@@ -43,6 +43,9 @@ data:
     
       server {
         listen             8080;
+        
+        auth_basic           "Loki";
+        auth_basic_user_file /etc/nginx/secrets/.htpasswd;
     
         location = / {
           return 200 'OK';

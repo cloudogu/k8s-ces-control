@@ -37,6 +37,7 @@ spec:
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/promtail/promtail.yaml"
+            - -config.expand-env=true
           volumeMounts:
             - name: config
               mountPath: /etc/promtail
@@ -53,6 +54,16 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+            - name: LOKI_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: loki-credentials
+            - name: LOKI_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: loki-credentials
           ports:
             - name: http-metrics
               containerPort: 3101

@@ -82,7 +82,11 @@ func configureApplication(_ *cli.Context) error {
 }
 
 func registerServices(grpcServer *grpc.Server) error {
-	pbLogging.RegisterDoguLogMessagesServer(grpcServer, logging.NewLoggingService())
+	loggingService, err := logging.NewLoggingService()
+	if err != nil {
+		return err
+	}
+	pbLogging.RegisterDoguLogMessagesServer(grpcServer, loggingService)
 
 	server, err := doguAdministration.NewDoguAdministrationServer()
 	if err != nil {
