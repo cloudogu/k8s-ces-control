@@ -13,7 +13,7 @@ metadata:
     app.kubernetes.io/component: write
     app.kubernetes.io/part-of: memberlist
 spec:
-  replicas: 2
+  replicas: 1
   podManagementPolicy: Parallel
   updateStrategy:
     rollingUpdate:
@@ -102,4 +102,4 @@ spec:
           - ReadWriteOnce
         resources:
           requests:
-            storage: "10Gi"
+            storage: "1Gi"

@@ -106,11 +106,11 @@ spec:
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
-            storage: 5Gi
+            storage: 1Gi
     - metadata:
         name: export-1
       spec:
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
-            storage: 5Gi
+            storage: 1Gi

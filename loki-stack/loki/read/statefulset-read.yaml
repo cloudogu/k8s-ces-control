@@ -13,7 +13,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: read
 spec:
-  replicas: 2
+  replicas: 1
   podManagementPolicy: Parallel
   updateStrategy:
     rollingUpdate:
@@ -110,4 +110,4 @@ spec:
           - ReadWriteOnce
         resources:
           requests:
-            storage: "10Gi"
+            storage: "1Gi"

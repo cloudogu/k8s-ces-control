@@ -8,8 +8,13 @@ import (
 	"github.com/cloudogu/k8s-ces-control/packages/config"
 	v1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+const responseMessageMissingDoguname = "dogu name is empty"
 
 func NewDoguAdministrationServer() (*server, error) {
 	client, err := config.CreateClusterClient()
@@ -41,54 +46,98 @@ func (s *server) GetDoguList(ctx context.Context, _ *pb.DoguListRequest) (*pb.Do
 }
 
 // StartDogu starts the specified dogu
-func (s *server) StartDogu(_ context.Context, request *pb.DoguAdministrationRequest) (*types.BasicResponse, error) {
-	//doguName := request.DoguName
-	//if doguName == "" {
-	//	return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguname)
-	//}
-	//message, err := s.administrator.startDogu(doguName)
-	//log.Info(message)
-	//if err != nil {
-	//	log.Error(err)
-	//	return nil, status.Error(codes.Internal, err.Error())
-	//}
+func (s *server) StartDogu(ctx context.Context, request *pb.DoguAdministrationRequest) (*types.BasicResponse, error) {
+	doguName := request.DoguName
+	if doguName == "" {
+		return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguname)
+	}
+
+	deployment, err := s.getDeployment(ctx, doguName)
+	if err != nil {
+		return nil, err
+	}
+
+	oneReplica := int32(1)
+	deployment.Spec.Replicas = &oneReplica
+
+	err = s.updateDeployment(ctx, deployment, doguName)
+	if err != nil {
+		return nil, err
+	}
 
 	return &types.BasicResponse{}, nil
 }
 
+func (s *server) getDeployment(ctx context.Context, doguName string) (*appsv1.Deployment, error) {
+	deployment, err := s.client.AppsV1().Deployments("ecosystem").Get(ctx, doguName, metav1.GetOptions{})
+	if err != nil {
+		return nil, status.Errorf(codes.Unknown, "failed to get deployment for dogu %s: %w", doguName, err)
+	}
+
+	return deployment, nil
+}
+
+func (s *server) updateDeployment(ctx context.Context, deployment *appsv1.Deployment, doguName string) error {
+	_, err := s.client.AppsV1().Deployments("ecosystem").Update(ctx, deployment, metav1.UpdateOptions{})
+	if err != nil {
+		return status.Errorf(codes.Unknown, "failed to update deployment for dogu %s: %w", doguName, err)
+	}
+
+	return nil
+}
+
 // StopDogu stops the specified dogu
-func (s *server) StopDogu(_ context.Context, request *pb.DoguAdministrationRequest) (*types.BasicResponse, error) {
-	//doguName := request.DoguName
-	//if doguName == "" {
+func (s *server) StopDogu(ctx context.Context, request *pb.DoguAdministrationRequest) (*types.BasicResponse, error) {
+	// doguName := request.DoguName
+	// if doguName == "" {
 	//	return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguname)
-	//}
-	//message, err := s.administrator.stopDogu(doguName)
-	//log.Info(message)
-	//if err != nil {
+	// }
+	// message, err := s.administrator.stopDogu(doguName)
+	// log.Info(message)
+	// if err != nil {
 	//	log.Error(err)
 	//	return nil, status.Error(codes.Internal, err.Error())
-	//}
+	// }
+	doguName := request.DoguName
+	println(doguName)
+	if doguName == "" {
+		return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguname)
+	}
+
+	deployment, err := s.getDeployment(ctx, doguName)
+	if err != nil {
+		return nil, err
+	}
+
+	zeroReplicas := int32(0)
+	deployment.Spec.Replicas = &zeroReplicas
+
+	err = s.updateDeployment(ctx, deployment, doguName)
+	if err != nil {
+		return nil, err
+	}
+
 	return &types.BasicResponse{}, nil
 }
 
 // RestartDogu restarts the specified dogu
 func (s *server) RestartDogu(_ context.Context, request *pb.DoguAdministrationRequest) (*types.BasicResponse, error) {
-	//doguName := request.DoguName
-	//if doguName == "" {
+	// doguName := request.DoguName
+	// if doguName == "" {
 	//	return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguname)
-	//}
-	//messageStopDogu, err := s.administrator.stopDogu(doguName)
-	//log.Info(messageStopDogu)
-	//if err != nil {
+	// }
+	// messageStopDogu, err := s.administrator.stopDogu(doguName)
+	// log.Info(messageStopDogu)
+	// if err != nil {
 	//	log.Error(err)
 	//	return nil, status.Error(codes.Internal, err.Error())
-	//}
-	//messsageStartDogu, err := s.administrator.startDogu(doguName)
-	//log.Info(messsageStartDogu)
-	//if err != nil {
+	// }
+	// messsageStartDogu, err := s.administrator.startDogu(doguName)
+	// log.Info(messsageStartDogu)
+	// if err != nil {
 	//	log.Error(err)
 	//	return nil, status.Error(codes.Internal, err.Error())
-	//}
+	// }
 	return &types.BasicResponse{}, nil
 }
 
