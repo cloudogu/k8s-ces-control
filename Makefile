@@ -98,7 +98,12 @@ delete-grafana: monitoring-namespace
 	@kubectl delete -f ${WORKDIR}/loki-stack/grafana --namespace=${MONITORING_NAMESPACE} || true
 
 .PHONY: build
-build: k8s-delete image-import k8s-apply ## Builds a new version of the k8s-ces-control and deploys it into the K8s-EcoSystem.
+build: k8s-delete image-import k8s-apply kill-pod ## Builds a new version of the k8s-ces-control and deploys it into the K8s-EcoSystem.
+
+.PHONY: kill-pod
+kill-pod:
+	@echo "Restarting k8s-ces-control!"
+	@kubectl -n ${NAMESPACE} delete pods -l 'app.kubernetes.io/name=k8s-ces-control'
 
 .PHONY: k8s-create-temporary-resource
 k8s-create-temporary-resource: create-temporary-release-resource template-dev-only-image-pull-policy
@@ -109,6 +114,7 @@ create-temporary-release-resource: $(K8S_RESOURCE_TEMP_FOLDER) check-env-var-sta
 	@cat $(K8S_CES_CONTROL_RESOURCE_YAML) >> $(K8S_RESOURCE_TEMP_YAML)
 	@sed -i "s/'{{\.LOG\_LEVEL}}'/$(LOG_LEVEL)/" $(K8S_RESOURCE_TEMP_YAML)
 	@sed -i "s/'{{\.STAGE}}'/$(STAGE)/" $(K8S_RESOURCE_TEMP_YAML)
+	@sed -i "s/'{{\.NAMESPACE}}'/$(NAMESPACE)/" $(K8S_RESOURCE_TEMP_YAML)
 	@$(BINARY_YQ) -i e "(select(.kind == \"Deployment\").spec.template.spec.containers[]|select(.image == \"*$(ARTIFACT_ID)*\").image)=\"$(IMAGE)\"" $(K8S_RESOURCE_TEMP_YAML);
 
 .PHONY: template-dev-only-image-pull-policy

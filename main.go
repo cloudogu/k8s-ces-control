@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"github.com/cloudogu/cesapp-lib/core"
+	cesregistry "github.com/cloudogu/cesapp-lib/registry"
 	pbDoguAdministration "github.com/cloudogu/k8s-ces-control/generated/doguAdministration"
 	pgHealth "github.com/cloudogu/k8s-ces-control/generated/health"
 	pbLogging "github.com/cloudogu/k8s-ces-control/generated/logging"
@@ -82,17 +85,26 @@ func configureApplication(_ *cli.Context) error {
 }
 
 func registerServices(grpcServer *grpc.Server) error {
+	cesReg, err := cesregistry.New(core.Registry{
+		Type:      "etcd",
+		Endpoints: []string{fmt.Sprintf("http://etcd.%s.svc.cluster.local:4001", config.CurrentNamespace)},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create CES registry: %w", err)
+	}
+
 	loggingService, err := logging.NewLoggingService()
 	if err != nil {
 		return err
 	}
 	pbLogging.RegisterDoguLogMessagesServer(grpcServer, loggingService)
 
-	server, err := doguAdministration.NewDoguAdministrationServer()
+	server, err := doguAdministration.NewDoguAdministrationServer(cesReg)
 	if err != nil {
 		return err
 	}
 	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, server)
+
 	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService())
 	pbMaintenance.RegisterDebugModeServer(grpcServer, maintenance.NewDebugModeService())
 
