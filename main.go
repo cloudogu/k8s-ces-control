@@ -13,12 +13,15 @@ import (
 	"github.com/cloudogu/k8s-ces-control/packages/doguHealth"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	"github.com/cloudogu/k8s-ces-control/packages/maintenance"
+	"github.com/cloudogu/k8s-ces-control/packages/ssl"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
+	"log"
 	"net"
 	"os"
 )
@@ -129,7 +132,11 @@ func startServerAction(_ *cli.Context) error {
 		logrus.Fatalf("failed to listen: %v", err)
 	}
 
-	grpcServer := grpc.NewServer()
+	creds, err := readTLSCredentials()
+	if err != nil {
+		log.Fatalf("Failed to setup TLS: %v", err)
+	}
+	grpcServer := grpc.NewServer(grpc.Creds(creds))
 	err = registerServices(grpcServer)
 	if err != nil {
 		logrus.Fatalf("failed to register services: %w", err)
@@ -147,4 +154,17 @@ func startServerAction(_ *cli.Context) error {
 		return err
 	}
 	return nil
+}
+
+func readTLSCredentials() (credentials.TransportCredentials, error) {
+	cesReg, err := cesregistry.New(core.Registry{
+		Type:      "etcd",
+		Endpoints: []string{fmt.Sprintf("http://etcd.%s.svc.cluster.local:4001", config.CurrentNamespace)},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create CES registry: %w", err)
+	}
+
+	reader := ssl.NewManager(cesReg.GlobalConfig())
+	return reader.GetCertificateCredentials()
 }

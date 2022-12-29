@@ -16,6 +16,7 @@ COPY .git ${WORKDIR}/.git
 
 ## Copy makefiles
 COPY Makefile ${WORKDIR}/
+COPY makefiles ${WORKDIR}/makefiles
 COPY build ${WORKDIR}/build
 
 RUN go mod vendor
@@ -42,6 +43,9 @@ RUN set -eux -o pipefail \
     && adduser -S -h ${WORKDIR} -G "${USER}" -u 1000 -s /bin/bash "${USER}" \
     && chown -R ${USER}:${USER} ${WORKDIR} /etc/ssl/certs \
     && rm -rf /var/cache/apk/*
+
+# Create folder for k8s-ces-control files.
+RUN mkdir /etc/k8s-ces-control && chown -R ${USER}:${USER} /etc/k8s-ces-control
 
 EXPOSE 50051
 HEALTHCHECK CMD netstat -tulpn | grep LISTEN | grep 50051
