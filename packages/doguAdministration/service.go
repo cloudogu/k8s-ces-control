@@ -43,6 +43,8 @@ func (s *server) GetDoguList(ctx context.Context, _ *pb.DoguListRequest) (*pb.Do
 		return &pb.DoguListResponse{}, nil
 	}
 
+	// TODO create etcd client and read dogu.json for all dogus
+
 	return createDoguListResponse(list), nil
 }
 

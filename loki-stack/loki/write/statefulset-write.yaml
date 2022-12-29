@@ -13,7 +13,7 @@ metadata:
     app.kubernetes.io/component: write
     app.kubernetes.io/part-of: memberlist
 spec:
-  replicas: 1
+  replicas: 2
   podManagementPolicy: Parallel
   updateStrategy:
     rollingUpdate:
