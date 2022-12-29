@@ -16,6 +16,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"net/url"
+	"sort"
 	"time"
 )
 
@@ -139,12 +140,12 @@ func (s *loggingService) readLogs(name string, count int) ([]byte, error) {
 		return []byte{}, nil
 	}
 
-	result, err := json.MarshalIndent(lokiResp.Data.Result, "", "    ")
-	if err != nil {
-		return nil, createInternalErr(fmt.Errorf("failed to marshal results: %w", err), codes.Canceled)
+	buf := &bytes.Buffer{}
+	for _, s := range extractRawLogsFromLokiResponseData(lokiResp.Data) {
+		buf.WriteString(fmt.Sprintf("%s\n", s))
 	}
 
-	return result, nil
+	return buf.Bytes(), nil
 }
 
 func compressMessages(doguName string, logLines []byte) ([]byte, error) {
@@ -171,6 +172,30 @@ func compressMessages(doguName string, logLines []byte) ([]byte, error) {
 	_ = zipWriter.Close()
 	logrus.Debugf("wrote %d byte(s) to archive", writtenBytes)
 	return compressedMessages.Bytes(), nil
+}
+
+func extractRawLogsFromLokiResponseData(lokiResponseData LokiResponseData) []string {
+	var unsortedLogs = make(map[string]string)
+	streams := lokiResponseData.Result
+	for _, lokiStream := range streams {
+		for _, value := range lokiStream.Values {
+			unsortedLogs[value[0]] = value[1]
+		}
+	}
+
+	keys := make([]string, 0, len(unsortedLogs))
+	for k := range unsortedLogs {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	var sortedLogs []string
+	for _, k := range keys {
+		sortedLogs = append(sortedLogs, unsortedLogs[k])
+	}
+
+	return sortedLogs
 }
 
 func createInternalErr(err error, code codes.Code) error {
