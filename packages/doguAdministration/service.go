@@ -21,13 +21,8 @@ import (
 
 const responseMessageMissingDoguname = "dogu name is empty"
 
-func NewDoguAdministrationServer(reg cesregistry.Registry) (*server, error) {
-	client, err := config.CreateClusterClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create cluster client")
-	}
-
-	return &server{client: client, doguRegistry: reg.DoguRegistry()}, nil
+func NewDoguAdministrationServer(client config.ClusterClient, reg cesregistry.Registry) *server {
+	return &server{client: client, doguRegistry: reg.DoguRegistry()}
 }
 
 type server struct {
@@ -38,7 +33,7 @@ type server struct {
 
 // GetDoguList returns the list of dogus to administrate (all)
 func (s *server) GetDoguList(ctx context.Context, _ *pb.DoguListRequest) (*pb.DoguListResponse, error) {
-	list, err := s.client.EcoSystemApi.Dogus("ecosystem").List(ctx, metav1.ListOptions{})
+	list, err := s.client.EcoSystemApi.Dogus(config.CurrentNamespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
@@ -89,7 +84,7 @@ func (s *server) RestartDogu(ctx context.Context, request *pb.DoguAdministration
 	}
 
 	zeroReplicas := int32(0)
-	deployment, err := s.client.AppsV1().Deployments("ecosystem").Get(ctx, doguName, metav1.GetOptions{})
+	deployment, err := s.client.AppsV1().Deployments(config.CurrentNamespace).Get(ctx, doguName, metav1.GetOptions{})
 	if err != nil {
 		return nil, status.Errorf(codes.Unknown, "failed to get deployment for dogu %s: %w", doguName, err)
 	}
@@ -104,7 +99,7 @@ func (s *server) RestartDogu(ctx context.Context, request *pb.DoguAdministration
 	}
 
 	deployLabel := fmt.Sprintf("dogu.name=%s", doguName)
-	watchInterface, err := s.client.AppsV1().Deployments("ecosystem").
+	watchInterface, err := s.client.AppsV1().Deployments(config.CurrentNamespace).
 		Watch(ctx, metav1.ListOptions{LabelSelector: deployLabel})
 	if err != nil {
 		return nil, status.Errorf(codes.Unknown, "failed create watch for deployment wit label %s: %w", deployLabel, err)
@@ -126,8 +121,8 @@ func (s *server) RestartDogu(ctx context.Context, request *pb.DoguAdministration
 }
 
 func (s *server) scaleDeployment(ctx context.Context, doguName string, replicas int32) error {
-	scale := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: doguName, Namespace: "ecosystem"}, Spec: scalingv1.ScaleSpec{Replicas: replicas}}
-	_, err := s.client.AppsV1().Deployments("ecosystem").UpdateScale(ctx, doguName, scale, metav1.UpdateOptions{})
+	scale := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: doguName, Namespace: config.CurrentNamespace}, Spec: scalingv1.ScaleSpec{Replicas: replicas}}
+	_, err := s.client.AppsV1().Deployments(config.CurrentNamespace).UpdateScale(ctx, doguName, scale, metav1.UpdateOptions{})
 	if err != nil {
 		return status.Errorf(codes.Unknown, "failed to scale deployment to %d: %w", replicas, err)
 	}

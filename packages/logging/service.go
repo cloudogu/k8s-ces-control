@@ -23,12 +23,8 @@ const (
 	responseMessageMissingDoguname = "Dogu name should not be empty"
 )
 
-func NewLoggingService() (*loggingService, error) {
-	client, err := config.CreateClusterClient()
-	if err != nil {
-		return nil, err
-	}
-	return &loggingService{client: client}, nil
+func NewLoggingService(client config.ClusterClient) *loggingService {
+	return &loggingService{client: client}
 }
 
 type loggingService struct {

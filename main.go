@@ -93,19 +93,14 @@ func registerServices(grpcServer *grpc.Server) error {
 		return fmt.Errorf("failed to create CES registry: %w", err)
 	}
 
-	loggingService, err := logging.NewLoggingService()
+	client, err := config.CreateClusterClient()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create cluster client")
 	}
-	pbLogging.RegisterDoguLogMessagesServer(grpcServer, loggingService)
 
-	server, err := doguAdministration.NewDoguAdministrationServer(cesReg)
-	if err != nil {
-		return err
-	}
-	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, server)
-
-	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService())
+	pbLogging.RegisterDoguLogMessagesServer(grpcServer, logging.NewLoggingService(client))
+	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministration.NewDoguAdministrationServer(client, cesReg))
+	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService(client))
 	pbMaintenance.RegisterDebugModeServer(grpcServer, maintenance.NewDebugModeService())
 
 	// health endpoint used to determine the healthiness of the app
