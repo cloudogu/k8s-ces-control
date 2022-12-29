@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/cloudogu/cesapp-lib/registry"
 	"github.com/cloudogu/cesapp-lib/ssl"
+	"github.com/cloudogu/k8s-ces-control/packages/config"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/credentials"
 	"log"
@@ -33,7 +34,16 @@ func (r manager) GetCertificateCredentials() (credentials.TransportCredentials, 
 
 	if !hasCertificate {
 		logrus.Println("Found no ssl certificate -> generating new one.")
-		cert, key, err := ssl.NewSSLGenerator().GenerateSelfSignedCert("k8s-ces-control", "k8s-ces-control", 24000, "country", "province", "DE", []string{})
+
+		cert, key, err := ssl.NewSSLGenerator().GenerateSelfSignedCert(
+			"k8s-ces-control",
+			"k8s-ces-control",
+			24000,
+			"DE",
+			"Lower Saxony",
+			"Brunswick",
+			[]string{fmt.Sprintf("k8s-ces-control.%s.svc.cluster.local", config.CurrentNamespace), "localhost"},
+		)
 		if err != nil {
 			return nil, err
 		}

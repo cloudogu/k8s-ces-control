@@ -139,6 +139,7 @@ func startServerAction(_ *cli.Context) error {
 	if err != nil {
 		log.Fatalf("Failed to setup TLS: %v", err)
 	}
+
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
 	err = registerServices(grpcServer)
 	if err != nil {
