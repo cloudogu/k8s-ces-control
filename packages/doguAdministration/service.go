@@ -106,7 +106,7 @@ func (s *server) RestartDogu(ctx context.Context, request *pb.DoguAdministration
 			return nil, status.Error(codes.Unknown, "watch object is not type of deployment")
 		}
 
-		if *deployment.Spec.Replicas == zeroReplicas {
+		if deployment.Status.Replicas == zeroReplicas {
 			return &types.BasicResponse{}, s.scaleDeployment(ctx, doguName, 1)
 		} else {
 			continue
