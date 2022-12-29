@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	certificateRegistryKey    = "certificate/cesappd/server.crt"
-	certificateFilePath       = "/etc/cesappd/server.crt"
-	certificateKeyRegistryKey = "certificate/cesappd/server.key"
-	certificateKeyFilePath    = "/etc/cesappd/server.key"
+	certificateRegistryKey    = "certificate/k8s-ces-control/server.crt"
+	certificateFilePath       = "/etc/k8s-ces-control/server.crt"
+	certificateKeyRegistryKey = "certificate/k8s-ces-control/server.key"
+	CertificateKeyFilePath    = "/etc/cesappd/server.key"
 )
 
 type manager struct {

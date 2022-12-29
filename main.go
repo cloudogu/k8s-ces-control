@@ -8,12 +8,14 @@ import (
 	pgHealth "github.com/cloudogu/k8s-ces-control/generated/health"
 	pbLogging "github.com/cloudogu/k8s-ces-control/generated/logging"
 	pbMaintenance "github.com/cloudogu/k8s-ces-control/generated/maintenance"
+	"github.com/cloudogu/k8s-ces-control/packages/account"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
 	"github.com/cloudogu/k8s-ces-control/packages/doguHealth"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	"github.com/cloudogu/k8s-ces-control/packages/maintenance"
 	"github.com/cloudogu/k8s-ces-control/packages/ssl"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
@@ -62,6 +64,7 @@ func startCesControl() error {
 	app.EnableBashCompletion = true
 	app.Commands = []*cli.Command{
 		startServerCommand(),
+		createServiceAccountCommand(),
 	}
 
 	logrus.Infoln("Starting k8s-ces-control")
@@ -158,6 +161,16 @@ func startServerAction(_ *cli.Context) error {
 }
 
 func readTLSCredentials() (credentials.TransportCredentials, error) {
+	cesReg, err := getCesRegistry()
+	if err != nil {
+		return nil, err
+	}
+
+	reader := ssl.NewManager(cesReg.GlobalConfig())
+	return reader.GetCertificateCredentials()
+}
+
+func getCesRegistry() (cesregistry.Registry, error) {
 	cesReg, err := cesregistry.New(core.Registry{
 		Type:      "etcd",
 		Endpoints: []string{fmt.Sprintf("http://etcd.%s.svc.cluster.local:4001", config.CurrentNamespace)},
@@ -166,6 +179,59 @@ func readTLSCredentials() (credentials.TransportCredentials, error) {
 		return nil, fmt.Errorf("failed to create CES registry: %w", err)
 	}
 
-	reader := ssl.NewManager(cesReg.GlobalConfig())
-	return reader.GetCertificateCredentials()
+	return cesReg, nil
+}
+
+func createServiceAccountCommand() *cli.Command {
+	managerCreator := func(serviceName string) (account.ServiceAccountManager, error) {
+		cesRegistry, err := getCesRegistry()
+		if err != nil {
+			return account.ServiceAccountManager{}, err
+		}
+		manager, err := account.NewServiceAccountManager(serviceName, cesRegistry)
+		if err != nil {
+			return account.ServiceAccountManager{}, err
+		}
+		return manager, nil
+	}
+	return &cli.Command{
+		Name:      "service-account-create",
+		Usage:     "creates a service account for the given service",
+		ArgsUsage: "SERVICE_NAME",
+		Action:    getServiceAccountAction(managerCreator),
+	}
+}
+
+type serviceAccountManagerCreator func(serviceName string) (account.ServiceAccountManager, error)
+
+func getServiceAccountAction(getManager serviceAccountManagerCreator) func(ctx *cli.Context) error {
+	return func(ctx *cli.Context) error {
+		err := validateArgsCount(ctx, 1)
+		if err != nil {
+			return createServiceAccountErr("", "create", err)
+		}
+		serviceName := ctx.Args().First()
+		accountManager, err := getManager(serviceName)
+		if err != nil {
+			return createServiceAccountErr(serviceName, "create", err)
+		}
+		result, err := accountManager.Create(ctx.Context)
+		if err != nil {
+			return createServiceAccountErr(serviceName, "create", err)
+		}
+		fmt.Println(result)
+		return nil
+	}
+}
+
+func createServiceAccountErr(serviceName, action string, err error) error {
+	return fmt.Errorf("failed to %s service account for service %s: %w", action, serviceName, err)
+}
+
+func validateArgsCount(ctx *cli.Context, requiredCount int) error {
+	actualArgsCount := ctx.Args().Len()
+	if actualArgsCount < requiredCount {
+		return errors.Errorf("The command '%s' requires at least %d argument(s)", ctx.Command.Name, requiredCount)
+	}
+	return nil
 }
