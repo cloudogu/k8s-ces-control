@@ -16,6 +16,8 @@ const (
 	stagingEnvironmentVariable = "STAGE"
 	stageProduction            = "production"
 	stageDevelopment           = "development"
+
+	namespaceEnvironmentVariable = "NAMESPACE"
 )
 
 type ClusterClient struct {
@@ -53,6 +55,11 @@ func ConfigureApplication() error {
 		return err
 	}
 
+	err = configureNamespace()
+	if err != nil {
+		return err
+	}
+
 	err = configureCurrentStage()
 	if err != nil {
 		return err
@@ -82,6 +89,24 @@ func configureCurrentStage() error {
 		return fmt.Errorf("found invalid value [%s] for environment variable [%s], only the values [production, development] are valid values", stage, stagingEnvironmentVariable)
 	}
 
+	return nil
+}
+
+var CurrentNamespace = ""
+
+func configureNamespace() error {
+	namespace, ok := os.LookupEnv(namespaceEnvironmentVariable)
+	if !ok {
+		logrus.Printf("No namespace was set via the environment variable [%s]. A namespace is required.", namespaceEnvironmentVariable)
+		return nil
+	}
+
+	CurrentNamespace = namespace
+	if CurrentNamespace == "" {
+		return fmt.Errorf("found invalid value for namespace [%s]: namespace cannot be empty: set valid value with environment variable [%s]", CurrentNamespace, namespaceEnvironmentVariable)
+	}
+
+	logrus.Printf("Using namespace [%s].", CurrentNamespace)
 	return nil
 }
 

@@ -3,6 +3,7 @@ package doguAdministration
 import (
 	"context"
 	"fmt"
+	"github.com/cloudogu/cesapp-lib/core"
 	pb "github.com/cloudogu/k8s-ces-control/generated/doguAdministration"
 	"github.com/cloudogu/k8s-ces-control/generated/types"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
@@ -13,20 +14,24 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	scalingv1 "k8s.io/api/autoscaling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	cesregistry "github.com/cloudogu/cesapp-lib/registry"
+	"github.com/hashicorp/go-multierror"
 )
 
 const responseMessageMissingDoguname = "dogu name is empty"
 
-func NewDoguAdministrationServer() (*server, error) {
+func NewDoguAdministrationServer(reg cesregistry.Registry) (*server, error) {
 	client, err := config.CreateClusterClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cluster client")
 	}
 
-	return &server{client: client}, nil
+	return &server{client: client, doguRegistry: reg.DoguRegistry()}, nil
 }
 
 type server struct {
+	doguRegistry cesregistry.DoguRegistry
 	pb.UnimplementedDoguAdministrationServer
 	client config.ClusterClient
 }
@@ -43,9 +48,13 @@ func (s *server) GetDoguList(ctx context.Context, _ *pb.DoguListRequest) (*pb.Do
 		return &pb.DoguListResponse{}, nil
 	}
 
-	// TODO create etcd client and read dogu.json for all dogus
+	doguJsonList, err := s.getDoguJsonList(list.Items)
+	if err != nil {
+		logrus.Error(fmt.Errorf("failed to get dogus from etcd"))
+		return nil, err
+	}
 
-	return createDoguListResponse(list), nil
+	return createDoguListResponse(doguJsonList), nil
 }
 
 // StartDogu starts the specified dogu
@@ -126,15 +135,28 @@ func (s *server) scaleDeployment(ctx context.Context, doguName string, replicas 
 	return nil
 }
 
-func createDoguListResponse(dogus *v1.DoguList) *pb.DoguListResponse {
+func (s *server) getDoguJsonList(doguListItems []v1.Dogu) (dogus []*core.Dogu, multiErr error) {
+	for _, doguListItem := range doguListItems {
+		dogu, err := s.doguRegistry.Get(doguListItem.GetName())
+		if err != nil {
+			multiErr = multierror.Append(err, err)
+		}
+
+		dogus = append(dogus, dogu)
+	}
+
+	return dogus, multiErr
+}
+
+func createDoguListResponse(dogus []*core.Dogu) *pb.DoguListResponse {
 	var result []*pb.Dogu
-	for _, dogu := range dogus.Items {
+	for _, dogu := range dogus {
 		result = append(result, &pb.Dogu{
-			Name:        dogu.Name,
-			DisplayName: dogu.Spec.Name,
-			Version:     dogu.Spec.Version,
-			Description: dogu.Spec.Name,
-			Tags:        []string{dogu.Spec.Name},
+			Name:        dogu.GetSimpleName(),
+			DisplayName: dogu.DisplayName,
+			Version:     dogu.Version,
+			Description: dogu.Description,
+			Tags:        dogu.Tags,
 		})
 	}
 
