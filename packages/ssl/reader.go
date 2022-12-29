@@ -65,12 +65,12 @@ func (r manager) GetCertificateCredentials() (credentials.TransportCredentials, 
 		return nil, err
 	}
 
-	err = r.copyFromRegistryToFile(certificateKeyRegistryKey, certificateKeyFilePath)
+	err = r.copyFromRegistryToFile(certificateKeyRegistryKey, CertificateKeyFilePath)
 	if err != nil {
 		return nil, err
 	}
 
-	return credentials.NewServerTLSFromFile(certificateFilePath, certificateKeyFilePath)
+	return credentials.NewServerTLSFromFile(certificateFilePath, CertificateKeyFilePath)
 }
 
 func (r manager) hasCertificate() (bool, error) {
