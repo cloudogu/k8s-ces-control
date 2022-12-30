@@ -58,6 +58,6 @@ EXPOSE 50051
 #HEALTHCHECK CMD /grpc_health_probe -tls -tulpn | grep LISTEN | grep 50051
 
 WORKDIR ${WORKDIR}
-USER ${USER}
+USER k8s-ces-control
 
 CMD LOG_LEVEL=DEBUG ./k8s-ces-control start
