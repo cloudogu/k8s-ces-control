@@ -129,7 +129,7 @@ void stageLintK8SResources() {
             .image(kubevalImage)
             .inside("-v ${WORKSPACE}/k8s:/data -t --entrypoint=")
                     {
-                        sh "kubeval /data/k8s-ces-setup.yaml --ignore-missing-schemas"
+                        sh "kubeval /data/${repositoryName}.yaml --ignore-missing-schemas"
                     }
 }
 
