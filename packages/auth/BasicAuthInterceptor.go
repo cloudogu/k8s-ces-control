@@ -11,6 +11,8 @@ import (
 	"strings"
 )
 
+var publicEndpoints = []string{"/grpc.health.v1.Health/Check"}
+
 func BasicAuthUnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	logger := log.FromContext(ctx)
 	logger.Info("Interceptor called; FullMethod: ", info.FullMethod)
@@ -18,6 +20,10 @@ func BasicAuthUnaryInterceptor(ctx context.Context, req interface{}, info *grpc.
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, status.Errorf(codes.Unauthenticated, "metadata is not provided")
+	}
+
+	if isPublicEndpoint(info) {
+		return handler(ctx, req)
 	}
 
 	getCredentials := authHelper.GetServiceAccountCredentials
@@ -29,6 +35,16 @@ func BasicAuthUnaryInterceptor(ctx context.Context, req interface{}, info *grpc.
 	}
 
 	return handler(ctx, req)
+}
+
+func isPublicEndpoint(info *grpc.UnaryServerInfo) bool {
+	for _, endpoint := range publicEndpoints {
+		if info.FullMethod == endpoint {
+			return true
+		}
+	}
+
+	return false
 }
 
 func authorize(ctx context.Context, metadata *metadata.MD, _ string, getCredentials authHelper.AuthenticationFunc) error {
