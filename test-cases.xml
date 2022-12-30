@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite>
+<testsuite name="github.com/cloudogu/k8s-ces-control/integration">
     <testcase name="Integration-Test: Test 1">
         <system-out>Passed.</system-out>
     </testcase>

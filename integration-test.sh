@@ -19,6 +19,7 @@ startPortForward() {
   sleep 2s
   echo "Started Port-Forward on ${PORT_FORWARD_PID}"
 }
+
 killPortForward() {
   echo "Stopping Port-Forward..."
   kill -kill "${PORT_FORWARD_PID}"
@@ -27,7 +28,7 @@ killPortForward() {
 test() {
 local getDoguList
 getDoguList="$(${GRPCURL_BIN} -insecure localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.GetDoguList | jq '.dogus | map(select(.name)) | .[].name')"
-printf "Result: \n %s" "${getDoguList}"
+printf "Results: \n%s\n" "${getDoguList}"
 #    String installedDogus = grpcurl(grpcurlPort, "")
 #    echo "Retrieve all Dogus from "
 #
@@ -37,6 +38,13 @@ printf "Result: \n %s" "${getDoguList}"
 #    }
 }
 
+function createIntegrationTestFile() {
+  rm -rf target/bash-integration-test
+  mkdir -p target/bash-integration-test/results.xml
+  touch target/bash-integration-test/results.xml
+}
+
+createIntegrationTestFile
 startPortForward
 test
 killPortForward
