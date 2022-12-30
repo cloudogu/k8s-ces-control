@@ -117,13 +117,13 @@ node('docker') {
 }
 
 private void testK8sCesControl(K3d k3d) {
-    new Docker(this)..image("golang:${goVersion}")
+    new Docker(this).image("golang:${goVersion}")
             .mountJenkinsUser()
             .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}")
-    {
-        make 'integration-test-bash'
-        junit allowEmptyResults: true, testResults: 'target/bash-integration-test/*.xml'
-    }
+                    {
+                        make 'integration-test-bash'
+                        junit allowEmptyResults: true, testResults: 'target/bash-integration-test/*.xml'
+                    }
 }
 
 private String grpcurl(String port, String command) {
