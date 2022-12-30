@@ -86,7 +86,7 @@ func (s *server) RestartDogu(ctx context.Context, request *pb.DoguAdministration
 	zeroReplicas := int32(0)
 	deployment, err := s.client.AppsV1().Deployments(config.CurrentNamespace).Get(ctx, doguName, metav1.GetOptions{})
 	if err != nil {
-		return nil, status.Errorf(codes.Unknown, "failed to get deployment for dogu %s: %w", doguName, err)
+		return nil, status.Errorf(codes.Unknown, "failed to get deployment for dogu %s: %s", doguName, err.Error())
 	}
 	println(deployment.Spec.Replicas)
 	if *deployment.Spec.Replicas == zeroReplicas {
@@ -102,7 +102,7 @@ func (s *server) RestartDogu(ctx context.Context, request *pb.DoguAdministration
 	watchInterface, err := s.client.AppsV1().Deployments(config.CurrentNamespace).
 		Watch(ctx, metav1.ListOptions{LabelSelector: deployLabel})
 	if err != nil {
-		return nil, status.Errorf(codes.Unknown, "failed create watch for deployment wit label %s: %w", deployLabel, err)
+		return nil, status.Errorf(codes.Unknown, "failed create watch for deployment wit label %s: %s", deployLabel, err.Error())
 	}
 
 	for {
@@ -124,7 +124,7 @@ func (s *server) scaleDeployment(ctx context.Context, doguName string, replicas 
 	scale := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: doguName, Namespace: config.CurrentNamespace}, Spec: scalingv1.ScaleSpec{Replicas: replicas}}
 	_, err := s.client.AppsV1().Deployments(config.CurrentNamespace).UpdateScale(ctx, doguName, scale, metav1.UpdateOptions{})
 	if err != nil {
-		return status.Errorf(codes.Unknown, "failed to scale deployment to %d: %w", replicas, err)
+		return status.Errorf(codes.Unknown, "failed to scale deployment to %d: %s", replicas, err.Error())
 	}
 
 	return nil

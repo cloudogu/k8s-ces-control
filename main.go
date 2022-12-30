@@ -144,7 +144,7 @@ func startServerAction(_ *cli.Context) error {
 	grpcServer := grpc.NewServer(grpc.Creds(creds), grpc.UnaryInterceptor(auth.BasicAuthUnaryInterceptor))
 	err = registerServices(grpcServer)
 	if err != nil {
-		logrus.Fatalf("failed to register services: %w", err)
+		logrus.Fatalf("failed to register services: %s", err.Error())
 		return err
 	}
 
