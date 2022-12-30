@@ -37,36 +37,40 @@ node('docker') {
             make 'clean'
         }
 
-        stage('Lint - Dockerfile') {
-            lintDockerfile()
-        }
+        junit allowEmptyResults: true, testResults: 'test-cases.xml'
 
-        stage("Lint - k8s Resources") {
-            stageLintK8SResources()
-        }
+        sh "exit 1"
 
-        docker
-                .image("golang:${goVersion}")
-                .mountJenkinsUser()
-                .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}")
-                        {
-                            stage('Build') {
-                                make 'compile'
-                            }
+        // stage('Lint - Dockerfile') {
+        //     lintDockerfile()
+        // }
 
-                            stage('Unit Tests') {
-                                make 'unit-test'
-                                junit allowEmptyResults: true, testResults: 'target/unit-tests/*-tests.xml'
-                            }
-
-                            stage("Review dog analysis") {
-                                stageStaticAnalysisReviewDog()
-                            }
-                        }
-
-        stage('SonarQube') {
-            stageStaticAnalysisSonarQube()
-        }
+        // stage("Lint - k8s Resources") {
+        //     stageLintK8SResources()
+        // }
+//
+        // docker
+        //         .image("golang:${goVersion}")
+        //         .mountJenkinsUser()
+        //         .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}")
+        //                 {
+        //                     stage('Build') {
+        //                         make 'compile'
+        //                     }
+//
+        //                     stage('Unit Tests') {
+        //                         make 'unit-test'
+        //                         junit allowEmptyResults: true, testResults: 'target/unit-tests/*-tests.xml'
+        //                     }
+//
+        //                     stage("Review dog analysis") {
+        //                         stageStaticAnalysisReviewDog()
+        //                     }
+        //                 }
+//
+        // stage('SonarQube') {
+        //     stageStaticAnalysisSonarQube()
+        // }
 
         K3d k3d = new K3d(this, "${WORKSPACE}", "${WORKSPACE}/k3d", env.PATH)
         try {
@@ -76,7 +80,7 @@ node('docker') {
 
             stage('Setup') {
                 k3d.setup("v0.10.0", [
-                        dependencies: ["official/postfix"],
+                        dependencies: ["official/postfix", "official/ldap"],
                         defaultDogu : ""
                 ])
             }
@@ -96,7 +100,7 @@ node('docker') {
             stage('Install grpcurl') {
                 String grpcurlVersion = "1.8.7"
                 sh "wget -O grpcurl.tar.gz https://github.com/fullstorydev/grpcurl/releases/download/v${grpcurlVersion}/grpcurl_${grpcurlVersion}_linux_x86_64.tar.gz"
-                sh "tar -xf grpcurl.tar.gz"
+                sh "tar --one-top-level=grpcurlDir -xf grpcurl.tar.gz"
                 sh "rm -rf grpcurl.tar.gz"
             }
 
@@ -105,7 +109,7 @@ node('docker') {
             }
 
             stage('Test Grpc') {
-
+                testK8sCesControl(k3d)
             }
 
             stageAutomaticRelease()
@@ -121,6 +125,24 @@ node('docker') {
             }
         }
     }
+}
+
+private void testK8sCesControl(K3d k3d) {
+    String grpcurlPort = findFreeTcpPort()
+    k3d.kubectl("port-forward service/k8s-ces-control ${grpcurlPort}:50051 &")
+
+    String installedDogus = grpcurl(grpcurlPort, "doguAdministration.DoguAdministration.GetDoguList | jq '.dogus | map(select(.name)) | .[].name'")
+    echo "Retrieve all Dogus from "
+
+    String[] expectedDogus = ["ldap", "postfix"]
+    if (!installedDogus.contains("\"ldap\"")){
+        sh "echo 'Expected ldap dogu to be contained in the dogu list returned by grpc call but does not -> exit' && exit 1"
+    }
+
+}
+
+private String grpcurl(String port, String command) {
+    return sh(returnStdout: true, script: "./grpcurlDir/grpcurl -insecure localhost:${grpcurlPort} command").trim()
 }
 
 void stageLintK8SResources() {
@@ -199,7 +221,7 @@ void stageAutomaticRelease() {
         }
 
         stage('Regenerate resources for release') {
-            make 'create-temporary-release-resource'
+            generateResources()
         }
 
         stage('Push to Registry') {
@@ -215,7 +237,7 @@ String generateResources(String image = "") {
     Makefile makefile = new Makefile(this)
     String version = makefile.getVersion()
     String generatedFile = "target/make/k8s/k8s-ces-control_${version}.yaml".toString()
-    docker.image('mikefarah/yq:4.22.1')
+    new Docker(this).image('mikefarah/yq:4.22.1')
             .mountJenkinsUser()
             .inside("--volume ${WORKSPACE}:/workdir -w /workdir") {
                 if (image == "") {
@@ -231,4 +253,13 @@ String generateResources(String image = "") {
 
 void make(String makeArgs) {
     sh "make ${makeArgs}"
+}
+
+/**
+ * returns a free, unprivileged TCP port
+ *
+ * @return new free, unprivileged TCP port
+ */
+String findFreeTcpPort() {
+    return sh(returnStdout: true, script: 'echo -n $(python3 -c \'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()\');').trim()
 }
