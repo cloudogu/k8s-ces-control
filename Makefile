@@ -38,6 +38,7 @@ include build/make/bats.mk
 include build/make/k8s.mk
 include makefiles/grpc.mk
 include makefiles/loki.mk
+include makefiles/integration.mk
 
 default: build
 
