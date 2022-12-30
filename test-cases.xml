@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="github.com/cloudogu/k8s-ces-control/integration">
+    <testcase name="Integration-Test: Test 1">
+        <system-out>Passed.</system-out>
+    </testcase>
+    <testcase name="Integration-Test: Test 2 ">
+<!--        &lt;!&ndash; option 1 &ndash;&gt; <skipped />-->
+        <!-- option 2 --> <failure message="my failure message">my stack trace</failure>
+        <system-err>
+            Failed. Got dogus from rpc:
+
+            "asd"
+            "edad"
+            "adsd"
+
+            But does not contain "ldap"
+        </system-err>
+    </testcase>
+</testsuite>
