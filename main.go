@@ -9,6 +9,7 @@ import (
 	pbLogging "github.com/cloudogu/k8s-ces-control/generated/logging"
 	pbMaintenance "github.com/cloudogu/k8s-ces-control/generated/maintenance"
 	"github.com/cloudogu/k8s-ces-control/packages/account"
+	"github.com/cloudogu/k8s-ces-control/packages/auth"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
 	"github.com/cloudogu/k8s-ces-control/packages/doguHealth"
@@ -140,7 +141,7 @@ func startServerAction(_ *cli.Context) error {
 		log.Fatalf("Failed to setup TLS: %v", err)
 	}
 
-	grpcServer := grpc.NewServer(grpc.Creds(creds))
+	grpcServer := grpc.NewServer(grpc.Creds(creds), grpc.UnaryInterceptor(auth.BasicAuthUnaryInterceptor))
 	err = registerServices(grpcServer)
 	if err != nil {
 		logrus.Fatalf("failed to register services: %s", err.Error())
@@ -161,7 +162,7 @@ func startServerAction(_ *cli.Context) error {
 }
 
 func readTLSCredentials() (credentials.TransportCredentials, error) {
-	cesReg, err := getCesRegistry()
+	cesReg, err := config.GetCesRegistry()
 	if err != nil {
 		return nil, err
 	}
@@ -170,21 +171,9 @@ func readTLSCredentials() (credentials.TransportCredentials, error) {
 	return reader.GetCertificateCredentials()
 }
 
-func getCesRegistry() (cesregistry.Registry, error) {
-	cesReg, err := cesregistry.New(core.Registry{
-		Type:      "etcd",
-		Endpoints: []string{fmt.Sprintf("http://etcd.%s.svc.cluster.local:4001", config.CurrentNamespace)},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create CES registry: %w", err)
-	}
-
-	return cesReg, nil
-}
-
 func createServiceAccountCommand() *cli.Command {
 	managerCreator := func(serviceName string) (account.ServiceAccountManager, error) {
-		cesRegistry, err := getCesRegistry()
+		cesRegistry, err := config.GetCesRegistry()
 		if err != nil {
 			return account.ServiceAccountManager{}, err
 		}
@@ -219,6 +208,7 @@ func getServiceAccountAction(getManager serviceAccountManagerCreator) func(ctx *
 		if err != nil {
 			return createServiceAccountErr(serviceName, "create", err)
 		}
+		logrus.Infoln(result.String())
 		fmt.Println(result)
 		return nil
 	}

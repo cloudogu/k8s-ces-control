@@ -114,7 +114,7 @@ spec:
               valueFrom:
                 fieldRef:
                   apiVersion: v1
-                  fieldPath: metadata.name
+                  fieldPath: metadata.namespace
           startupProbe:
             exec:
               command: ["/bin/bash", "-c", "/grpc_health_probe -addr localhost:50051 -tls -tls-ca-cert /etc/k8s-ces-control/server.crt -tls-client-cert /etc/k8s-ces-control/server.crt -tls-client-key /etc/k8s-ces-control/server.key || exit 1"]

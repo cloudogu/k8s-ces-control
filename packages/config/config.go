@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"github.com/cloudogu/cesapp-lib/core"
+	cesregistry "github.com/cloudogu/cesapp-lib/registry"
 	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -141,4 +143,16 @@ func printCloudoguLogo() {
 	logrus.Println("                   V///   '°°°°      (/////)      °°°°'   ////  ")
 	logrus.Println("                    V/////(////////\\. '°°°' ./////////(///(/'   ")
 	logrus.Println("                       'V/(/////////////////////////////V'      ")
+}
+
+func GetCesRegistry() (cesregistry.Registry, error) {
+	cesReg, err := cesregistry.New(core.Registry{
+		Type:      "etcd",
+		Endpoints: []string{fmt.Sprintf("http://etcd.%s.svc.cluster.local:4001", CurrentNamespace)},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create CES registry: %w", err)
+	}
+
+	return cesReg, nil
 }
