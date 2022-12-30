@@ -15,7 +15,7 @@ const (
 	certificateRegistryKey    = "certificate/k8s-ces-control/server.crt"
 	certificateFilePath       = "/etc/k8s-ces-control/server.crt"
 	certificateKeyRegistryKey = "certificate/k8s-ces-control/server.key"
-	CertificateKeyFilePath    = "/etc/cesappd/server.key"
+	CertificateKeyFilePath    = "/etc/k8s-ces-control/server.key"
 )
 
 type manager struct {
@@ -85,7 +85,7 @@ func (r manager) hasCertificate() (bool, error) {
 }
 
 func (r manager) copyFromRegistryToFile(registryKey string, fileName string) error {
-	serverCrt, err := r.globalRegistry.Get(registryKey)
+	value, err := r.globalRegistry.Get(registryKey)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (r manager) copyFromRegistryToFile(registryKey string, fileName string) err
 		log.Fatal(err)
 	}
 
-	_, err = f.WriteString(serverCrt)
+	_, err = f.WriteString(value)
 	if err != nil {
 		return fmt.Errorf("failed to write file [%s]: %w", f.Name(), err)
 	}
