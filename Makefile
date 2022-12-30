@@ -9,7 +9,7 @@ SHELL = /usr/bin/env bash -o pipefail
 
 ## Image URL to use all building/pushing image targets
 IMAGE_DEV=${K3CES_REGISTRY_URL_PREFIX}/${ARTIFACT_ID}:${VERSION}
-IMAGE=cloudogu/${ARTIFACT_ID}:${VERSION}
+IMAGE?=cloudogu/${ARTIFACT_ID}:${VERSION}
 LINT_VERSION=v1.45.2
 
 MAKEFILES_VERSION=7.0.1
@@ -42,7 +42,7 @@ include makefiles/loki.mk
 default: build
 
 .PHONY: build
-build: k8s-delete image-import k8s-apply kill-pod ## Builds a new version of the k8s-ces-control and deploys it into the K8s-EcoSystem.
+build: check-env-var-namespace k8s-delete image-import k8s-apply kill-pod ## Builds a new version of the k8s-ces-control and deploys it into the K8s-EcoSystem.
 
 .PHONY: kill-pod
 kill-pod:
@@ -53,12 +53,11 @@ kill-pod:
 k8s-create-temporary-resource: create-temporary-release-resource template-dev-only-image-pull-policy
 
 .PHONY: create-temporary-release-resource
-create-temporary-release-resource: $(K8S_RESOURCE_TEMP_FOLDER) check-env-var-stage check-env-var-log-level check-env-var-namespace
+create-temporary-release-resource: $(K8S_RESOURCE_TEMP_FOLDER) check-env-var-stage check-env-var-log-level
 	@echo "---" > $(K8S_RESOURCE_TEMP_YAML)
 	@cat $(K8S_CES_CONTROL_RESOURCE_YAML) >> $(K8S_RESOURCE_TEMP_YAML)
 	@sed -i "s/'{{\.LOG\_LEVEL}}'/$(LOG_LEVEL)/" $(K8S_RESOURCE_TEMP_YAML)
 	@sed -i "s/'{{\.STAGE}}'/$(STAGE)/" $(K8S_RESOURCE_TEMP_YAML)
-	@sed -i "s/'{{\.NAMESPACE}}'/$(NAMESPACE)/" $(K8S_RESOURCE_TEMP_YAML)
 	@$(BINARY_YQ) -i e "(select(.kind == \"Deployment\").spec.template.spec.containers[]|select(.image == \"*$(ARTIFACT_ID)*\").image)=\"$(IMAGE)\"" $(K8S_RESOURCE_TEMP_YAML);
 
 .PHONY: template-dev-only-image-pull-policy
