@@ -1,7 +1,7 @@
 # Set these to the desired values
 ARTIFACT_ID=k8s-ces-control
 VERSION=0.0.1
-GOTAG=1.19
+GOTAG=1.19.3
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 SHELL = /usr/bin/env bash -o pipefail
@@ -10,7 +10,7 @@ SHELL = /usr/bin/env bash -o pipefail
 ## Image URL to use all building/pushing image targets
 IMAGE_DEV=${K3CES_REGISTRY_URL_PREFIX}/${ARTIFACT_ID}:${VERSION}
 IMAGE?=cloudogu/${ARTIFACT_ID}:${VERSION}
-LINT_VERSION=v1.45.2
+LINT_VERSION=v1.50.1
 
 MAKEFILES_VERSION=7.0.1
 .DEFAULT_GOAL:=default

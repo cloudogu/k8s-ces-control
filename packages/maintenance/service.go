@@ -7,10 +7,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	debugModeDisableAtKey = "debug/disable_at"
-)
-
 type debugModeService struct {
 	pbMaintenance.UnimplementedDebugModeServer
 }
