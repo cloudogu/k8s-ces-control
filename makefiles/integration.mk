@@ -16,11 +16,11 @@ integration-test-bash-notice:
 
 ${GRPCURL_BIN}: ${UTILITY_BIN_PATH}
 	@echo "Installing grpcurl v${GRPCURL_BIN_VERSION}"
+	@rm -rf /tmp/grpcurl_${GRPCURL_BIN_VERSION}
 	@mkdir /tmp/grpcurl_${GRPCURL_BIN_VERSION}
 	@wget -O /tmp/grpcurl_${GRPCURL_BIN_VERSION}/grpcurl.tar.gz https://github.com/fullstorydev/grpcurl/releases/download/v${GRPCURL_BIN_VERSION}/grpcurl_${GRPCURL_BIN_VERSION}_linux_x86_64.tar.gz > /dev/null 2>&1
 	@tar -xf /tmp/grpcurl_${GRPCURL_BIN_VERSION}/grpcurl.tar.gz -C /tmp/grpcurl_${GRPCURL_BIN_VERSION}
 	@mv /tmp/grpcurl_${GRPCURL_BIN_VERSION}/grpcurl ${GRPCURL_BIN}
-	@rm -rf /tmp/grpcurl_${GRPCURL_BIN_VERSION}
 
 ${JQ_BIN}: ${UTILITY_BIN_PATH}
 	@echo "Installing jq v${JQ_BIN_VERSION}"
