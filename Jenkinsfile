@@ -81,11 +81,11 @@ node('docker') {
                 ])
             }
 
-            stage("wait for setup") {
+            stage("Wait for Setup") {
                 k3d.waitForDeploymentRollout("postfix", 300, 10)
             }
 
-            stage('Install locally into k3d') {
+            stage('Install k8s-ces-control') {
                 Makefile makefile = new Makefile(this)
                 def localImageName = k3d.buildAndPushToLocalRegistry("cloudogu/${repositoryName}", makefile.getVersion())
                 String pathToGeneratedFile = generateResources(localImageName)
@@ -93,7 +93,7 @@ node('docker') {
                 make("clean")
             }
 
-            stage("wait for setup") {
+            stage("Wait for k8s-ces-control") {
                 k3d.waitForDeploymentRollout("k8s-ces-control", 300, 10)
             }
 
@@ -225,7 +225,7 @@ String generateResources(String image = "") {
     new Docker(this).image("golang:${goVersion}")
             .mountJenkinsUser()
             .inside("--volume ${WORKSPACE}:/workdir -w /workdir") {
-                if (image == "") {
+                if (image != "") {
                     sh "IMAGE=${image} LOG_LEVEL=DEBUG make k8s-generate"
                 } else {
                     sh "make k8s-generate"
