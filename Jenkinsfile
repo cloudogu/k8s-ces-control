@@ -222,7 +222,7 @@ String generateResources(String image = "") {
     Makefile makefile = new Makefile(this)
     String version = makefile.getVersion()
     String generatedFile = "target/make/k8s/k8s-ces-control_${version}.yaml".toString()
-    new Docker(this).image('mikefarah/yq:4.22.1')
+    new Docker(this).image("golang:${goVersion}")
             .mountJenkinsUser()
             .inside("--volume ${WORKSPACE}:/workdir -w /workdir") {
                 if (image == "") {
