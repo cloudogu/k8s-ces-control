@@ -121,7 +121,7 @@ private void testK8sCesControl(K3d k3d) {
             .mountJenkinsUser()
             .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}")
                     {
-                        make 'integration-test-bash'
+                        sh 'KUBECTL_BIN="KUBECONFIG=\'$(pwd)/.k3d/.kube/config kubectl\'" make integration-test-bash'
                         junit allowEmptyResults: true, testResults: 'target/bash-integration-test/*.xml'
                     }
 }
@@ -246,5 +246,7 @@ void make(String makeArgs) {
  * @return new free, unprivileged TCP port
  */
 String findFreeTcpPort() {
+    sh 'KUBECTL="sudo KUBECONFIG $(pwd)/.k3d/.kube/config" make integration-test-bash'
+    sh(returnStdout: true, script: 'echo -n $(python3 -c \'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()\');').trim()
     return sh(returnStdout: true, script: 'echo -n $(python3 -c \'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()\');').trim()
 }

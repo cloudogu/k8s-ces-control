@@ -6,7 +6,7 @@ JQ_BIN_VERSION?=1.6
 
 .PHONY: integration-test-bash
 integration-test-bash: integration-test-bash-notice ${GRPCURL_BIN} ${JQ_BIN}## Runs integration tests by bash.
-	export GRPCURL_BIN=${GRPCURL_BIN} && export KUBECTL_BIN=${KUBECTL_BIN} && ./integration-test.sh
+	export GRPCURL_BIN=${GRPCURL_BIN} && export KUBECTL_BIN=${KUBECTL_BIN} && export JQ_BIN=${JQ_BIN} && ./integration-test.sh
 
 .PHONY: integration-test-bash-notice
 integration-test-bash-notice:
@@ -20,3 +20,4 @@ ${GRPCURL_BIN}: ${UTILITY_BIN_PATH}
 ${JQ_BIN}: ${UTILITY_BIN_PATH}
 	@echo "Installing jq v${JQ_BIN_VERSION}"
 	@wget -O ${JQ_BIN} https://github.com/stedolan/jq/releases/download/jq-${JQ_BIN_VERSION}/jq-linux64 > /dev/null 2>&1
+	@chmod +x ${JQ_BIN}
