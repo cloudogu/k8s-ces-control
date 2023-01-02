@@ -37,10 +37,6 @@ node('docker') {
             make 'clean'
         }
 
-        junit allowEmptyResults: true, testResults: 'test-cases.xml'
-
-        sh "exit 1"
-
         // stage('Lint - Dockerfile') {
         //     lintDockerfile()
         // }
@@ -49,24 +45,24 @@ node('docker') {
         //     stageLintK8SResources()
         // }
 //
-        // docker
-        //         .image("golang:${goVersion}")
-        //         .mountJenkinsUser()
-        //         .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}")
-        //                 {
-        //                     stage('Build') {
-        //                         make 'compile'
-        //                     }
+//         docker
+//                 .image("golang:${goVersion}")
+//                 .mountJenkinsUser()
+//                 .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}")
+//                         {
+//                             stage('Build') {
+//                                 make 'compile'
+//                             }
 //
-        //                     stage('Unit Tests') {
-        //                         make 'unit-test'
-        //                         junit allowEmptyResults: true, testResults: 'target/unit-tests/*-tests.xml'
-        //                     }
+//                             stage('Unit Tests') {
+//                                 make 'unit-test'
+//                                 junit allowEmptyResults: true, testResults: 'target/unit-tests/*-tests.xml'
+//                             }
 //
-        //                     stage("Review dog analysis") {
-        //                         stageStaticAnalysisReviewDog()
-        //                     }
-        //                 }
+//                             stage("Review dog analysis") {
+//                                 stageStaticAnalysisReviewDog()
+//                             }
+//                         }
 //
         // stage('SonarQube') {
         //     stageStaticAnalysisSonarQube()
@@ -85,11 +81,11 @@ node('docker') {
                 ])
             }
 
-            stage("wait for setup") {
+            stage("Wait for Setup") {
                 k3d.waitForDeploymentRollout("postfix", 300, 10)
             }
 
-            stage('Install locally into k3d') {
+            stage('Install k8s-ces-control') {
                 Makefile makefile = new Makefile(this)
                 def localImageName = k3d.buildAndPushToLocalRegistry("cloudogu/${repositoryName}", makefile.getVersion())
                 String pathToGeneratedFile = generateResources(localImageName)
@@ -97,14 +93,7 @@ node('docker') {
                 make("clean")
             }
 
-            stage('Install grpcurl') {
-                String grpcurlVersion = "1.8.7"
-                sh "wget -O grpcurl.tar.gz https://github.com/fullstorydev/grpcurl/releases/download/v${grpcurlVersion}/grpcurl_${grpcurlVersion}_linux_x86_64.tar.gz"
-                sh "tar --one-top-level=grpcurlDir -xf grpcurl.tar.gz"
-                sh "rm -rf grpcurl.tar.gz"
-            }
-
-            stage("wait for setup") {
+            stage("Wait for k8s-ces-control") {
                 k3d.waitForDeploymentRollout("k8s-ces-control", 300, 10)
             }
 
@@ -128,17 +117,13 @@ node('docker') {
 }
 
 private void testK8sCesControl(K3d k3d) {
-    String grpcurlPort = findFreeTcpPort()
-    k3d.kubectl("port-forward service/k8s-ces-control ${grpcurlPort}:50051 &")
-
-    String installedDogus = grpcurl(grpcurlPort, "doguAdministration.DoguAdministration.GetDoguList | jq '.dogus | map(select(.name)) | .[].name'")
-    echo "Retrieve all Dogus from "
-
-    String[] expectedDogus = ["ldap", "postfix"]
-    if (!installedDogus.contains("\"ldap\"")){
-        sh "echo 'Expected ldap dogu to be contained in the dogu list returned by grpc call but does not -> exit' && exit 1"
-    }
-
+    new Docker(this).image("golang:${goVersion}")
+            .mountJenkinsUser()
+            .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}")
+                    {
+                        make 'integration-test-bash'
+                        junit allowEmptyResults: true, testResults: 'target/bash-integration-test/*.xml'
+                    }
 }
 
 private String grpcurl(String port, String command) {
@@ -237,13 +222,13 @@ String generateResources(String image = "") {
     Makefile makefile = new Makefile(this)
     String version = makefile.getVersion()
     String generatedFile = "target/make/k8s/k8s-ces-control_${version}.yaml".toString()
-    new Docker(this).image('mikefarah/yq:4.22.1')
+    new Docker(this).image("golang:${goVersion}")
             .mountJenkinsUser()
             .inside("--volume ${WORKSPACE}:/workdir -w /workdir") {
-                if (image == "") {
-                    sh "IMAGE=${image} LOG_LEVEL=DEBUG make k8s-generate"
+                if (image != "") {
+                    sh "IMAGE_DEV=${image} LOG_LEVEL=DEBUG make k8s-generate"
                 } else {
-                    sh "make k8s-generate"
+                    sh "make k8s-create-temporary-resource"
                 }
                 archiveArtifacts "${generatedFile}"
             }
