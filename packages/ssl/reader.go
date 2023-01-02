@@ -12,10 +12,11 @@ import (
 )
 
 const (
-	certificateRegistryKey    = "certificate/k8s-ces-control/server.crt"
-	certificateFilePath       = "/etc/k8s-ces-control/server.crt"
-	certificateKeyRegistryKey = "certificate/k8s-ces-control/server.key"
-	CertificateKeyFilePath    = "/etc/k8s-ces-control/server.key"
+	certificateRegistryKey       = "certificate/k8s-ces-control/server.crt"
+	certificateLegacyRegistryKey = "certificate/cesappd/server.crt"
+	certificateFilePath          = "/etc/k8s-ces-control/server.crt"
+	certificateKeyRegistryKey    = "certificate/k8s-ces-control/server.key"
+	CertificateKeyFilePath       = "/etc/k8s-ces-control/server.key"
 )
 
 type manager struct {
@@ -49,6 +50,11 @@ func (r manager) GetCertificateCredentials() (credentials.TransportCredentials, 
 		}
 
 		err = r.globalRegistry.Set(certificateRegistryKey, cert)
+		if err != nil {
+			return nil, err
+		}
+
+		err = r.globalRegistry.Set(certificateLegacyRegistryKey, cert)
 		if err != nil {
 			return nil, err
 		}
