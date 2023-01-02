@@ -131,6 +131,7 @@ func startServerCommand() *cli.Command {
 }
 
 func startServerAction(_ *cli.Context) error {
+	config.PrintCloudoguLogo()
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		logrus.Fatalf("failed to listen: %v", err)
@@ -208,7 +209,6 @@ func getServiceAccountAction(getManager serviceAccountManagerCreator) func(ctx *
 		if err != nil {
 			return createServiceAccountErr(serviceName, "create", err)
 		}
-		logrus.Infoln(result.String())
 		fmt.Println(result)
 		return nil
 	}

@@ -84,7 +84,7 @@ func configureCurrentStage() error {
 
 	currentStage = stage
 	if stage == stageProduction {
-		logrus.Println("Using stage [production].")
+		logrus.Infoln("Using stage [production].")
 	} else if stage == stageDevelopment {
 		logrus.Warningf("Using stage [development]. This is not recommended for production systems!")
 	} else {
@@ -99,7 +99,7 @@ var CurrentNamespace = ""
 func configureNamespace() error {
 	namespace, ok := os.LookupEnv(namespaceEnvironmentVariable)
 	if !ok {
-		logrus.Printf("No namespace was set via the environment variable [%s]. A namespace is required.", namespaceEnvironmentVariable)
+		logrus.Infof("No namespace was set via the environment variable [%s]. A namespace is required.", namespaceEnvironmentVariable)
 		return nil
 	}
 
@@ -108,13 +108,12 @@ func configureNamespace() error {
 		return fmt.Errorf("found invalid value for namespace [%s]: namespace cannot be empty: set valid value with environment variable [%s]", CurrentNamespace, namespaceEnvironmentVariable)
 	}
 
-	logrus.Printf("Using namespace [%s].", CurrentNamespace)
+	logrus.Infof("Using namespace [%s].", CurrentNamespace)
+
 	return nil
 }
 
 func configureLogLevel() error {
-	printCloudoguLogo()
-
 	logLevel, ok := os.LookupEnv(logLevelEnvironmentVariable)
 	if !ok {
 		logrus.SetLevel(defaultLogLevel)
@@ -126,12 +125,13 @@ func configureLogLevel() error {
 		return fmt.Errorf("could not parse log level %s to logrus level: %w", logLevel, err)
 	}
 
-	logrus.Infof("Using log level: %s", logLevelParsed)
 	logrus.StandardLogger().SetLevel(logLevelParsed)
+	logrus.Infof("Using log level: %s", logLevelParsed)
+
 	return nil
 }
 
-func printCloudoguLogo() {
+func PrintCloudoguLogo() {
 	logrus.Println("                                     ./////,                    ")
 	logrus.Println("                                 ./////==//////*                ")
 	logrus.Println("                                ////.  ___   ////.              ")
