@@ -121,8 +121,7 @@ private void testK8sCesControl(K3d k3d) {
             .mountJenkinsUser()
             .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}")
                     {
-                        sh "sleep infinity"
-                        sh "KUBECTL_BIN_PATH=\\\"KUBECONFIG=/go/src/${project}/k3d/.k3d/.kube/config /go/src/${project}/.bin/kubectl\\\" make integration-test-bash"
+                        sh "KUBECONFIG=/go/src/${project}/k3d/.k3d/.kube/config make integration-test-bash"
                         junit allowEmptyResults: true, testResults: 'target/bash-integration-test/*.xml'
                     }
 }

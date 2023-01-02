@@ -17,17 +17,17 @@ integration-test-bash-notice:
 ${GRPCURL_BIN}: ${UTILITY_BIN_PATH}
 	@echo "Installing grpcurl v${GRPCURL_BIN_VERSION}"
 	@mkdir /tmp/grpcurl_${GRPCURL_BIN_VERSION}
-	@wget -O /tmp/grpcurl_${GRPCURL_BIN_VERSION}/grpcurl.tar.gz https://github.com/fullstorydev/grpcurl/releases/download/v${GRPCURL_BIN_VERSION}/grpcurl_${GRPCURL_BIN_VERSION}_linux_x86_64.tar.gz
+	@wget -O /tmp/grpcurl_${GRPCURL_BIN_VERSION}/grpcurl.tar.gz https://github.com/fullstorydev/grpcurl/releases/download/v${GRPCURL_BIN_VERSION}/grpcurl_${GRPCURL_BIN_VERSION}_linux_x86_64.tar.gz > /dev/null 2>&1
 	@tar -xf /tmp/grpcurl_${GRPCURL_BIN_VERSION}/grpcurl.tar.gz -C /tmp/grpcurl_${GRPCURL_BIN_VERSION}
 	@mv /tmp/grpcurl_${GRPCURL_BIN_VERSION}/grpcurl ${GRPCURL_BIN}
 	@rm -rf /tmp/grpcurl_${GRPCURL_BIN_VERSION}
 
 ${JQ_BIN}: ${UTILITY_BIN_PATH}
 	@echo "Installing jq v${JQ_BIN_VERSION}"
-	@wget -O ${JQ_BIN} https://github.com/stedolan/jq/releases/download/jq-${JQ_BIN_VERSION}/jq-linux64
+	@wget -O ${JQ_BIN} https://github.com/stedolan/jq/releases/download/jq-${JQ_BIN_VERSION}/jq-linux64 > /dev/null 2>&1
 	@chmod +x ${JQ_BIN}
 
 ${KUBECTL_BIN}: ${UTILITY_BIN_PATH}
 	@echo "Installing kubectl ${KUBECTL_BIN_VERSION}"
-	@curl -o ${KUBECTL_BIN} -LO "https://dl.k8s.io/release/${KUBECTL_BIN_VERSION}/bin/linux/amd64/kubectl"
+	@curl -o ${KUBECTL_BIN} -LO "https://dl.k8s.io/release/${KUBECTL_BIN_VERSION}/bin/linux/amd64/kubectl" > /dev/null 2>&1
 	@chmod +x ${KUBECTL_BIN}
