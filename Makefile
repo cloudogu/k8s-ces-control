@@ -8,7 +8,7 @@ SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
 ## Image URL to use all building/pushing image targets
-IMAGE_DEV=${K3CES_REGISTRY_URL_PREFIX}/${ARTIFACT_ID}:${VERSION}
+IMAGE_DEV?=${K3CES_REGISTRY_URL_PREFIX}/${ARTIFACT_ID}:${VERSION}
 IMAGE?=cloudogu/${ARTIFACT_ID}:${VERSION}
 LINT_VERSION=v1.50.1
 

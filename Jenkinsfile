@@ -226,9 +226,9 @@ String generateResources(String image = "") {
             .mountJenkinsUser()
             .inside("--volume ${WORKSPACE}:/workdir -w /workdir") {
                 if (image != "") {
-                    sh "IMAGE=${image} LOG_LEVEL=DEBUG make k8s-generate"
+                    sh "IMAGE_DEV=${image} LOG_LEVEL=DEBUG make k8s-generate"
                 } else {
-                    sh "make k8s-generate"
+                    sh "make k8s-create-temporary-resource"
                 }
                 archiveArtifacts "${generatedFile}"
             }
