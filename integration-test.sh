@@ -100,9 +100,9 @@ createServiceAccount() {
 
 deleteServiceAccount() {
   local etcdClientPodName
-  etcdClientPodName="$("${KUBECTL_BIN_PATH}" get pods -o name | grep etcd-client)"
+  etcdClientPodName="$("${KUBECTL_BIN_PATH}" get pods -o name | grep etcd-client || true)"
 
-  kubectl exec "${etcdClientPodName}" -- etcdctl rm -r /config/_host/k8s-ces-control/integrationtest
+  kubectl exec "${etcdClientPodName}" -- etcdctl rm -r /config/_host/k8s-ces-control/integrationtest || true
 }
 
 runTests() {
@@ -151,9 +151,10 @@ testDoguAdministration_StartStopDogus() {
     addFailingTestCase "Dogu-Administration-StopDogu-Postfix" "Expected the replicas of postfix to be 0 but got: ${replicas}"
   fi
 
+  ${GRPCURL_BIN_PATH_WITH_AUTH} -insecure -d '{"doguName": "postfix"}' localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.StartDogu >/dev/null 2>&1
   local replicas=""
   replicas="$(${KUBECTL_BIN_PATH} get deployment/postfix -o json | ${JQ_BIN_PATH} '.spec.replicas')"
-  if [[ "${replicas}" == 0 ]]; then
+  if [[ "${replicas}" == 1 ]]; then
     echo "Test: Postfix started? Success!"
     addSuccessTestCase "Dogu-Administration-StartDogu-Postfix" "k8s-ces-control successfully started the Postfix dogu."
   else
