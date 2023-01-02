@@ -100,9 +100,9 @@ createServiceAccount() {
 
 deleteServiceAccount() {
   local etcdClientPodName
-  etcdClientPodName="$("${KUBECTL_BIN_PATH}" get pods -o name | grep etcd-client)"
+  etcdClientPodName="$("${KUBECTL_BIN_PATH}" get pods -o name | grep etcd-client || true)"
 
-  kubectl exec "${etcdClientPodName}" -- etcdctl rm -r /config/_host/k8s-ces-control/integrationtest
+  kubectl exec "${etcdClientPodName}" -- etcdctl rm -r /config/_host/k8s-ces-control/integrationtest || true
 }
 
 runTests() {

@@ -88,7 +88,7 @@ node('docker') {
             stage('Install k8s-ces-control') {
                 Makefile makefile = new Makefile(this)
                 def localImageName = k3d.buildAndPushToLocalRegistry("cloudogu/${repositoryName}", makefile.getVersion())
-                String pathToGeneratedFile = generateResources(localImageName)
+                String pathToGeneratedFile = generateResources("IMAGE_DEV=${localImageName} STAGE=development LOG_LEVEL=DEBUG make k8s-generate")
                 k3d.kubectl("apply -f ${pathToGeneratedFile}")
                 make("clean")
             }
@@ -121,7 +121,8 @@ private void testK8sCesControl(K3d k3d) {
             .mountJenkinsUser()
             .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}")
                     {
-                        sh 'KUBECTL_BIN_PATH="KUBECONFIG=\'/go/src/${project}/k3d/.k3d/.kube/config /go/src/${project}/.bin/kubectl\'" make integration-test-bash'
+                        sh "sleep infinity"
+                        sh "KUBECTL_BIN_PATH=\\\"KUBECONFIG=/go/src/${project}/k3d/.k3d/.kube/config /go/src/${project}/.bin/kubectl\\\" make integration-test-bash"
                         junit allowEmptyResults: true, testResults: 'target/bash-integration-test/*.xml'
                     }
 }
@@ -206,7 +207,7 @@ void stageAutomaticRelease() {
         }
 
         stage('Regenerate resources for release') {
-            generateResources()
+            generateResources("make k8s-create-temporary-resource")
         }
 
         stage('Push to Registry') {
@@ -218,18 +219,14 @@ void stageAutomaticRelease() {
     }
 }
 
-String generateResources(String image = "") {
+String generateResources(String makefileCommand = "") {
     Makefile makefile = new Makefile(this)
     String version = makefile.getVersion()
     String generatedFile = "target/make/k8s/k8s-ces-control_${version}.yaml".toString()
     new Docker(this).image("golang:${goVersion}")
             .mountJenkinsUser()
             .inside("--volume ${WORKSPACE}:/workdir -w /workdir") {
-                if (image != "") {
-                    sh "IMAGE_DEV=${image} LOG_LEVEL=DEBUG make k8s-generate"
-                } else {
-                    sh "make k8s-create-temporary-resource"
-                }
+                sh "${makefileCommand}"
                 archiveArtifacts "${generatedFile}"
             }
 
