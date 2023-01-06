@@ -1,0 +1,20 @@
+---
+# Source: loki/templates/write/poddisruptionbudget-write.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: loki-write
+  labels:
+    helm.sh/chart: loki-3.8.0
+    app.kubernetes.io/name: loki
+    app.kubernetes.io/instance: loki
+    app.kubernetes.io/version: "2.7.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: write
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: loki
+      app.kubernetes.io/instance: loki
+      app.kubernetes.io/component: write
+  maxUnavailable: 1

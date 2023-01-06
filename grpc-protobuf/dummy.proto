@@ -1,0 +1,11 @@
+syntax = "proto3";
+package dummy;
+option go_package = "github.com/cloudogu/k8s-ces-control/generated/dummy";
+
+service HelloWorldService {
+  rpc HelloWorld(HelloWorldRequest) returns (HelloWorldResponse);
+}
+
+message HelloWorldRequest {}
+
+message HelloWorldResponse {}
