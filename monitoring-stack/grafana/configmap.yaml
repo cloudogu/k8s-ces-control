@@ -26,3 +26,21 @@ data:
     provisioning = /etc/grafana/provisioning
     [server]
     domain = ''
+    [auth]
+    signout_redirect_url = https://192.168.56.2/cas/logout
+    [auth.basic]
+    enabled = false
+    [auth.generic_oauth]
+    name = OAuth
+    icon = signin
+    enabled = true
+    client_id = cas-sa
+    client_secret = cas-sa-pw
+    empty_scopes = false
+    auth_url = https://192.168.56.2/cas/oauth2.0/authorize
+    token_url = https://192.168.56.2/cas/oauth2.0/token
+    api_url = https://192.168.56.2/cas/oauth2.0/profile
+    allowed_domains = mycompany.com mycompany.org 192.168.56.2
+    allow_sign_up = true
+    tls_skip_verify_insecure = true
+    use_pkce = true
