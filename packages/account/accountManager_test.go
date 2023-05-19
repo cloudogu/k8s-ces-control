@@ -1,5 +1,11 @@
 package account
 
+import (
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"testing"
+)
+
 // TODO :)
 // import (
 // 	"errors"
@@ -339,3 +345,55 @@ package account
 // 	// 	assert.Equal(t, ServiceAccountData{Username: "jeff", Password: "test-password"}, serviceAccountData)
 // 	// })
 // }
+
+func TestNewServiceAccountManager(t *testing.T) {
+	t.Run("should fail to fetch key provider from registry", func(t *testing.T) {
+		// given
+		globalConfigMock := newMockRegistryContext(t)
+		globalConfigMock.EXPECT().Get("key_provider").Return("", assert.AnError)
+		registryMock := newMockConfigRegistry(t)
+		registryMock.EXPECT().GlobalConfig().Return(globalConfigMock)
+
+		// when
+		actual, err := NewServiceAccountManager("test-service", registryMock)
+
+		// then
+		require.Error(t, err)
+		assert.Empty(t, actual)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to create ServiceAccountManager: failed to get key provider from global config")
+	})
+	t.Run("should fail to fetch key provider from registry", func(t *testing.T) {
+		// given
+		globalConfigMock := newMockRegistryContext(t)
+		globalConfigMock.EXPECT().Get("key_provider").Return("abcde", nil)
+		registryMock := newMockConfigRegistry(t)
+		registryMock.EXPECT().GlobalConfig().Return(globalConfigMock)
+
+		// when
+		actual, err := NewServiceAccountManager("test-service", registryMock)
+
+		// then
+		require.Error(t, err)
+		assert.Empty(t, actual)
+		assert.ErrorContains(t, err, "failed to create ServiceAccountManager: failed to create key provider: could not find provider from type abcde")
+	})
+	t.Run("should create service account manager", func(t *testing.T) {
+		// given
+		globalConfigMock := newMockRegistryContext(t)
+		globalConfigMock.EXPECT().Get("key_provider").Return("pkcs1v15", nil)
+		hostConfigMock := newMockRegistryContext(t)
+		registryMock := newMockConfigRegistry(t)
+		registryMock.EXPECT().GlobalConfig().Return(globalConfigMock)
+		registryMock.EXPECT().HostConfig("k8s-ces-control").Return(hostConfigMock)
+
+		// when
+		actual, err := NewServiceAccountManager("test-service", registryMock)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, "test-service", actual.serviceName)
+		assert.NotNil(t, actual.keyProvider)
+		assert.Equal(t, hostConfigMock, actual.hostConfiguration)
+	})
+}

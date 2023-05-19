@@ -3,10 +3,11 @@ package account
 import (
 	"context"
 	"fmt"
-	"github.com/cloudogu/cesapp-lib/keys"
-	"github.com/cloudogu/cesapp-lib/registry"
-	"github.com/cloudogu/k8s-ces-control/packages/ssl"
+
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/cloudogu/cesapp-lib/keys"
+	"github.com/cloudogu/k8s-ces-control/packages/ssl"
 )
 
 const (
@@ -15,25 +16,11 @@ const (
 	randUsernameSuffixLength = 8
 )
 
-// ConfigurationRegistry provides functions to access the configuration registry.
-type ConfigurationRegistry interface {
-	// Set sets a configuration value in current context
-	Set(key, value string) error
-	// Get returns a configuration value from the current context
-	Get(key string) (string, error)
-}
-
-// KeyProvider provides functions to access public and private keys of the system.
-type KeyProvider interface {
-	// FromPrivateKeyPath reads the keypair from the private key file path
-	FromPrivateKeyPath(path string) (*keys.KeyPair, error)
-}
-
 // ServiceAccountManager provides methods to create or Delete service accounts.
 type ServiceAccountManager struct {
 	serviceName       string
-	hostConfiguration ConfigurationRegistry
-	keyProvider       KeyProvider
+	hostConfiguration registryContext
+	keyProvider       keyProvider
 }
 
 // ServiceAccountData holds the raw data for a service account.
@@ -43,8 +30,8 @@ type ServiceAccountData struct {
 }
 
 // NewServiceAccountManager creates a new instance of the ServiceAccountManager for the specified service.
-func NewServiceAccountManager(serviceName string, registry registry.Registry) (ServiceAccountManager, error) {
-	keyProvider, err := getKeyProvider(registry)
+func NewServiceAccountManager(serviceName string, registry configRegistry) (ServiceAccountManager, error) {
+	keyProvider, err := getKeyProvider(registry.GlobalConfig())
 	if err != nil {
 		return ServiceAccountManager{}, fmt.Errorf("failed to create ServiceAccountManager: %w", err)
 	}
@@ -61,17 +48,17 @@ func (manager *ServiceAccountManager) SetServiceName(serviceName string) *Servic
 	return manager
 }
 
-func (manager *ServiceAccountManager) SetKeyProvider(keyProvider KeyProvider) *ServiceAccountManager {
+func (manager *ServiceAccountManager) SetKeyProvider(keyProvider keyProvider) *ServiceAccountManager {
 	manager.keyProvider = keyProvider
 	return manager
 }
 
-func (manager *ServiceAccountManager) SetHostConfiguration(configRegistry ConfigurationRegistry) *ServiceAccountManager {
+func (manager *ServiceAccountManager) SetHostConfiguration(configRegistry registryContext) *ServiceAccountManager {
 	manager.hostConfiguration = configRegistry
 	return manager
 }
 
-func (manager *ServiceAccountManager) GetHostConfiguration() ConfigurationRegistry {
+func (manager *ServiceAccountManager) GetHostConfiguration() registryContext {
 	return manager.hostConfiguration
 }
 
@@ -92,8 +79,8 @@ func (manager *ServiceAccountManager) GetServiceAccountData(ctx context.Context)
 	return ServiceAccountData{Username: username, Password: password}, nil
 }
 
-func getKeyProvider(registry registry.Registry) (KeyProvider, error) {
-	providerStr, err := registry.GlobalConfig().Get("key_provider")
+func getKeyProvider(globalConfig registryContext) (keyProvider, error) {
+	providerStr, err := globalConfig.Get("key_provider")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get key provider from global config: %w", err)
 	}
@@ -140,7 +127,7 @@ func generateUsernamePassword(service string) ServiceAccountData {
 	}
 }
 
-func encrypt(rawPassword, certificatePath string, provider KeyProvider) (string, error) {
+func encrypt(rawPassword, certificatePath string, provider keyProvider) (string, error) {
 	keyPair, err := provider.FromPrivateKeyPath(certificatePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to load key pair data: %w", err)
@@ -149,7 +136,7 @@ func encrypt(rawPassword, certificatePath string, provider KeyProvider) (string,
 	return publicKey.Encrypt(rawPassword)
 }
 
-func decrypt(encryptedValue, certificatePath string, provider KeyProvider) (string, error) {
+func decrypt(encryptedValue, certificatePath string, provider keyProvider) (string, error) {
 	keyPair, err := provider.FromPrivateKeyPath(certificatePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to load key pair data: %w", err)
