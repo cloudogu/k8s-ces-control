@@ -1,7 +1,7 @@
 # Set these to the desired values
 ARTIFACT_ID=k8s-ces-control
 VERSION=0.0.1
-GOTAG=1.19.3
+GOTAG=1.20.4
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 SHELL = /usr/bin/env bash -o pipefail

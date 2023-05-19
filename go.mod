@@ -1,6 +1,6 @@
 module github.com/cloudogu/k8s-ces-control
 
-go 1.19
+go 1.20
 
 require (
 	github.com/cloudogu/cesapp-lib v0.0.0-20221229112545-4d449f4c8473
