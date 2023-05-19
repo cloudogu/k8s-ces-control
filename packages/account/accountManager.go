@@ -30,13 +30,13 @@ type ServiceAccountData struct {
 }
 
 // NewServiceAccountManager creates a new instance of the ServiceAccountManager for the specified service.
-func NewServiceAccountManager(serviceName string, registry configRegistry) (ServiceAccountManager, error) {
+func NewServiceAccountManager(serviceName string, registry configRegistry) (*ServiceAccountManager, error) {
 	keyProvider, err := getKeyProvider(registry.GlobalConfig())
 	if err != nil {
-		return ServiceAccountManager{}, fmt.Errorf("failed to create ServiceAccountManager: %w", err)
+		return nil, fmt.Errorf("failed to create ServiceAccountManager: %w", err)
 	}
 
-	return ServiceAccountManager{
+	return &ServiceAccountManager{
 		serviceName:       serviceName,
 		keyProvider:       keyProvider,
 		hostConfiguration: registry.HostConfig(hostConfigServiceName),
@@ -91,12 +91,12 @@ func getKeyProvider(globalConfig registryContext) (keyProvider, error) {
 	return keyProvider, nil
 }
 
-func (accountData ServiceAccountData) String() string {
+func (accountData *ServiceAccountData) String() string {
 	return fmt.Sprintf("username:%s\npassword:%s", accountData.Username, accountData.Password)
 }
 
 // Create creates a new service account.
-func (manager ServiceAccountManager) Create(context context.Context) (ServiceAccountData, error) {
+func (manager *ServiceAccountManager) Create(context context.Context) (ServiceAccountData, error) {
 	log.FromContext(context).Info("create service account for service '%s'", manager.serviceName)
 	hostConfig := manager.hostConfiguration
 	consumerName := manager.serviceName

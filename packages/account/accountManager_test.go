@@ -397,3 +397,58 @@ func TestNewServiceAccountManager(t *testing.T) {
 		assert.Equal(t, hostConfigMock, actual.hostConfiguration)
 	})
 }
+
+func TestServiceAccountManager_SetServiceName(t *testing.T) {
+	t.Run("should set service name", func(t *testing.T) {
+		// given
+		sut := &ServiceAccountManager{serviceName: "some-name"}
+
+		// when
+		sut.SetServiceName("different-name")
+
+		// then
+		assert.Equal(t, "different-name", sut.serviceName)
+	})
+}
+
+func TestServiceAccountManager_SetKeyProvider(t *testing.T) {
+	t.Run("should set key provider", func(t *testing.T) {
+		// given
+		keyProviderMock := newMockKeyProvider(t)
+		sut := &ServiceAccountManager{keyProvider: nil}
+
+		// when
+		sut.SetKeyProvider(keyProviderMock)
+
+		// then
+		assert.Equal(t, keyProviderMock, sut.keyProvider)
+	})
+}
+
+func TestServiceAccountManager_SetHostConfiguration(t *testing.T) {
+	t.Run("should set host config", func(t *testing.T) {
+		// given
+		hostConfigMock := newMockRegistryContext(t)
+		sut := &ServiceAccountManager{hostConfiguration: nil}
+
+		// when
+		sut.SetHostConfiguration(hostConfigMock)
+
+		// then
+		assert.Equal(t, hostConfigMock, sut.hostConfiguration)
+	})
+}
+
+func TestServiceAccountManager_GetHostConfiguration(t *testing.T) {
+	t.Run("should get host config", func(t *testing.T) {
+		// given
+		hostConfigMock := newMockRegistryContext(t)
+		sut := &ServiceAccountManager{hostConfiguration: hostConfigMock}
+
+		// when
+		actual := sut.GetHostConfiguration()
+
+		// then
+		assert.Equal(t, hostConfigMock, actual)
+	})
+}
