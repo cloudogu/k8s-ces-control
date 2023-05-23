@@ -173,14 +173,14 @@ func readTLSCredentials() (credentials.TransportCredentials, error) {
 }
 
 func createServiceAccountCommand() *cli.Command {
-	managerCreator := func(serviceName string) (account.ServiceAccountManager, error) {
+	managerCreator := func(serviceName string) (*account.ServiceAccountManager, error) {
 		cesRegistry, err := config.GetCesRegistry()
 		if err != nil {
-			return account.ServiceAccountManager{}, err
+			return &account.ServiceAccountManager{}, err
 		}
 		manager, err := account.NewServiceAccountManager(serviceName, cesRegistry)
 		if err != nil {
-			return account.ServiceAccountManager{}, err
+			return &account.ServiceAccountManager{}, err
 		}
 		return manager, nil
 	}
@@ -192,7 +192,7 @@ func createServiceAccountCommand() *cli.Command {
 	}
 }
 
-type serviceAccountManagerCreator func(serviceName string) (account.ServiceAccountManager, error)
+type serviceAccountManagerCreator func(serviceName string) (*account.ServiceAccountManager, error)
 
 func getServiceAccountAction(getManager serviceAccountManagerCreator) func(ctx *cli.Context) error {
 	return func(ctx *cli.Context) error {
