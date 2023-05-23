@@ -65,15 +65,15 @@ func (manager *ServiceAccountManager) GetHostConfiguration() registryContext {
 func (manager *ServiceAccountManager) GetServiceAccountData(ctx context.Context) (ServiceAccountData, error) {
 	username, err := manager.GetHostConfiguration().Get(manager.serviceName + "/username")
 	if err != nil {
-		return ServiceAccountData{}, err
+		return ServiceAccountData{}, fmt.Errorf("failed to get username for service account '%s': %w", manager.serviceName, err)
 	}
 	encryptedPassword, err := manager.GetHostConfiguration().Get(manager.serviceName + "/password")
 	if err != nil {
-		return ServiceAccountData{}, err
+		return ServiceAccountData{}, fmt.Errorf("failed to get password for service account '%s': %w", manager.serviceName, err)
 	}
 	password, err := decrypt(encryptedPassword, ssl.CertificateKeyFilePath, manager.keyProvider)
 	if err != nil {
-		return ServiceAccountData{}, err
+		return ServiceAccountData{}, fmt.Errorf("failed to decrypt password for service account '%s': %w", manager.serviceName, err)
 	}
 	log.FromContext(ctx).Info("getting credentials for serviceaccount %s ...", manager.serviceName)
 	return ServiceAccountData{Username: username, Password: password}, nil
@@ -103,15 +103,15 @@ func (manager *ServiceAccountManager) Create(context context.Context) (ServiceAc
 	userData := generateUsernamePassword(consumerName)
 	passwordEncrypted, err := encrypt(userData.Password, ssl.CertificateKeyFilePath, manager.keyProvider)
 	if err != nil {
-		return ServiceAccountData{}, fmt.Errorf("failed to encrypt the users password: %w", err)
+		return ServiceAccountData{}, fmt.Errorf("failed to encrypt the users password for service account '%s': %w", consumerName, err)
 	}
 	err = hostConfig.Set(consumerName+"/username", userData.Username)
 	if err != nil {
-		return ServiceAccountData{}, fmt.Errorf("failed to write username to registry: %w", err)
+		return ServiceAccountData{}, fmt.Errorf("failed to write username to registry for service account '%s': %w", consumerName, err)
 	}
 	err = hostConfig.Set(consumerName+"/password", passwordEncrypted)
 	if err != nil {
-		return ServiceAccountData{}, fmt.Errorf("failed to write password to registry: %w", err)
+		return ServiceAccountData{}, fmt.Errorf("failed to write password to registry for service account '%s': %w", consumerName, err)
 	}
 
 	return userData, nil

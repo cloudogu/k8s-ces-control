@@ -1,8 +1,13 @@
 package account
 
 import (
+	"context"
+	"crypto/rsa"
+	"github.com/cloudogu/cesapp-lib/keys"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"io"
 	"testing"
 )
 
@@ -450,5 +455,269 @@ func TestServiceAccountManager_GetHostConfiguration(t *testing.T) {
 
 		// then
 		assert.Equal(t, hostConfigMock, actual)
+	})
+}
+
+func TestServiceAccountManager_GetServiceAccountData(t *testing.T) {
+	t.Run("should fail to get username", func(t *testing.T) {
+		// given
+		hostConfigMock := newMockRegistryContext(t)
+		hostConfigMock.EXPECT().Get("myService/username").Return("", assert.AnError)
+		sut := &ServiceAccountManager{
+			serviceName:       "myService",
+			hostConfiguration: hostConfigMock,
+		}
+
+		// when
+		actual, err := sut.GetServiceAccountData(context.TODO())
+
+		// then
+		require.Error(t, err)
+		assert.Empty(t, actual)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to get username for service account 'myService'")
+	})
+	t.Run("should fail to get password", func(t *testing.T) {
+		// given
+		hostConfigMock := newMockRegistryContext(t)
+		hostConfigMock.EXPECT().Get("myService/username").Return("myUser", nil)
+		hostConfigMock.EXPECT().Get("myService/password").Return("", assert.AnError)
+		sut := &ServiceAccountManager{
+			serviceName:       "myService",
+			hostConfiguration: hostConfigMock,
+		}
+
+		// when
+		actual, err := sut.GetServiceAccountData(context.TODO())
+
+		// then
+		require.Error(t, err)
+		assert.Empty(t, actual)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to get password for service account 'myService'")
+	})
+	t.Run("should fail to load key pair data", func(t *testing.T) {
+		// given
+		hostConfigMock := newMockRegistryContext(t)
+		hostConfigMock.EXPECT().Get("myService/username").Return("myUser", nil)
+		hostConfigMock.EXPECT().Get("myService/password").Return("myPassword", nil)
+		keyProviderMock := newMockKeyProvider(t)
+		keyProviderMock.EXPECT().FromPrivateKeyPath("/etc/k8s-ces-control/server.key").Return(nil, assert.AnError)
+		sut := &ServiceAccountManager{
+			serviceName:       "myService",
+			hostConfiguration: hostConfigMock,
+			keyProvider:       keyProviderMock,
+		}
+
+		// when
+		actual, err := sut.GetServiceAccountData(context.TODO())
+
+		// then
+		require.Error(t, err)
+		assert.Empty(t, actual)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to decrypt password for service account 'myService': failed to load key pair data")
+	})
+	t.Run("should fail to decrypt password", func(t *testing.T) {
+		// given
+		hostConfigMock := newMockRegistryContext(t)
+		hostConfigMock.EXPECT().Get("myService/username").Return("myUser", nil)
+		hostConfigMock.EXPECT().Get("myService/password").Return("myPassword", nil)
+		keyProviderMock := newMockKeyProvider(t)
+		dummyKeyPair := &keys.KeyPair{}
+		keyProviderMock.EXPECT().FromPrivateKeyPath("/etc/k8s-ces-control/server.key").Return(dummyKeyPair, nil)
+		sut := &ServiceAccountManager{
+			serviceName:       "myService",
+			hostConfiguration: hostConfigMock,
+			keyProvider:       keyProviderMock,
+		}
+
+		// when
+		actual, err := sut.GetServiceAccountData(context.TODO())
+
+		// then
+		require.Error(t, err)
+		assert.Empty(t, actual)
+		assert.ErrorContains(t, err, "failed to decrypt password for service account 'myService': failed to decode base64 input")
+	})
+	t.Run("should succeed", func(t *testing.T) {
+		// given
+		hostConfigMock := newMockRegistryContext(t)
+		hostConfigMock.EXPECT().Get("myService/username").Return("myUser", nil)
+		hostConfigMock.EXPECT().Get("myService/password").Return("bXlQYXNzd29yZAo=", nil)
+
+		dummyKeyProvider := &keys.KeyProvider{Decrypter: func(_ io.Reader, _ *rsa.PrivateKey, cipherText []byte) ([]byte, error) {
+			assert.Equal(t, []byte("myPassword\n"), cipherText)
+			return []byte("myDecryptedPassword"), nil
+		}}
+		dummyKeyPair, err := dummyKeyProvider.Generate()
+		require.NoError(t, err)
+
+		keyProviderMock := newMockKeyProvider(t)
+		keyProviderMock.EXPECT().FromPrivateKeyPath("/etc/k8s-ces-control/server.key").Return(dummyKeyPair, nil)
+		sut := &ServiceAccountManager{
+			serviceName:       "myService",
+			hostConfiguration: hostConfigMock,
+			keyProvider:       keyProviderMock,
+		}
+
+		// when
+		actual, err := sut.GetServiceAccountData(context.TODO())
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, ServiceAccountData{Username: "myUser", Password: "myDecryptedPassword"}, actual)
+	})
+}
+
+func TestServiceAccountData_String(t *testing.T) {
+	t.Run("should return stringified data", func(t *testing.T) {
+		// given
+		sut := ServiceAccountData{
+			Username: "myUsername",
+			Password: "myPassword",
+		}
+
+		// when
+		actual := sut.String()
+
+		// then
+		assert.Equal(t, "username:myUsername\npassword:myPassword", actual)
+	})
+}
+
+func TestServiceAccountManager_Create(t *testing.T) {
+	t.Run("should fail to load key pair data", func(t *testing.T) {
+		// given
+		hostConfigMock := newMockRegistryContext(t)
+		keyProviderMock := newMockKeyProvider(t)
+		keyProviderMock.EXPECT().FromPrivateKeyPath("/etc/k8s-ces-control/server.key").Return(nil, assert.AnError)
+		sut := &ServiceAccountManager{
+			serviceName:       "myService",
+			hostConfiguration: hostConfigMock,
+			keyProvider:       keyProviderMock,
+		}
+
+		// when
+		actual, err := sut.Create(context.TODO())
+
+		// then
+		require.Error(t, err)
+		assert.Empty(t, actual)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to encrypt the users password for service account 'myService': failed to load key pair data")
+	})
+	t.Run("should fail to encrypt password", func(t *testing.T) {
+		// given
+		hostConfigMock := newMockRegistryContext(t)
+
+		dummyKeyProvider := &keys.KeyProvider{Encrypter: func(_ io.Reader, _ *rsa.PublicKey, _ []byte) ([]byte, error) {
+			return nil, assert.AnError
+		}}
+		dummyKeyPair, err := dummyKeyProvider.Generate()
+		require.NoError(t, err)
+
+		keyProviderMock := newMockKeyProvider(t)
+		keyProviderMock.EXPECT().FromPrivateKeyPath("/etc/k8s-ces-control/server.key").Return(dummyKeyPair, nil)
+		sut := &ServiceAccountManager{
+			serviceName:       "myService",
+			hostConfiguration: hostConfigMock,
+			keyProvider:       keyProviderMock,
+		}
+
+		// when
+		actual, err := sut.Create(context.TODO())
+
+		// then
+		require.Error(t, err)
+		assert.Empty(t, actual)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to encrypt the users password for service account 'myService': failed to encrypt input text")
+	})
+	t.Run("should fail to set username", func(t *testing.T) {
+		// given
+		hostConfigMock := newMockRegistryContext(t)
+		hostConfigMock.EXPECT().Set("myService/username", mock.AnythingOfType("string")).Return(assert.AnError)
+
+		dummyKeyProvider := &keys.KeyProvider{Encrypter: func(_ io.Reader, _ *rsa.PublicKey, _ []byte) ([]byte, error) {
+			return []byte("encryptedPassword"), nil
+		}}
+		dummyKeyPair, err := dummyKeyProvider.Generate()
+		require.NoError(t, err)
+
+		keyProviderMock := newMockKeyProvider(t)
+		keyProviderMock.EXPECT().FromPrivateKeyPath("/etc/k8s-ces-control/server.key").Return(dummyKeyPair, nil)
+		sut := &ServiceAccountManager{
+			serviceName:       "myService",
+			hostConfiguration: hostConfigMock,
+			keyProvider:       keyProviderMock,
+		}
+
+		// when
+		actual, err := sut.Create(context.TODO())
+
+		// then
+		require.Error(t, err)
+		assert.Empty(t, actual)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to write username to registry for service account 'myService'")
+	})
+	t.Run("should fail to set password", func(t *testing.T) {
+		// given
+		hostConfigMock := newMockRegistryContext(t)
+		hostConfigMock.EXPECT().Set("myService/username", mock.AnythingOfType("string")).Return(nil)
+		hostConfigMock.EXPECT().Set("myService/password", mock.AnythingOfType("string")).Return(assert.AnError)
+
+		dummyKeyProvider := &keys.KeyProvider{Encrypter: func(_ io.Reader, _ *rsa.PublicKey, _ []byte) ([]byte, error) {
+			return []byte("encryptedPassword"), nil
+		}}
+		dummyKeyPair, err := dummyKeyProvider.Generate()
+		require.NoError(t, err)
+
+		keyProviderMock := newMockKeyProvider(t)
+		keyProviderMock.EXPECT().FromPrivateKeyPath("/etc/k8s-ces-control/server.key").Return(dummyKeyPair, nil)
+		sut := &ServiceAccountManager{
+			serviceName:       "myService",
+			hostConfiguration: hostConfigMock,
+			keyProvider:       keyProviderMock,
+		}
+
+		// when
+		actual, err := sut.Create(context.TODO())
+
+		// then
+		require.Error(t, err)
+		assert.Empty(t, actual)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to write password to registry for service account 'myService'")
+	})
+	t.Run("should succeed", func(t *testing.T) {
+		// given
+		hostConfigMock := newMockRegistryContext(t)
+		hostConfigMock.EXPECT().Set("myService/username", mock.AnythingOfType("string")).Return(nil)
+		hostConfigMock.EXPECT().Set("myService/password", mock.AnythingOfType("string")).Return(nil)
+
+		dummyKeyProvider := &keys.KeyProvider{Encrypter: func(_ io.Reader, _ *rsa.PublicKey, _ []byte) ([]byte, error) {
+			return []byte("encryptedPassword"), nil
+		}}
+		dummyKeyPair, err := dummyKeyProvider.Generate()
+		require.NoError(t, err)
+
+		keyProviderMock := newMockKeyProvider(t)
+		keyProviderMock.EXPECT().FromPrivateKeyPath("/etc/k8s-ces-control/server.key").Return(dummyKeyPair, nil)
+		sut := &ServiceAccountManager{
+			serviceName:       "myService",
+			hostConfiguration: hostConfigMock,
+			keyProvider:       keyProviderMock,
+		}
+
+		// when
+		actual, err := sut.Create(context.TODO())
+
+		// then
+		require.NoError(t, err)
+		assert.NotEmpty(t, actual)
+		assert.Contains(t, actual.Username, "myService")
+		assert.NotEmpty(t, actual.Password)
 	})
 }
