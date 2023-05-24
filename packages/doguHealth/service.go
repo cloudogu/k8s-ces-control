@@ -4,23 +4,30 @@ import (
 	"context"
 	pbHealth "github.com/cloudogu/k8s-ces-control/generated/health"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
+	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 const checkTypeContainer = "container"
 const responseMessageMissingDoguname = "dogu name is empty"
 
-func NewDoguHealthService(client config.ClusterClient) pbHealth.DoguHealthServer {
+type clusterClient interface {
+	ecoSystem.EcoSystemV1Alpha1Interface
+	kubernetes.Interface
+}
+
+func NewDoguHealthService(client clusterClient) pbHealth.DoguHealthServer {
 	return &server{client: client}
 }
 
 type server struct {
 	pbHealth.UnimplementedDoguHealthServer
-	client config.ClusterClient
+	client clusterClient
 }
 
 // GetByName retrieves the health information about a given dogu if it is installed.
@@ -46,7 +53,7 @@ func (s *server) GetByNames(ctx context.Context, request *pbHealth.DoguHealthLis
 // GetAll retrieves health information about all installed dogus.
 func (s *server) GetAll(ctx context.Context, _ *pbHealth.DoguHealthAllRequest) (*pbHealth.DoguHealthMapResponse, error) {
 	logrus.Debugf("Check healthy state of all dogus")
-	doguList, err := s.client.EcoSystemApi.Dogus(config.CurrentNamespace).List(ctx, metav1.ListOptions{})
+	doguList, err := s.client.Dogus(config.CurrentNamespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		logrus.Error(err)
 		return nil, err

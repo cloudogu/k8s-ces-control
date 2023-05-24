@@ -8,12 +8,13 @@ import (
 	"encoding/json"
 	"fmt"
 	pb "github.com/cloudogu/k8s-ces-control/generated/logging"
-	"github.com/cloudogu/k8s-ces-control/packages/config"
 	"github.com/cloudogu/k8s-ces-control/packages/stream"
+	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"net/http"
 	"net/url"
 	"sort"
@@ -24,12 +25,17 @@ const (
 	responseMessageMissingDoguname = "Dogu name should not be empty"
 )
 
-func NewLoggingService(client config.ClusterClient) *loggingService {
+type clusterClient interface {
+	ecoSystem.EcoSystemV1Alpha1Interface
+	kubernetes.Interface
+}
+
+func NewLoggingService(client clusterClient) *loggingService {
 	return &loggingService{client: client}
 }
 
 type loggingService struct {
-	client config.ClusterClient
+	client clusterClient
 	pb.UnimplementedDoguLogMessagesServer
 }
 
@@ -110,7 +116,7 @@ func (s *loggingService) readLogs(name string, count int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode > 300 {
 		return nil, createInternalErr(fmt.Errorf("loki http error: status: %s, code: %d", resp.Status, resp.StatusCode), codes.Canceled)

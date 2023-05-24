@@ -7,6 +7,7 @@ import (
 	pb "github.com/cloudogu/k8s-ces-control/generated/doguAdministration"
 	"github.com/cloudogu/k8s-ces-control/generated/types"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
+	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
 	v1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -14,6 +15,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	scalingv1 "k8s.io/api/autoscaling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	cesregistry "github.com/cloudogu/cesapp-lib/registry"
 	"github.com/hashicorp/go-multierror"
@@ -21,19 +23,24 @@ import (
 
 const responseMessageMissingDoguname = "dogu name is empty"
 
-func NewDoguAdministrationServer(client config.ClusterClient, reg cesregistry.Registry) *server {
+type clusterClient interface {
+	ecoSystem.EcoSystemV1Alpha1Interface
+	kubernetes.Interface
+}
+
+func NewDoguAdministrationServer(client clusterClient, reg cesregistry.Registry) *server {
 	return &server{client: client, doguRegistry: reg.DoguRegistry()}
 }
 
 type server struct {
 	doguRegistry cesregistry.DoguRegistry
 	pb.UnimplementedDoguAdministrationServer
-	client config.ClusterClient
+	client clusterClient
 }
 
 // GetDoguList returns the list of dogus to administrate (all)
 func (s *server) GetDoguList(ctx context.Context, _ *pb.DoguListRequest) (*pb.DoguListResponse, error) {
-	list, err := s.client.EcoSystemApi.Dogus(config.CurrentNamespace).List(ctx, metav1.ListOptions{})
+	list, err := s.client.Dogus(config.CurrentNamespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
