@@ -18,6 +18,13 @@ const (
 func TestConfigureApplication(t *testing.T) {
 	t.Run("should set log level, namespace and stage from env vars", func(t *testing.T) {
 		// given
+		previousStageVar := currentStage
+		defer func() { currentStage = previousStageVar }()
+		previousNamespaceVar := CurrentNamespace
+		defer func() { CurrentNamespace = previousNamespaceVar }()
+		previousLogrusLogLevel := logrus.GetLevel()
+		defer logrus.SetLevel(previousLogrusLogLevel)
+
 		previousLogLevel, logLevelExists := setEnv(t, logLevelEnv, "info")
 		defer cleanupEnv(t, logLevelEnv, previousLogLevel, logLevelExists)
 
@@ -38,6 +45,13 @@ func TestConfigureApplication(t *testing.T) {
 	})
 	t.Run("should set log level, namespace and stage from env vars", func(t *testing.T) {
 		// given
+		previousStageVar := currentStage
+		defer func() { currentStage = previousStageVar }()
+		previousNamespaceVar := CurrentNamespace
+		defer func() { CurrentNamespace = previousNamespaceVar }()
+		previousLogrusLogLevel := logrus.GetLevel()
+		defer logrus.SetLevel(previousLogrusLogLevel)
+
 		previousLogLevel, logLevelExists := setEnv(t, logLevelEnv, "info")
 		defer cleanupEnv(t, logLevelEnv, previousLogLevel, logLevelExists)
 
@@ -58,6 +72,13 @@ func TestConfigureApplication(t *testing.T) {
 	})
 	t.Run("should set default log level and stage if not set", func(t *testing.T) {
 		// given
+		previousStageVar := currentStage
+		defer func() { currentStage = previousStageVar }()
+		previousNamespaceVar := CurrentNamespace
+		defer func() { CurrentNamespace = previousNamespaceVar }()
+		previousLogrusLogLevel := logrus.GetLevel()
+		defer logrus.SetLevel(previousLogrusLogLevel)
+
 		previousLogLevel, logLevelExists := unsetEnv(t, logLevelEnv)
 		defer cleanupEnv(t, logLevelEnv, previousLogLevel, logLevelExists)
 
@@ -78,6 +99,13 @@ func TestConfigureApplication(t *testing.T) {
 	})
 	t.Run("should fail when invalid log level is set", func(t *testing.T) {
 		// given
+		previousStageVar := currentStage
+		defer func() { currentStage = previousStageVar }()
+		previousNamespaceVar := CurrentNamespace
+		defer func() { CurrentNamespace = previousNamespaceVar }()
+		previousLogrusLogLevel := logrus.GetLevel()
+		defer logrus.SetLevel(previousLogrusLogLevel)
+
 		previousLogLevel, logLevelExists := setEnv(t, logLevelEnv, "banana")
 		defer cleanupEnv(t, logLevelEnv, previousLogLevel, logLevelExists)
 
@@ -90,6 +118,13 @@ func TestConfigureApplication(t *testing.T) {
 	})
 	t.Run("should fail if NAMESPACE env var is not set", func(t *testing.T) {
 		// given
+		previousStageVar := currentStage
+		defer func() { currentStage = previousStageVar }()
+		previousNamespaceVar := CurrentNamespace
+		defer func() { CurrentNamespace = previousNamespaceVar }()
+		previousLogrusLogLevel := logrus.GetLevel()
+		defer logrus.SetLevel(previousLogrusLogLevel)
+
 		previousNamespace, namespaceExists := unsetEnv(t, namespaceEnv)
 		defer cleanupEnv(t, namespaceEnv, previousNamespace, namespaceExists)
 
@@ -107,6 +142,13 @@ func TestConfigureApplication(t *testing.T) {
 	})
 	t.Run("should fail if NAMESPACE env var is set to empty string", func(t *testing.T) {
 		// given
+		previousStageVar := currentStage
+		defer func() { currentStage = previousStageVar }()
+		previousNamespaceVar := CurrentNamespace
+		defer func() { CurrentNamespace = previousNamespaceVar }()
+		previousLogrusLogLevel := logrus.GetLevel()
+		defer logrus.SetLevel(previousLogrusLogLevel)
+
 		previousLogLevel, logLevelExists := setEnv(t, logLevelEnv, "info")
 		defer cleanupEnv(t, logLevelEnv, previousLogLevel, logLevelExists)
 
@@ -124,6 +166,13 @@ func TestConfigureApplication(t *testing.T) {
 	})
 	t.Run("should fail if stage is invalid", func(t *testing.T) {
 		// given
+		previousStageVar := currentStage
+		defer func() { currentStage = previousStageVar }()
+		previousNamespaceVar := CurrentNamespace
+		defer func() { CurrentNamespace = previousNamespaceVar }()
+		previousLogrusLogLevel := logrus.GetLevel()
+		defer logrus.SetLevel(previousLogrusLogLevel)
+
 		previousLogLevel, logLevelExists := setEnv(t, logLevelEnv, "info")
 		defer cleanupEnv(t, logLevelEnv, previousLogLevel, logLevelExists)
 
@@ -172,4 +221,31 @@ func cleanupEnv(t *testing.T, key, previousValue string, exists bool) {
 		err := os.Unsetenv(key)
 		require.NoError(t, err)
 	}
+}
+
+func TestIsDevelopmentStage(t *testing.T) {
+	t.Run("should be true for stage development", func(t *testing.T) {
+		// given
+		previousStage := currentStage
+		defer func() { currentStage = previousStage }()
+		currentStage = "development"
+
+		// when
+		actual := IsDevelopmentStage()
+
+		// then
+		assert.True(t, actual)
+	})
+	t.Run("should be true for stage production", func(t *testing.T) {
+		// given
+		previousStage := currentStage
+		defer func() { currentStage = previousStage }()
+		currentStage = "production"
+
+		// when
+		actual := IsDevelopmentStage()
+
+		// then
+		assert.False(t, actual)
+	})
 }
