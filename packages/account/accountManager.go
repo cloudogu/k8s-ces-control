@@ -91,7 +91,7 @@ func getKeyProvider(globalConfig registryContext) (keyProvider, error) {
 	return keyProvider, nil
 }
 
-func (accountData *ServiceAccountData) String() string {
+func (accountData ServiceAccountData) String() string {
 	return fmt.Sprintf("username:%s\npassword:%s", accountData.Username, accountData.Password)
 }
 
