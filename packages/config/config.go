@@ -40,12 +40,12 @@ func CreateClusterClient() (*clusterClient, error) {
 
 	k8sClient, err := kubernetes.NewForConfig(clusterConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create kubernetes client")
+		return nil, fmt.Errorf("failed to create kubernetes client: %w", err)
 	}
 
 	doguClient, err := ecoSystem.NewForConfig(clusterConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create dogu client")
+		return nil, fmt.Errorf("failed to create dogu client: %w", err)
 	}
 
 	return &clusterClient{EcoSystemV1Alpha1Interface: doguClient, Interface: k8sClient}, nil

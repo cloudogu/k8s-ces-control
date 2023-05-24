@@ -1,7 +1,13 @@
 package config
 
 import (
+	doguApiV1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd/api"
 	"os"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"strings"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -247,5 +253,132 @@ func TestIsDevelopmentStage(t *testing.T) {
 
 		// then
 		assert.False(t, actual)
+	})
+}
+
+func TestGetCesRegistry(t *testing.T) {
+	t.Run("should succeed", func(t *testing.T) {
+		// when
+		actual, err := GetCesRegistry()
+
+		// then
+		require.NoError(t, err)
+		assert.NotEmpty(t, actual)
+	})
+}
+
+func TestPrintCloudoguLogo(t *testing.T) {
+	t.Run("should print logo", func(t *testing.T) {
+		// given
+		defer logrus.SetOutput(os.Stderr)
+		buf := new(strings.Builder)
+		logrus.SetOutput(buf)
+
+		// when
+		PrintCloudoguLogo()
+
+		// then
+		lines := strings.Split(buf.String(), "\n")
+		assert.Len(t, lines, 12)
+		assert.Contains(t, lines[0], "                                     ./////,                    ")
+		assert.Contains(t, lines[1], "                                 ./////==//////*                ")
+		assert.Contains(t, lines[2], "                                ////.  ___   ////.              ")
+		assert.Contains(t, lines[3], "                         ,**,. ////  ,////A,  */// ,**,.        ")
+		assert.Contains(t, lines[4], "                    ,/////////////*  */////*  *////////////A    ")
+		assert.Contains(t, lines[5], "                   ////'        \\\\VA.   '|'   .///'       '///*  ")
+		assert.Contains(t, lines[6], "                  *///  .*///*,         |         .*//*,   ///* ")
+		assert.Contains(t, lines[7], "                  (///  (//////)**--_./////_----*//////)   ///) ")
+		assert.Contains(t, lines[8], "                   V///   '°°°°      (/////)      °°°°'   ////  ")
+		assert.Contains(t, lines[9], "                    V/////(////////\\\\. '°°°' ./////////(///(/'   ")
+		assert.Contains(t, lines[10], "                       'V/(/////////////////////////////V'      ")
+	})
+}
+
+func TestCreateClusterClient(t *testing.T) {
+	t.Run("should fail to load cluster config", func(t *testing.T) {
+		// given
+		originalConfigFunc := ctrl.GetConfig
+		defer func() { ctrl.GetConfig = originalConfigFunc }()
+
+		failingConfigFunc := func() (*rest.Config, error) {
+			return nil, assert.AnError
+		}
+		ctrl.GetConfig = failingConfigFunc
+
+		// when
+		actual, err := CreateClusterClient()
+
+		// then
+		require.Error(t, err)
+		assert.Nil(t, actual)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to load cluster configuration")
+	})
+	t.Run("should fail to create kubernetes client", func(t *testing.T) {
+		// given
+		originalConfigFunc := ctrl.GetConfig
+		defer func() { ctrl.GetConfig = originalConfigFunc }()
+
+		incorrectConfigFunc := func() (*rest.Config, error) {
+			return &rest.Config{
+				ExecProvider: &api.ExecConfig{},
+				AuthProvider: &api.AuthProviderConfig{},
+			}, nil
+		}
+		ctrl.GetConfig = incorrectConfigFunc
+
+		// when
+		actual, err := CreateClusterClient()
+
+		// then
+		require.Error(t, err)
+		assert.Nil(t, actual)
+		assert.ErrorContains(t, err, "failed to create kubernetes client")
+	})
+	t.Run("should fail to create kubernetes client", func(t *testing.T) {
+		// given
+		originalConfigFunc := ctrl.GetConfig
+		defer func() { ctrl.GetConfig = originalConfigFunc }()
+
+		dummyConfigFunc := func() (*rest.Config, error) {
+			return &rest.Config{}, nil
+		}
+		ctrl.GetConfig = dummyConfigFunc
+
+		originalAddSchemeFunc := doguApiV1.AddToScheme
+		defer func() { doguApiV1.AddToScheme = originalAddSchemeFunc }()
+
+		failingAddSchemeFunc := func(s *runtime.Scheme) error {
+			return assert.AnError
+		}
+		doguApiV1.AddToScheme = failingAddSchemeFunc
+
+		// when
+		actual, err := CreateClusterClient()
+
+		// then
+		require.Error(t, err)
+		assert.Nil(t, actual)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to create dogu client")
+	})
+	t.Run("should succeed", func(t *testing.T) {
+		// given
+		originalConfigFunc := ctrl.GetConfig
+		defer func() { ctrl.GetConfig = originalConfigFunc }()
+
+		dummyConfigFunc := func() (*rest.Config, error) {
+			return &rest.Config{}, nil
+		}
+		ctrl.GetConfig = dummyConfigFunc
+
+		// when
+		actual, err := CreateClusterClient()
+
+		// then
+		require.NoError(t, err)
+		assert.NotNil(t, actual)
+		assert.NotNil(t, actual.EcoSystemV1Alpha1Interface)
+		assert.NotNil(t, actual.Interface)
 	})
 }
