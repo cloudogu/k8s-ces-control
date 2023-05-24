@@ -2,6 +2,7 @@ package authHelper
 
 import (
 	"context"
+
 	"github.com/cloudogu/k8s-ces-control/packages/account"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
 )
