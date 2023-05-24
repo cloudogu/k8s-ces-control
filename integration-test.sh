@@ -1,7 +1,6 @@
 #!/bin/bash
-set -o errexit
-set -o nounset
-set -o pipefail
+set -eEuo pipefail
+trap '__error_handing__ $? $LINENO' ERR
 
 # This file is responsible to test the k8s-ces-control feature in integration with the whole cluster.
 # To run this script a local cluster is needed.
@@ -12,6 +11,15 @@ GRPCURL_BIN_PATH="${GRPCURL_BIN:-grpcurl}"
 GRPCURL_BIN_PATH_WITH_AUTH=
 JQ_BIN_PATH="${JQ_BIN:-jq}"
 PORT_FORWARD_PID=
+
+function __error_handling__() {
+  deleteServiceAccount
+  killPortForward
+  local last_status_code=$1;
+  local error_line_number=$2;
+  echo 1>&2 "Error - exited with status $last_status_code at line $error_line_number";
+  perl -slne 'if($.+5 >= $ln && $.-4 <= $ln){ $_="$. $_"; s/$ln/">" x length($ln)/eg; s/^\D+.*?$/\e[1;31m$&\e[0m/g;  print}' -- -ln=$error_line_number $0
+}
 
 startPortForward() {
   echo "Starting Port-Forward on ${PORT_FORWARD_PID}..."
@@ -115,8 +123,10 @@ runTests() {
 }
 
 testDoguAdministration_GetAllDogus() {
+  local doguListJson
+  doguListJson=$(${GRPCURL_BIN_PATH_WITH_AUTH} -insecure localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.GetDoguList)
   local getDoguList
-  getDoguList="$(${GRPCURL_BIN_PATH_WITH_AUTH} -insecure localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.GetDoguList | ${JQ_BIN_PATH} '.dogus | map(select(.name)) | .[].name')"
+  getDoguList=$(echo ${doguListJson} | ${JQ_BIN_PATH} '.dogus | map(select(.name)) | .[].name')
 
   if [[ "${getDoguList}" == *"\"ldap\""* ]]; then
     echo "Test: Check if Ldap returned: Success!"
