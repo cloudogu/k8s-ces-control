@@ -9,8 +9,11 @@ import (
 	v1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	appsv1 "k8s.io/api/apps/v1"
 	scalingv1 "k8s.io/api/autoscaling/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"testing"
 )
 
@@ -349,6 +352,298 @@ func Test_server_StopDogu(t *testing.T) {
 
 		// when
 		actual, err := sut.StopDogu(context.TODO(), request)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, &types.BasicResponse{}, actual)
+	})
+}
+
+func Test_server_RestartDogu(t *testing.T) {
+	t.Run("should fail if dogu name is empty", func(t *testing.T) {
+		// given
+		clientMock := newMockClusterClient(t)
+		doguRegMock := newMockDoguRegistry(t)
+		sut := &server{
+			doguRegistry: doguRegMock,
+			client:       clientMock,
+		}
+		request := &doguAdministration.DoguAdministrationRequest{DoguName: ""}
+
+		// when
+		actual, err := sut.RestartDogu(context.TODO(), request)
+
+		// then
+		require.Error(t, err)
+		assert.Nil(t, actual)
+		assert.ErrorContains(t, err, "rpc error: code = InvalidArgument desc = dogu name is empty")
+	})
+	t.Run("should fail to get deployment", func(t *testing.T) {
+		// given
+		previousNamespaceVar := config.CurrentNamespace
+		defer func() { config.CurrentNamespace = previousNamespaceVar }()
+		config.CurrentNamespace = "ecosystem"
+
+		deploymentMock := newMockDeploymentClient(t)
+		deploymentMock.EXPECT().Get(context.TODO(), "my-dogu", metav1.GetOptions{}).Return(nil, assert.AnError)
+		appsMock := newMockAppsV1Client(t)
+		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
+		clientMock := newMockClusterClient(t)
+		clientMock.EXPECT().AppsV1().Return(appsMock)
+		doguRegMock := newMockDoguRegistry(t)
+		sut := &server{
+			doguRegistry: doguRegMock,
+			client:       clientMock,
+		}
+		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
+
+		// when
+		actual, err := sut.RestartDogu(context.TODO(), request)
+
+		// then
+		require.Error(t, err)
+		assert.Nil(t, actual)
+		assert.ErrorContains(t, err, assert.AnError.Error())
+		assert.ErrorContains(t, err, "failed to get deployment for dogu my-dogu")
+	})
+	t.Run("should fail to scale up zero-replica-deployment", func(t *testing.T) {
+		// given
+		previousNamespaceVar := config.CurrentNamespace
+		defer func() { config.CurrentNamespace = previousNamespaceVar }()
+		config.CurrentNamespace = "ecosystem"
+
+		zeroReplicas := int32(0)
+		zeroReplicaDeployment := &appsv1.Deployment{Spec: appsv1.DeploymentSpec{Replicas: &zeroReplicas}}
+		scale := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: "my-dogu", Namespace: config.CurrentNamespace}, Spec: scalingv1.ScaleSpec{Replicas: 1}}
+		deploymentMock := newMockDeploymentClient(t)
+		deploymentMock.EXPECT().UpdateScale(context.TODO(), "my-dogu", scale, metav1.UpdateOptions{}).Return(nil, assert.AnError)
+		deploymentMock.EXPECT().Get(context.TODO(), "my-dogu", metav1.GetOptions{}).Return(zeroReplicaDeployment, nil)
+		appsMock := newMockAppsV1Client(t)
+		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
+		clientMock := newMockClusterClient(t)
+		clientMock.EXPECT().AppsV1().Return(appsMock)
+		doguRegMock := newMockDoguRegistry(t)
+		sut := &server{
+			doguRegistry: doguRegMock,
+			client:       clientMock,
+		}
+		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
+
+		// when
+		actual, err := sut.RestartDogu(context.TODO(), request)
+
+		// then
+		require.Error(t, err)
+		assert.Equal(t, &types.BasicResponse{}, actual)
+		assert.ErrorContains(t, err, assert.AnError.Error())
+		assert.ErrorContains(t, err, "failed to scale deployment to 1")
+	})
+	t.Run("should succeed to scale up zero-replica-deployment", func(t *testing.T) {
+		// given
+		previousNamespaceVar := config.CurrentNamespace
+		defer func() { config.CurrentNamespace = previousNamespaceVar }()
+		config.CurrentNamespace = "ecosystem"
+
+		zeroReplicas := int32(0)
+		zeroReplicaDeployment := &appsv1.Deployment{Spec: appsv1.DeploymentSpec{Replicas: &zeroReplicas}}
+		scale := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: "my-dogu", Namespace: config.CurrentNamespace}, Spec: scalingv1.ScaleSpec{Replicas: 1}}
+		deploymentMock := newMockDeploymentClient(t)
+		deploymentMock.EXPECT().Get(context.TODO(), "my-dogu", metav1.GetOptions{}).Return(zeroReplicaDeployment, nil)
+		deploymentMock.EXPECT().UpdateScale(context.TODO(), "my-dogu", scale, metav1.UpdateOptions{}).Return(nil, nil)
+		appsMock := newMockAppsV1Client(t)
+		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
+		clientMock := newMockClusterClient(t)
+		clientMock.EXPECT().AppsV1().Return(appsMock)
+		doguRegMock := newMockDoguRegistry(t)
+		sut := &server{
+			doguRegistry: doguRegMock,
+			client:       clientMock,
+		}
+		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
+
+		// when
+		actual, err := sut.RestartDogu(context.TODO(), request)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, &types.BasicResponse{}, actual)
+	})
+	t.Run("should fail to scale down running deployment", func(t *testing.T) {
+		// given
+		previousNamespaceVar := config.CurrentNamespace
+		defer func() { config.CurrentNamespace = previousNamespaceVar }()
+		config.CurrentNamespace = "ecosystem"
+
+		oneReplica := int32(1)
+		runningDeployment := &appsv1.Deployment{Spec: appsv1.DeploymentSpec{Replicas: &oneReplica}}
+		scale := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: "my-dogu", Namespace: config.CurrentNamespace}, Spec: scalingv1.ScaleSpec{Replicas: 0}}
+		deploymentMock := newMockDeploymentClient(t)
+		deploymentMock.EXPECT().Get(context.TODO(), "my-dogu", metav1.GetOptions{}).Return(runningDeployment, nil)
+		deploymentMock.EXPECT().UpdateScale(context.TODO(), "my-dogu", scale, metav1.UpdateOptions{}).Return(nil, assert.AnError)
+		appsMock := newMockAppsV1Client(t)
+		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
+		clientMock := newMockClusterClient(t)
+		clientMock.EXPECT().AppsV1().Return(appsMock)
+		doguRegMock := newMockDoguRegistry(t)
+		sut := &server{
+			doguRegistry: doguRegMock,
+			client:       clientMock,
+		}
+		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
+
+		// when
+		actual, err := sut.RestartDogu(context.TODO(), request)
+
+		// then
+		require.Error(t, err)
+		assert.Nil(t, actual)
+		assert.ErrorContains(t, err, assert.AnError.Error())
+		assert.ErrorContains(t, err, "failed to scale deployment to 0")
+	})
+	t.Run("should fail to create watch for deployment", func(t *testing.T) {
+		// given
+		previousNamespaceVar := config.CurrentNamespace
+		defer func() { config.CurrentNamespace = previousNamespaceVar }()
+		config.CurrentNamespace = "ecosystem"
+
+		oneReplica := int32(1)
+		runningDeployment := &appsv1.Deployment{Spec: appsv1.DeploymentSpec{Replicas: &oneReplica}}
+		scale := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: "my-dogu", Namespace: config.CurrentNamespace}, Spec: scalingv1.ScaleSpec{Replicas: 0}}
+		deploymentMock := newMockDeploymentClient(t)
+		deploymentMock.EXPECT().Get(context.TODO(), "my-dogu", metav1.GetOptions{}).Return(runningDeployment, nil)
+		deploymentMock.EXPECT().UpdateScale(context.TODO(), "my-dogu", scale, metav1.UpdateOptions{}).Return(nil, nil)
+		deploymentMock.EXPECT().Watch(context.TODO(), metav1.ListOptions{LabelSelector: "dogu.name=my-dogu"}).Return(nil, assert.AnError)
+		appsMock := newMockAppsV1Client(t)
+		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
+		clientMock := newMockClusterClient(t)
+		clientMock.EXPECT().AppsV1().Return(appsMock)
+		doguRegMock := newMockDoguRegistry(t)
+		sut := &server{
+			doguRegistry: doguRegMock,
+			client:       clientMock,
+		}
+		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
+
+		// when
+		actual, err := sut.RestartDogu(context.TODO(), request)
+
+		// then
+		require.Error(t, err)
+		assert.Nil(t, actual)
+		assert.ErrorContains(t, err, assert.AnError.Error())
+		assert.ErrorContains(t, err, "failed create watch for deployment wit label dogu.name=my-dogu")
+	})
+	t.Run("should return wrong type in watch", func(t *testing.T) {
+		// given
+		previousNamespaceVar := config.CurrentNamespace
+		defer func() { config.CurrentNamespace = previousNamespaceVar }()
+		config.CurrentNamespace = "ecosystem"
+
+		deploymentMock := newMockDeploymentClient(t)
+		oneReplica := int32(1)
+		runningDeployment := &appsv1.Deployment{Spec: appsv1.DeploymentSpec{Replicas: &oneReplica}}
+		deploymentMock.EXPECT().Get(context.TODO(), "my-dogu", metav1.GetOptions{}).Return(runningDeployment, nil)
+		scale := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: "my-dogu", Namespace: config.CurrentNamespace}, Spec: scalingv1.ScaleSpec{Replicas: 0}}
+		deploymentMock.EXPECT().UpdateScale(context.TODO(), "my-dogu", scale, metav1.UpdateOptions{}).Return(nil, nil)
+		watchMock := newMockWatchInterface(t)
+		resultChan := make(chan watch.Event)
+		go func() { resultChan <- watch.Event{Object: &corev1.Secret{}} }()
+		watchMock.EXPECT().ResultChan().Return(resultChan)
+		deploymentMock.EXPECT().Watch(context.TODO(), metav1.ListOptions{LabelSelector: "dogu.name=my-dogu"}).Return(watchMock, nil)
+		appsMock := newMockAppsV1Client(t)
+		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
+		clientMock := newMockClusterClient(t)
+		clientMock.EXPECT().AppsV1().Return(appsMock)
+		doguRegMock := newMockDoguRegistry(t)
+		sut := &server{
+			doguRegistry: doguRegMock,
+			client:       clientMock,
+		}
+		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
+
+		// when
+		actual, err := sut.RestartDogu(context.TODO(), request)
+
+		// then
+		require.Error(t, err)
+		assert.Nil(t, actual)
+		assert.ErrorContains(t, err, "watch object is not type of deployment")
+	})
+	t.Run("should fail to scale deployment up again", func(t *testing.T) {
+		// given
+		previousNamespaceVar := config.CurrentNamespace
+		defer func() { config.CurrentNamespace = previousNamespaceVar }()
+		config.CurrentNamespace = "ecosystem"
+
+		deploymentMock := newMockDeploymentClient(t)
+		oneReplica := int32(1)
+		runningDeployment := &appsv1.Deployment{Spec: appsv1.DeploymentSpec{Replicas: &oneReplica}}
+		deploymentMock.EXPECT().Get(context.TODO(), "my-dogu", metav1.GetOptions{}).Return(runningDeployment, nil)
+		scaleDown := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: "my-dogu", Namespace: config.CurrentNamespace}, Spec: scalingv1.ScaleSpec{Replicas: 0}}
+		deploymentMock.EXPECT().UpdateScale(context.TODO(), "my-dogu", scaleDown, metav1.UpdateOptions{}).Return(nil, nil)
+		scaleUp := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: "my-dogu", Namespace: config.CurrentNamespace}, Spec: scalingv1.ScaleSpec{Replicas: 1}}
+		deploymentMock.EXPECT().UpdateScale(context.TODO(), "my-dogu", scaleUp, metav1.UpdateOptions{}).Return(nil, assert.AnError)
+		watchMock := newMockWatchInterface(t)
+		resultChan := make(chan watch.Event)
+		zeroReplica := int32(0)
+		stoppedDeployment := &appsv1.Deployment{Spec: appsv1.DeploymentSpec{Replicas: &zeroReplica}}
+		go func() { resultChan <- watch.Event{Object: stoppedDeployment} }()
+		watchMock.EXPECT().ResultChan().Return(resultChan)
+		deploymentMock.EXPECT().Watch(context.TODO(), metav1.ListOptions{LabelSelector: "dogu.name=my-dogu"}).Return(watchMock, nil)
+		appsMock := newMockAppsV1Client(t)
+		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
+		clientMock := newMockClusterClient(t)
+		clientMock.EXPECT().AppsV1().Return(appsMock)
+		doguRegMock := newMockDoguRegistry(t)
+		sut := &server{
+			doguRegistry: doguRegMock,
+			client:       clientMock,
+		}
+		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
+
+		// when
+		actual, err := sut.RestartDogu(context.TODO(), request)
+
+		// then
+		require.Error(t, err)
+		assert.Equal(t, &types.BasicResponse{}, actual)
+		assert.ErrorContains(t, err, assert.AnError.Error())
+		assert.ErrorContains(t, err, "failed to scale deployment to 1")
+	})
+	t.Run("should succeed", func(t *testing.T) {
+		// given
+		previousNamespaceVar := config.CurrentNamespace
+		defer func() { config.CurrentNamespace = previousNamespaceVar }()
+		config.CurrentNamespace = "ecosystem"
+
+		deploymentMock := newMockDeploymentClient(t)
+		oneReplica := int32(1)
+		runningDeployment := &appsv1.Deployment{Spec: appsv1.DeploymentSpec{Replicas: &oneReplica}}
+		deploymentMock.EXPECT().Get(context.TODO(), "my-dogu", metav1.GetOptions{}).Return(runningDeployment, nil)
+		scaleDown := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: "my-dogu", Namespace: config.CurrentNamespace}, Spec: scalingv1.ScaleSpec{Replicas: 0}}
+		deploymentMock.EXPECT().UpdateScale(context.TODO(), "my-dogu", scaleDown, metav1.UpdateOptions{}).Return(nil, nil)
+		scaleUp := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: "my-dogu", Namespace: config.CurrentNamespace}, Spec: scalingv1.ScaleSpec{Replicas: 1}}
+		deploymentMock.EXPECT().UpdateScale(context.TODO(), "my-dogu", scaleUp, metav1.UpdateOptions{}).Return(nil, nil)
+		watchMock := newMockWatchInterface(t)
+		resultChan := make(chan watch.Event)
+		zeroReplica := int32(0)
+		stoppedDeployment := &appsv1.Deployment{Spec: appsv1.DeploymentSpec{Replicas: &zeroReplica}}
+		go func() { resultChan <- watch.Event{Object: stoppedDeployment} }()
+		watchMock.EXPECT().ResultChan().Return(resultChan)
+		deploymentMock.EXPECT().Watch(context.TODO(), metav1.ListOptions{LabelSelector: "dogu.name=my-dogu"}).Return(watchMock, nil)
+		appsMock := newMockAppsV1Client(t)
+		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
+		clientMock := newMockClusterClient(t)
+		clientMock.EXPECT().AppsV1().Return(appsMock)
+		doguRegMock := newMockDoguRegistry(t)
+		sut := &server{
+			doguRegistry: doguRegMock,
+			client:       clientMock,
+		}
+		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
+
+		// when
+		actual, err := sut.RestartDogu(context.TODO(), request)
 
 		// then
 		require.NoError(t, err)
