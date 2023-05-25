@@ -12,8 +12,8 @@ type registryContext interface {
 
 // keyProvider provides functions to access public and private keys of the system.
 type keyProvider interface {
-	// FromPrivateKeyPath reads the keypair from the private key file path
-	FromPrivateKeyPath(path string) (*keys.KeyPair, error)
+	// FromPrivateKey creates a key pair from the private key.
+	FromPrivateKey(privateKey []byte) (*keys.KeyPair, error)
 }
 
 type configRegistry interface {
