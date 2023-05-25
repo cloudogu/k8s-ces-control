@@ -20,25 +20,25 @@ func (_m *mockKeyProvider) EXPECT() *mockKeyProvider_Expecter {
 	return &mockKeyProvider_Expecter{mock: &_m.Mock}
 }
 
-// FromPrivateKeyPath provides a mock function with given fields: path
-func (_m *mockKeyProvider) FromPrivateKeyPath(path string) (*keys.KeyPair, error) {
-	ret := _m.Called(path)
+// FromPrivateKey provides a mock function with given fields: privateKey
+func (_m *mockKeyProvider) FromPrivateKey(privateKey []byte) (*keys.KeyPair, error) {
+	ret := _m.Called(privateKey)
 
 	var r0 *keys.KeyPair
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (*keys.KeyPair, error)); ok {
-		return rf(path)
+	if rf, ok := ret.Get(0).(func([]byte) (*keys.KeyPair, error)); ok {
+		return rf(privateKey)
 	}
-	if rf, ok := ret.Get(0).(func(string) *keys.KeyPair); ok {
-		r0 = rf(path)
+	if rf, ok := ret.Get(0).(func([]byte) *keys.KeyPair); ok {
+		r0 = rf(privateKey)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*keys.KeyPair)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(path)
+	if rf, ok := ret.Get(1).(func([]byte) error); ok {
+		r1 = rf(privateKey)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -46,30 +46,30 @@ func (_m *mockKeyProvider) FromPrivateKeyPath(path string) (*keys.KeyPair, error
 	return r0, r1
 }
 
-// mockKeyProvider_FromPrivateKeyPath_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FromPrivateKeyPath'
-type mockKeyProvider_FromPrivateKeyPath_Call struct {
+// mockKeyProvider_FromPrivateKey_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FromPrivateKey'
+type mockKeyProvider_FromPrivateKey_Call struct {
 	*mock.Call
 }
 
-// FromPrivateKeyPath is a helper method to define mock.On call
-//   - path string
-func (_e *mockKeyProvider_Expecter) FromPrivateKeyPath(path interface{}) *mockKeyProvider_FromPrivateKeyPath_Call {
-	return &mockKeyProvider_FromPrivateKeyPath_Call{Call: _e.mock.On("FromPrivateKeyPath", path)}
+// FromPrivateKey is a helper method to define mock.On call
+//   - privateKey []byte
+func (_e *mockKeyProvider_Expecter) FromPrivateKey(privateKey interface{}) *mockKeyProvider_FromPrivateKey_Call {
+	return &mockKeyProvider_FromPrivateKey_Call{Call: _e.mock.On("FromPrivateKey", privateKey)}
 }
 
-func (_c *mockKeyProvider_FromPrivateKeyPath_Call) Run(run func(path string)) *mockKeyProvider_FromPrivateKeyPath_Call {
+func (_c *mockKeyProvider_FromPrivateKey_Call) Run(run func(privateKey []byte)) *mockKeyProvider_FromPrivateKey_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string))
+		run(args[0].([]byte))
 	})
 	return _c
 }
 
-func (_c *mockKeyProvider_FromPrivateKeyPath_Call) Return(_a0 *keys.KeyPair, _a1 error) *mockKeyProvider_FromPrivateKeyPath_Call {
+func (_c *mockKeyProvider_FromPrivateKey_Call) Return(_a0 *keys.KeyPair, _a1 error) *mockKeyProvider_FromPrivateKey_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *mockKeyProvider_FromPrivateKeyPath_Call) RunAndReturn(run func(string) (*keys.KeyPair, error)) *mockKeyProvider_FromPrivateKeyPath_Call {
+func (_c *mockKeyProvider_FromPrivateKey_Call) RunAndReturn(run func([]byte) (*keys.KeyPair, error)) *mockKeyProvider_FromPrivateKey_Call {
 	_c.Call.Return(run)
 	return _c
 }
