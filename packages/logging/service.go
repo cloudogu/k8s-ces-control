@@ -37,33 +37,44 @@ type clusterClient interface {
 	kubernetes.Interface
 }
 
+type nowClock interface {
+	Now() time.Time
+}
+
+type realClock struct{}
+
+func (r *realClock) Now() time.Time {
+	return time.Now()
+}
+
 // NewLoggingService creates a new logging service.
 func NewLoggingService(client clusterClient) *loggingService {
-	return &loggingService{client: client}
+	clock := &realClock{}
+	return &loggingService{client: client, clock: clock}
 }
 
 type loggingService struct {
-	client clusterClient
 	pb.UnimplementedDoguLogMessagesServer
+	client clusterClient
+	clock  nowClock
 }
 
 // GetForDogu writes dogu log messages into the stream of the given server.
 func (s *loggingService) GetForDogu(request *pb.DoguLogMessageRequest, server pb.DoguLogMessages_GetForDoguServer) error {
 	linesCount := int(request.LineCount)
 	doguName := request.DoguName
-	client := s.client
 	// delegate to an orderly named method because GetForDogu is misleading but cannot be renamed due to the
 	// distributed nature of GRPC definitions
-	return writeLogLinesToStream(client, doguName, linesCount, server)
+	return writeLogLinesToStream(s.client, doguName, linesCount, s.clock, server)
 }
 
-func writeLogLinesToStream(client clusterClient, doguName string, linesCount int, server pb.DoguLogMessages_GetForDoguServer) error {
+func writeLogLinesToStream(client clusterClient, doguName string, linesCount int, clock nowClock, server pb.DoguLogMessages_GetForDoguServer) error {
 	if doguName == "" {
 		return status.Error(codes.InvalidArgument, responseMessageMissingDoguname)
 	}
 	logrus.Debugf("retrieving %d line(s) of log messages for dogu '%s'", linesCount, doguName)
 
-	logFileData, err := readLogs(client, doguName, linesCount)
+	logFileData, err := readLogs(client, clock, doguName, linesCount)
 	if err != nil {
 		return createInternalErr(err, codes.InvalidArgument)
 	}
@@ -81,23 +92,24 @@ func writeLogLinesToStream(client clusterClient, doguName string, linesCount int
 	return nil
 }
 
-func buildLokiQueryUrl(name string, count int) (string, error) {
+// buildLokiQueryUrl returns a Loki query over a range of time using the given pod regexp part and the maximum number of
+// results being returned.
+func buildLokiQueryUrl(podRegexp string, limit int, clock nowClock) (string, error) {
 	baseUrl, err := url.Parse(lokiGatewareServiceURL)
 	if err != nil {
 		return "", err
 	}
 
-	// TODO use baseURL.Join here
-	baseUrl.Path += "/loki/api/v1/query_range"
+	baseUrl = baseUrl.JoinPath("/loki/api/v1/query_range")
 	params := url.Values{}
-	queryParam := fmt.Sprintf("{pod=~\"%s.*\"}", name)
+	queryParam := fmt.Sprintf("{pod=~\"%s.*\"}", podRegexp)
 	params.Add("query", queryParam)
 	params.Add("direction", "backward")
 	baseUrl.RawQuery = params.Encode()
-	if count != 0 {
-		baseUrl.RawQuery += fmt.Sprintf("&limit=%d", count)
+	if limit != 0 {
+		baseUrl.RawQuery += fmt.Sprintf("&limit=%d", limit)
 	}
-	startDate := time.Now().Add(-(time.Hour * 24 * 7))
+	startDate := clock.Now().Add(-(time.Hour * 24 * 7))
 	baseUrl.RawQuery += fmt.Sprintf("&start=%d", startDate.UnixNano())
 
 	return baseUrl.String(), nil
@@ -123,8 +135,8 @@ func doLokiHttpQuery(client clusterClient, lokiUrl string) (*http.Response, erro
 	return resp, nil
 }
 
-func readLogs(client clusterClient, name string, count int) ([]byte, error) {
-	lokiUrl, err := buildLokiQueryUrl(name, count)
+func readLogs(client clusterClient, clock nowClock, name string, count int) ([]byte, error) {
+	lokiUrl, err := buildLokiQueryUrl(name, count, clock)
 	if err != nil {
 		return nil, err
 	}
