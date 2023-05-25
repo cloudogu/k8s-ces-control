@@ -7,29 +7,37 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	pb "github.com/cloudogu/k8s-ces-control/generated/logging"
-	"github.com/cloudogu/k8s-ces-control/packages/stream"
-	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
+	"net/http"
+	"net/url"
+	"sort"
+	"time"
+
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"net/http"
-	"net/url"
-	"sort"
-	"time"
+
+	pb "github.com/cloudogu/k8s-ces-control/generated/logging"
+	"github.com/cloudogu/k8s-ces-control/packages/stream"
+	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
 )
 
 const (
 	responseMessageMissingDoguname = "Dogu name should not be empty"
 )
 
+// TODO: URLs should be made configurable in case parts of the URL must be altered (f. i. "monitoring" may be unavailable
+// for organizational reasons)
+const lokiGatewareExecutionNamespace = "monitoring"
+const lokiGatewareServiceURL = "http://loki-gateway." + lokiGatewareExecutionNamespace + ".svc.cluster.local:80"
+
 type clusterClient interface {
 	ecoSystem.EcoSystemV1Alpha1Interface
 	kubernetes.Interface
 }
 
+// NewLoggingService creates a new logging service.
 func NewLoggingService(client clusterClient) *loggingService {
 	return &loggingService{client: client}
 }
@@ -39,20 +47,28 @@ type loggingService struct {
 	pb.UnimplementedDoguLogMessagesServer
 }
 
+// GetForDogu writes dogu log messages into the stream of the given server.
 func (s *loggingService) GetForDogu(request *pb.DoguLogMessageRequest, server pb.DoguLogMessages_GetForDoguServer) error {
 	linesCount := int(request.LineCount)
 	doguName := request.DoguName
+	client := s.client
+	// delegate to an orderly named method because GetForDogu is misleading but cannot be renamed due to the
+	// distributed nature of GRPC definitions
+	return writeLogLinesToStream(client, doguName, linesCount, server)
+}
+
+func writeLogLinesToStream(client clusterClient, doguName string, linesCount int, server pb.DoguLogMessages_GetForDoguServer) error {
 	if doguName == "" {
 		return status.Error(codes.InvalidArgument, responseMessageMissingDoguname)
 	}
 	logrus.Debugf("retrieving %d line(s) of log messages for dogu '%s'", linesCount, doguName)
 
-	logFileData, err := s.readLogs(doguName, linesCount)
+	logFileData, err := readLogs(client, doguName, linesCount)
 	if err != nil {
 		return createInternalErr(err, codes.InvalidArgument)
 	}
 
-	compressedMessagesBytes, err := compressMessages(request.DoguName, logFileData)
+	compressedMessagesBytes, err := compressMessages(doguName, logFileData)
 	if err != nil {
 		return err
 	}
@@ -66,11 +82,12 @@ func (s *loggingService) GetForDogu(request *pb.DoguLogMessageRequest, server pb
 }
 
 func buildLokiQueryUrl(name string, count int) (string, error) {
-	baseUrl, err := url.Parse("http://loki-gateway.monitoring.svc.cluster.local:80")
+	baseUrl, err := url.Parse(lokiGatewareServiceURL)
 	if err != nil {
 		return "", err
 	}
 
+	// TODO use baseURL.Join here
 	baseUrl.Path += "/loki/api/v1/query_range"
 	params := url.Values{}
 	queryParam := fmt.Sprintf("{pod=~\"%s.*\"}", name)
@@ -86,8 +103,8 @@ func buildLokiQueryUrl(name string, count int) (string, error) {
 	return baseUrl.String(), nil
 }
 
-func (s *loggingService) doLokiHttpQuery(lokiUrl string) (*http.Response, error) {
-	secret, err := s.client.CoreV1().Secrets("monitoring").Get(context.Background(), "loki-credentials",
+func doLokiHttpQuery(client clusterClient, lokiUrl string) (*http.Response, error) {
+	secret, err := client.CoreV1().Secrets(lokiGatewareExecutionNamespace).Get(context.Background(), "loki-credentials",
 		v1.GetOptions{})
 	if err != nil {
 		return nil, createInternalErr(fmt.Errorf("failed to fetch loki secret: %w", err), codes.Canceled)
@@ -106,13 +123,13 @@ func (s *loggingService) doLokiHttpQuery(lokiUrl string) (*http.Response, error)
 	return resp, nil
 }
 
-func (s *loggingService) readLogs(name string, count int) ([]byte, error) {
+func readLogs(client clusterClient, name string, count int) ([]byte, error) {
 	lokiUrl, err := buildLokiQueryUrl(name, count)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := s.doLokiHttpQuery(lokiUrl)
+	resp, err := doLokiHttpQuery(client, lokiUrl)
 	if err != nil {
 		return nil, err
 	}
