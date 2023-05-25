@@ -110,7 +110,7 @@ func doLokiHttpQuery(client clusterClient, lokiUrl string) (*http.Response, erro
 		return nil, createInternalErr(fmt.Errorf("failed to fetch loki secret: %w", err), codes.Canceled)
 	}
 
-	req, err := http.NewRequest("GET", lokiUrl, nil)
+	req, err := http.NewRequest(http.MethodGet, lokiUrl, nil)
 	if err != nil {
 		return nil, createInternalErr(fmt.Errorf("failed to create request with url [%s]: %w", lokiUrl, err), codes.Canceled)
 	}
