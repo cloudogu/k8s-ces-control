@@ -4,24 +4,17 @@ import (
 	"context"
 	pbHealth "github.com/cloudogu/k8s-ces-control/generated/health"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
-	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 const checkTypeContainer = "container"
 const responseMessageMissingDoguname = "dogu name is empty"
 
-type clusterClient interface {
-	ecoSystem.EcoSystemV1Alpha1Interface
-	kubernetes.Interface
-}
-
-func NewDoguHealthService(client clusterClient) pbHealth.DoguHealthServer {
+func NewDoguHealthService(client clusterClient) *server {
 	return &server{client: client}
 }
 
