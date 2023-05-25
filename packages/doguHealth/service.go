@@ -30,12 +30,7 @@ func (s *server) GetByName(ctx context.Context, request *pbHealth.DoguHealthRequ
 		return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguname)
 	}
 
-	doguHealthResponse, err := s.getDoguHealthResponse(ctx, request.DoguName)
-	if err != nil {
-		return nil, err
-	}
-
-	return doguHealthResponse, nil
+	return s.getDoguHealthResponse(ctx, request.DoguName)
 }
 
 func (s *server) GetByNames(ctx context.Context, request *pbHealth.DoguHealthListRequest) (*pbHealth.DoguHealthMapResponse, error) {
@@ -87,7 +82,14 @@ func (s *server) getDoguListHealthResponse(ctx context.Context, doguNameList []s
 func (s *server) getDoguHealthResponse(ctx context.Context, doguName string) (*pbHealth.DoguHealthResponse, error) {
 	doguDeployment, err := s.client.AppsV1().Deployments(config.CurrentNamespace).Get(ctx, doguName, metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		errResponse := &pbHealth.DoguHealthResponse{
+			FullName:    doguName,
+			ShortName:   doguName,
+			DisplayName: doguName,
+			Healthy:     false,
+			Results:     []*pbHealth.DoguHealthCheck{},
+		}
+		return errResponse, err
 	}
 
 	isHealthy := doguDeployment.Status.ReadyReplicas > 0

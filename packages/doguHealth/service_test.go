@@ -54,13 +54,20 @@ func Test_server_GetByName(t *testing.T) {
 		clientMock := newMockClusterClient(t)
 		clientMock.EXPECT().AppsV1().Return(appsMock)
 		sut := &server{client: clientMock}
+		expectedResponse := &health.DoguHealthResponse{
+			FullName:    "my-dogu",
+			ShortName:   "my-dogu",
+			DisplayName: "my-dogu",
+			Healthy:     false,
+			Results:     []*health.DoguHealthCheck{},
+		}
 
 		// when
 		actual, err := sut.GetByName(context.TODO(), request)
 
 		// then
 		require.Error(t, err)
-		assert.Nil(t, actual)
+		assert.Equal(t, expectedResponse, actual)
 		assert.ErrorIs(t, err, assert.AnError)
 	})
 	t.Run("should return unhealthy for unhealthy dogu", func(t *testing.T) {
@@ -122,6 +129,200 @@ func Test_server_GetByName(t *testing.T) {
 
 		// when
 		actual, err := sut.GetByName(context.TODO(), request)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, expectedResponse, actual)
+	})
+}
+
+func Test_server_GetByNames(t *testing.T) {
+	t.Run("should fail to get deployment", func(t *testing.T) {
+		// given
+		previousNamespaceVar := config.CurrentNamespace
+		defer func() { config.CurrentNamespace = previousNamespaceVar }()
+		config.CurrentNamespace = "ecosystem"
+
+		request := &health.DoguHealthListRequest{Dogus: []string{"will-fail", "will-succeed"}}
+		deploymentMock := newMockDeploymentClient(t)
+		deploymentMock.EXPECT().Get(context.TODO(), "will-fail", metav1.GetOptions{}).Return(nil, assert.AnError)
+		healthyDeployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}}
+		deploymentMock.EXPECT().Get(context.TODO(), "will-succeed", metav1.GetOptions{}).Return(healthyDeployment, nil)
+		appsMock := newMockAppsV1Client(t)
+		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
+		clientMock := newMockClusterClient(t)
+		clientMock.EXPECT().AppsV1().Return(appsMock)
+		sut := &server{client: clientMock}
+		expectedResponse := &health.DoguHealthMapResponse{
+			AllHealthy: false,
+			Results: map[string]*health.DoguHealthResponse{
+				"will-fail": {
+					FullName:    "will-fail",
+					ShortName:   "will-fail",
+					DisplayName: "will-fail",
+					Healthy:     false,
+					Results:     []*health.DoguHealthCheck{},
+				},
+				"will-succeed": {
+					FullName:    "will-succeed",
+					ShortName:   "will-succeed",
+					DisplayName: "will-succeed",
+					Healthy:     true,
+					Results: []*health.DoguHealthCheck{{
+						Type:    "container",
+						Success: true,
+						Message: "Check whether a deployment contains at least one ready replica.",
+					}},
+				},
+			},
+		}
+
+		// when
+		actual, err := sut.GetByNames(context.TODO(), request)
+
+		// then
+		require.Error(t, err)
+		assert.Equal(t, expectedResponse, actual)
+		assert.ErrorIs(t, err, assert.AnError)
+	})
+	t.Run("should fail to get multiple deployments", func(t *testing.T) {
+		// given
+		previousNamespaceVar := config.CurrentNamespace
+		defer func() { config.CurrentNamespace = previousNamespaceVar }()
+		config.CurrentNamespace = "ecosystem"
+
+		request := &health.DoguHealthListRequest{Dogus: []string{"will-fail", "will-fail-too"}}
+		deploymentMock := newMockDeploymentClient(t)
+		deploymentMock.EXPECT().Get(context.TODO(), "will-fail", metav1.GetOptions{}).Return(nil, assert.AnError)
+		deploymentMock.EXPECT().Get(context.TODO(), "will-fail-too", metav1.GetOptions{}).Return(nil, assert.AnError)
+		appsMock := newMockAppsV1Client(t)
+		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
+		clientMock := newMockClusterClient(t)
+		clientMock.EXPECT().AppsV1().Return(appsMock)
+		sut := &server{client: clientMock}
+		expectedResponse := &health.DoguHealthMapResponse{
+			AllHealthy: false,
+			Results: map[string]*health.DoguHealthResponse{
+				"will-fail": {
+					FullName:    "will-fail",
+					ShortName:   "will-fail",
+					DisplayName: "will-fail",
+					Healthy:     false,
+					Results:     []*health.DoguHealthCheck{},
+				},
+				"will-fail-too": {
+					FullName:    "will-fail-too",
+					ShortName:   "will-fail-too",
+					DisplayName: "will-fail-too",
+					Healthy:     false,
+					Results:     []*health.DoguHealthCheck{},
+				},
+			},
+		}
+
+		// when
+		actual, err := sut.GetByNames(context.TODO(), request)
+
+		// then
+		require.Error(t, err)
+		assert.Equal(t, expectedResponse, actual)
+		assert.ErrorIs(t, err, assert.AnError)
+	})
+	t.Run("should not all be healthy if one is unhealthy", func(t *testing.T) {
+		// given
+		previousNamespaceVar := config.CurrentNamespace
+		defer func() { config.CurrentNamespace = previousNamespaceVar }()
+		config.CurrentNamespace = "ecosystem"
+
+		request := &health.DoguHealthListRequest{Dogus: []string{"healthy", "unhealthy"}}
+		deploymentMock := newMockDeploymentClient(t)
+		healthyDeployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}}
+		deploymentMock.EXPECT().Get(context.TODO(), "healthy", metav1.GetOptions{}).Return(healthyDeployment, nil)
+		unhealthyDeployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 0}}
+		deploymentMock.EXPECT().Get(context.TODO(), "unhealthy", metav1.GetOptions{}).Return(unhealthyDeployment, nil)
+		appsMock := newMockAppsV1Client(t)
+		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
+		clientMock := newMockClusterClient(t)
+		clientMock.EXPECT().AppsV1().Return(appsMock)
+		sut := &server{client: clientMock}
+		expectedResponse := &health.DoguHealthMapResponse{
+			AllHealthy: false,
+			Results: map[string]*health.DoguHealthResponse{
+				"healthy": {
+					FullName:    "healthy",
+					ShortName:   "healthy",
+					DisplayName: "healthy",
+					Healthy:     true,
+					Results: []*health.DoguHealthCheck{{
+						Type:    "container",
+						Success: true,
+						Message: "Check whether a deployment contains at least one ready replica.",
+					}},
+				},
+				"unhealthy": {
+					FullName:    "unhealthy",
+					ShortName:   "unhealthy",
+					DisplayName: "unhealthy",
+					Healthy:     false,
+					Results:     []*health.DoguHealthCheck{},
+				},
+			},
+		}
+
+		// when
+		actual, err := sut.GetByNames(context.TODO(), request)
+
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, expectedResponse, actual)
+	})
+	t.Run("should all be healthy", func(t *testing.T) {
+		// given
+		previousNamespaceVar := config.CurrentNamespace
+		defer func() { config.CurrentNamespace = previousNamespaceVar }()
+		config.CurrentNamespace = "ecosystem"
+
+		request := &health.DoguHealthListRequest{Dogus: []string{"healthy1", "healthy2"}}
+		deploymentMock := newMockDeploymentClient(t)
+		healthy1Deployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}}
+		deploymentMock.EXPECT().Get(context.TODO(), "healthy1", metav1.GetOptions{}).Return(healthy1Deployment, nil)
+		healthy2Deployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}}
+		deploymentMock.EXPECT().Get(context.TODO(), "healthy2", metav1.GetOptions{}).Return(healthy2Deployment, nil)
+		appsMock := newMockAppsV1Client(t)
+		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
+		clientMock := newMockClusterClient(t)
+		clientMock.EXPECT().AppsV1().Return(appsMock)
+		sut := &server{client: clientMock}
+		expectedResponse := &health.DoguHealthMapResponse{
+			AllHealthy: true,
+			Results: map[string]*health.DoguHealthResponse{
+				"healthy1": {
+					FullName:    "healthy1",
+					ShortName:   "healthy1",
+					DisplayName: "healthy1",
+					Healthy:     true,
+					Results: []*health.DoguHealthCheck{{
+						Type:    "container",
+						Success: true,
+						Message: "Check whether a deployment contains at least one ready replica.",
+					}},
+				},
+				"healthy2": {
+					FullName:    "healthy2",
+					ShortName:   "healthy2",
+					DisplayName: "healthy2",
+					Healthy:     true,
+					Results: []*health.DoguHealthCheck{{
+						Type:    "container",
+						Success: true,
+						Message: "Check whether a deployment contains at least one ready replica.",
+					}},
+				},
+			},
+		}
+
+		// when
+		actual, err := sut.GetByNames(context.TODO(), request)
 
 		// then
 		require.NoError(t, err)
