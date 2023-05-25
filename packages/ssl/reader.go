@@ -40,9 +40,9 @@ func (r manager) GetCertificateCredentials() (credentials.TransportCredentials, 
 			"k8s-ces-control",
 			"k8s-ces-control",
 			24000,
-			"DE",
-			"Lower Saxony",
-			"Brunswick",
+			ssl.Country,
+			ssl.Province,
+			ssl.Locality,
 			[]string{fmt.Sprintf("k8s-ces-control.%s.svc.cluster.local", config.CurrentNamespace), "localhost"},
 		)
 		if err != nil {
