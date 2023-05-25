@@ -135,7 +135,8 @@ func readLogs(client clusterClient, name string, count int) ([]byte, error) {
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode > 300 {
+	isHttpStatusErrorish := resp.StatusCode >= http.StatusMultipleChoices
+	if isHttpStatusErrorish {
 		return nil, createInternalErr(fmt.Errorf("loki http error: status: %s, code: %d", resp.Status, resp.StatusCode), codes.Canceled)
 	}
 
