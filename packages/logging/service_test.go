@@ -97,3 +97,22 @@ func Test_doLokiHttpQuery(t *testing.T) {
 		assert.Equal(t, "400 Bad Request", actual.Status)
 	})
 }
+
+func TestNewLoggingService(t *testing.T) {
+	t.Run("should create query clock", func(t *testing.T) {
+		// given
+
+		// when
+		sut := NewLoggingService(nil)
+
+		// then
+		require.NotNil(t, sut)
+		assert.NotNil(t, sut.clock)
+	})
+}
+
+func Test_realClock_Now(t *testing.T) {
+	sut := new(realClock)
+	actual := sut.Now()
+	assert.IsType(t, actual, time.Now())
+}
