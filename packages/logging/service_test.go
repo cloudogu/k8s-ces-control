@@ -1,6 +1,9 @@
 package logging
 
 import (
+	"archive/zip"
+	"bytes"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -115,4 +118,46 @@ func Test_realClock_Now(t *testing.T) {
 	sut := new(realClock)
 	actual := sut.Now()
 	assert.IsType(t, actual, time.Now())
+}
+
+func Test_compressMessages(t *testing.T) {
+	t.Run("decompressed message should be equal to the input message", func(t *testing.T) {
+		// given
+		const unicodeText = `
+The ASCII compatible UTF-8 encoding of ISO 10646 and Unicode
+plain-text files is defined in RFC 2279 and in ISO 10646-1 Annex R.
+
+Using Unicode/UTF-8, you can write in emails and source code things such as
+
+Mathematics and Sciences:
+  ∮ E⋅da = Q,  n → ∞, ∑ f(i) = ∏ g(i), ∀x∈ℝ: ⌈x⌉ = −⌊−x⌋, α ∧ ¬β = ¬(¬α ∨ β),
+  ℕ ⊆ ℕ₀ ⊂ ℤ ⊂ ℚ ⊂ ℝ ⊂ ℂ, ⊥ < a ≠ b ≡ c ≤ d ≪ ⊤ ⇒ (A ⇔ B),
+  2H₂ + O₂ ⇌ 2H₂O, R = 4.7 kΩ, ⌀ 200 mm
+
+Linguistics and dictionaries:
+  ði ıntəˈnæʃənəl fəˈnɛtık əsoʊsiˈeıʃn
+  Y [ˈʏpsilɔn], Yen [jɛn], Yoga [ˈjoːgɑ]
+
+APL:
+  ((V⍳V)=⍳⍴V)/V←,V    ⌷←⍳→⍴∆∇⊃‾⍎⍕⌈
+`
+		input := []byte(unicodeText)
+
+		// when
+		actual, err := compressMessages("my-dogu", input)
+
+		// then
+		require.NoError(t, err)
+		assert.NotNil(t, actual)
+		zipreader, err := zip.NewReader(bytes.NewReader(actual), int64(len(actual)))
+		require.NoError(t, err)
+		for _, zipfile := range zipreader.File {
+			assert.Equal(t, "my-dogu.log", zipfile.Name)
+			fc, err := zipfile.Open()
+			require.NoError(t, err)
+			defer fc.Close()
+			actualFileContent, err := io.ReadAll(fc)
+			assert.Equal(t, []byte(unicodeText), actualFileContent)
+		}
+	})
 }
