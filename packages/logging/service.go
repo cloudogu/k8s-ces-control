@@ -239,21 +239,25 @@ func createInternalErr(err error, code codes.Code) error {
 	return status.Error(code, err.Error())
 }
 
+// LokiResponse represents the root structure of a query response.
 type LokiResponse struct {
 	Status string           `json:"status"`
 	Data   LokiResponseData `json:"data"`
 }
 
+// LokiResponseData contains log stream results and metadata ResultType. ResultType could be "stream" oder "vector".
 type LokiResponseData struct {
 	ResultType string             `json:"resultType"`
 	Result     []LokiStreamResult `json:"result"`
 }
 
+// LokiStreamResult the stream and the log values.
 type LokiStreamResult struct {
 	Stream LokiStream `json:"stream"`
 	Values [][]string `json:"values"`
 }
 
+// LokiStream contains metadata for the stream result.
 type LokiStream struct {
 	Container string `json:"container"`
 	Filename  string `json:"filename"`

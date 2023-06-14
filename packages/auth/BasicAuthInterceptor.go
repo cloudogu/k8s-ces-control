@@ -13,6 +13,7 @@ import (
 
 var publicEndpoints = []string{"/grpc.health.v1.Health/Check"}
 
+// BasicAuthUnaryInterceptor authorizes grpc request with service account credentials from authHelper.GetServiceAccountCredentials.
 func BasicAuthUnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	logger := log.FromContext(ctx)
 	logger.Info("Interceptor called; FullMethod: ", info.FullMethod)

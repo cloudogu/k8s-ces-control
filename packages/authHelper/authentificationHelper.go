@@ -7,8 +7,10 @@ import (
 	"github.com/cloudogu/k8s-ces-control/packages/config"
 )
 
+// AuthenticationFunc should retrieve credentials for a given service name.
 type AuthenticationFunc func(ctx context.Context, serviceName string) (account.ServiceAccountData, error)
 
+// GetServiceAccountCredentials return credentials for a given service name from the ces registry.
 func GetServiceAccountCredentials(ctx context.Context, serviceName string) (account.ServiceAccountData, error) {
 	cesRegistry, err := config.GetCesRegistry()
 	if err != nil {

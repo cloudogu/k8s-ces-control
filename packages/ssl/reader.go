@@ -23,6 +23,7 @@ type manager struct {
 	certGenerator  sslGenerator
 }
 
+// NewManager returns a new manager instance.
 func NewManager(globalRegistry configurationContext) *manager {
 	return &manager{
 		globalRegistry: globalRegistry,
@@ -30,6 +31,8 @@ func NewManager(globalRegistry configurationContext) *manager {
 	}
 }
 
+// GetCertificateCredentials returns the certificate from the ces registry.
+// If no certificate is found this routine generate a new self-signed certificate and writes it to the ces registry.
 func (r *manager) GetCertificateCredentials() (credentials.TransportCredentials, error) {
 	hasCertificate, err := r.hasCertificate()
 	if err != nil {

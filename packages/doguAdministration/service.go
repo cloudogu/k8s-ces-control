@@ -19,6 +19,7 @@ import (
 
 const responseMessageMissingDoguname = "dogu name is empty"
 
+// NewDoguAdministrationServer returns a new administration server instance to start/stop.. etc. Dogus.
 func NewDoguAdministrationServer(client clusterClient, reg cesRegistry) *server {
 	return &server{client: client, doguRegistry: reg.DoguRegistry()}
 }

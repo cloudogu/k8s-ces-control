@@ -14,6 +14,7 @@ import (
 const checkTypeContainer = "container"
 const responseMessageMissingDoguname = "dogu name is empty"
 
+// NewDoguHealthService return a new health server to retrieve health information from Dogus.
 func NewDoguHealthService(client clusterClient) *server {
 	return &server{client: client}
 }
@@ -33,6 +34,7 @@ func (s *server) GetByName(ctx context.Context, request *pbHealth.DoguHealthRequ
 	return s.getDoguHealthResponse(ctx, request.DoguName)
 }
 
+// GetByNames retrieves the health information about the given dogus if they are installed.
 func (s *server) GetByNames(ctx context.Context, request *pbHealth.DoguHealthListRequest) (*pbHealth.DoguHealthMapResponse, error) {
 	logrus.Debugf("Check healthy state of dogus [%s]", request.Dogus)
 	return s.getDoguListHealthResponse(ctx, request.Dogus)

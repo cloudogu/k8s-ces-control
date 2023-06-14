@@ -45,32 +45,14 @@ func NewServiceAccountManager(serviceName string, registry configRegistry) (*Ser
 	}, nil
 }
 
-func (manager *ServiceAccountManager) SetServiceName(serviceName string) *ServiceAccountManager {
-	manager.serviceName = serviceName
-	return manager
-}
-
-func (manager *ServiceAccountManager) SetKeyProvider(keyProvider keyProvider) *ServiceAccountManager {
-	manager.keyProvider = keyProvider
-	return manager
-}
-
-func (manager *ServiceAccountManager) SetHostConfiguration(configRegistry registryContext) *ServiceAccountManager {
-	manager.hostConfiguration = configRegistry
-	return manager
-}
-
-func (manager *ServiceAccountManager) GetHostConfiguration() registryContext {
-	return manager.hostConfiguration
-}
-
+// GetServiceAccountData returns credentials for the actual configured service.
 func (manager *ServiceAccountManager) GetServiceAccountData(ctx context.Context) (ServiceAccountData, error) {
-	username, err := manager.GetHostConfiguration().Get(manager.serviceName + "/username")
+	username, err := manager.hostConfiguration.Get(manager.serviceName + "/username")
 	if err != nil {
 		return ServiceAccountData{}, fmt.Errorf("failed to get username for service account '%s': %w", manager.serviceName, err)
 	}
 
-	encryptedPassword, err := manager.GetHostConfiguration().Get(manager.serviceName + "/password")
+	encryptedPassword, err := manager.hostConfiguration.Get(manager.serviceName + "/password")
 	if err != nil {
 		return ServiceAccountData{}, fmt.Errorf("failed to get password for service account '%s': %w", manager.serviceName, err)
 	}
@@ -103,6 +85,7 @@ func getKeyProvider(globalConfig registryContext) (keyProvider, error) {
 	return keyProvider, nil
 }
 
+// String returns the string presentation of the ServiceAccountData object.
 func (accountData ServiceAccountData) String() string {
 	return fmt.Sprintf("username:%s\npassword:%s", accountData.Username, accountData.Password)
 }

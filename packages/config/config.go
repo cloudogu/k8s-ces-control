@@ -97,6 +97,7 @@ func configureCurrentStage() error {
 	return nil
 }
 
+// CurrentNamespace contains the namespace from the k8s-ecs-control pod.
 var CurrentNamespace = ""
 
 func configureNamespace() error {
@@ -133,6 +134,7 @@ func configureLogLevel() error {
 	return nil
 }
 
+// PrintCloudoguLogo prints the awesome cloudogu logo.
 func PrintCloudoguLogo() {
 	logrus.Println("                                     ./////,                    ")
 	logrus.Println("                                 ./////==//////*                ")
@@ -147,6 +149,7 @@ func PrintCloudoguLogo() {
 	logrus.Println("                       'V/(/////////////////////////////V'      ")
 }
 
+// GetCesRegistry return the ces registry in the current namespace.
 func GetCesRegistry() (cesregistry.Registry, error) {
 	cesReg, err := cesregistry.New(core.Registry{
 		Type:      "etcd",
