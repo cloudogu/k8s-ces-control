@@ -151,10 +151,6 @@ func Test_compressMessages(t *testing.T) {
 	})
 }
 
-func Test_extractRawLogsFromLokiResponseData(t *testing.T) {
-	t.Fail()
-}
-
 func createUnicodeText() string {
 	return `
 The ASCII compatible UTF-8 encoding of ISO 10646 and Unicode
