@@ -141,11 +141,11 @@ func PrintCloudoguLogo() {
 	logrus.Println("                                ////.  ___   ////.              ")
 	logrus.Println("                         ,**,. ////  ,////A,  */// ,**,.        ")
 	logrus.Println("                    ,/////////////*  */////*  *////////////A    ")
-	logrus.Println("                   ////'        \\VA.   '|'   .///'       '///*  ")
+	logrus.Println("                   ////'        \\VA.   '|'   .///'       '///* ")
 	logrus.Println("                  *///  .*///*,         |         .*//*,   ///* ")
 	logrus.Println("                  (///  (//////)**--_./////_----*//////)   ///) ")
 	logrus.Println("                   V///   '°°°°      (/////)      °°°°'   ////  ")
-	logrus.Println("                    V/////(////////\\. '°°°' ./////////(///(/'   ")
+	logrus.Println("                    V/////(////////\\. '°°°' ./////////(///(/'  ")
 	logrus.Println("                       'V/(/////////////////////////////V'      ")
 }
 

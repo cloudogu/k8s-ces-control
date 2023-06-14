@@ -1,14 +1,16 @@
 package config
 
 import (
-	doguApiV1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
+	"os"
+	"strings"
+	"testing"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd/api"
-	"os"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"strings"
-	"testing"
+
+	doguApiV1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -285,11 +287,11 @@ func TestPrintCloudoguLogo(t *testing.T) {
 		assert.Contains(t, lines[2], "                                ////.  ___   ////.              ")
 		assert.Contains(t, lines[3], "                         ,**,. ////  ,////A,  */// ,**,.        ")
 		assert.Contains(t, lines[4], "                    ,/////////////*  */////*  *////////////A    ")
-		assert.Contains(t, lines[5], "                   ////'        \\\\VA.   '|'   .///'       '///*  ")
+		assert.Contains(t, lines[5], "                   ////'        \\\\VA.   '|'   .///'       '///* ")
 		assert.Contains(t, lines[6], "                  *///  .*///*,         |         .*//*,   ///* ")
 		assert.Contains(t, lines[7], "                  (///  (//////)**--_./////_----*//////)   ///) ")
 		assert.Contains(t, lines[8], "                   V///   '°°°°      (/////)      °°°°'   ////  ")
-		assert.Contains(t, lines[9], "                    V/////(////////\\\\. '°°°' ./////////(///(/'   ")
+		assert.Contains(t, lines[9], "                    V/////(////////\\\\. '°°°' ./////////(///(/'  ")
 		assert.Contains(t, lines[10], "                       'V/(/////////////////////////////V'      ")
 	})
 }
