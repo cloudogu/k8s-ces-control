@@ -46,8 +46,8 @@ func NewManager(client clusterClient, globalRegistry configurationContext) *mana
 
 // GetCertificateCredentials returns the certificate from the ces registry.
 // If no certificate is found this routine generate a new self-signed certificate and writes it to the ces registry.
-func (r *manager) GetCertificateCredentials(ctx context.Context) (credentials.TransportCredentials, error) {
-	hasCertificate, err := r.hasCertificate()
+func (m *manager) GetCertificateCredentials(ctx context.Context) (credentials.TransportCredentials, error) {
+	hasCertificate, err := m.hasCertificate()
 	if err != nil {
 		return nil, fmt.Errorf("failed to check if certificate exists: %w", err)
 	}
@@ -55,7 +55,7 @@ func (r *manager) GetCertificateCredentials(ctx context.Context) (credentials.Tr
 	if !hasCertificate {
 		logrus.Println("Found no ssl certificate -> generating new one.")
 
-		cert, key, err := r.certGenerator.GenerateSelfSignedCert(
+		cert, key, err := m.certGenerator.GenerateSelfSignedCert(
 			"k8s-ces-control",
 			"k8s-ces-control",
 			24000,
@@ -68,18 +68,18 @@ func (r *manager) GetCertificateCredentials(ctx context.Context) (credentials.Tr
 			return nil, fmt.Errorf("failed to generate self-signed certificate: %w", err)
 		}
 
-		err = setCertificateToRegistry(r.globalRegistry, cert, key)
+		err = setCertificateToRegistry(m.globalRegistry, cert, key)
 		if err != nil {
 			return nil, err
 		}
 
-		err = createCertificateSecret(ctx, config.CurrentNamespace, r.client, cert, key)
+		err = createCertificateSecret(ctx, config.CurrentNamespace, m.client, cert, key)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	cert, err := r.createCertFromRegistry()
+	cert, err := m.createCertFromRegistry()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cert from registry: %w", err)
 	}
@@ -144,13 +144,13 @@ func setCertificateToRegistry(globalReg configurationContext, cert string, key s
 	return nil
 }
 
-func (r *manager) createCertFromRegistry() (*tls.Certificate, error) {
-	certPEMBlock, err := r.globalRegistry.Get(certificateRegistryKey)
+func (m *manager) createCertFromRegistry() (*tls.Certificate, error) {
+	certPEMBlock, err := m.globalRegistry.Get(certificateRegistryKey)
 	if err != nil {
 		return nil, err
 	}
 
-	keyPEMBlock, err := r.globalRegistry.Get(CertificateKeyRegistryKey)
+	keyPEMBlock, err := m.globalRegistry.Get(CertificateKeyRegistryKey)
 	if err != nil {
 		return nil, err
 	}
@@ -163,8 +163,8 @@ func (r *manager) createCertFromRegistry() (*tls.Certificate, error) {
 	return &cert, nil
 }
 
-func (r *manager) hasCertificate() (bool, error) {
-	serverCrt, err := r.globalRegistry.Get(certificateRegistryKey)
+func (m *manager) hasCertificate() (bool, error) {
+	serverCrt, err := m.globalRegistry.Get(certificateRegistryKey)
 	if registry.IsKeyNotFoundError(err) {
 		return false, nil
 	} else if err != nil {
