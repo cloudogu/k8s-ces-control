@@ -37,36 +37,36 @@ node('docker') {
             make 'clean'
         }
 
-        // stage('Lint - Dockerfile') {
-        //     lintDockerfile()
-        // }
+         stage('Lint - Dockerfile') {
+             lintDockerfile()
+         }
 
-        // stage("Lint - k8s Resources") {
-        //     stageLintK8SResources()
-        // }
-//
-//         docker
-//                 .image("golang:${goVersion}")
-//                 .mountJenkinsUser()
-//                 .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}")
-//                         {
-//                             stage('Build') {
-//                                 make 'compile'
-//                             }
-//
-//                             stage('Unit Tests') {
-//                                 make 'unit-test'
-//                                 junit allowEmptyResults: true, testResults: 'target/unit-tests/*-tests.xml'
-//                             }
-//
-//                             stage("Review dog analysis") {
-//                                 stageStaticAnalysisReviewDog()
-//                             }
-//                         }
-//
-        // stage('SonarQube') {
-        //     stageStaticAnalysisSonarQube()
-        // }
+         stage("Lint - k8s Resources") {
+             stageLintK8SResources()
+         }
+
+         docker
+                 .image("golang:${goVersion}")
+                 .mountJenkinsUser()
+                 .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}")
+                         {
+                             stage('Build') {
+                                 make 'compile'
+                             }
+
+                             stage('Unit Tests') {
+                                 make 'unit-test'
+                                 junit allowEmptyResults: true, testResults: 'target/unit-tests/*-tests.xml'
+                             }
+
+                             stage("Review dog analysis") {
+                                 stageStaticAnalysisReviewDog()
+                             }
+                         }
+
+         stage('SonarQube') {
+             stageStaticAnalysisSonarQube()
+         }
 
         K3d k3d = new K3d(this, "${WORKSPACE}", "${WORKSPACE}/k3d", env.PATH)
         try {
