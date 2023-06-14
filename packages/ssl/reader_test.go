@@ -1,13 +1,19 @@
 package ssl
 
 import (
+	"context"
+	"testing"
+
 	_ "embed"
-	"github.com/cloudogu/k8s-ces-control/packages/config"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v2"
-	"testing"
+
+	"github.com/cloudogu/k8s-ces-control/packages/config"
 )
+
+var testCtx = context.Background()
 
 //go:embed testdata/valid_server.crt
 var validCertBytes []byte
@@ -21,7 +27,7 @@ func TestNewManager(t *testing.T) {
 		globalConfigMock := newMockConfigurationContext(t)
 
 		// when
-		actual := NewManager(globalConfigMock)
+		actual := NewManager(nil, globalConfigMock)
 
 		// then
 		assert.NotEmpty(t, actual)
@@ -41,7 +47,7 @@ func Test_manager_GetCertificateCredentials(t *testing.T) {
 		}
 
 		// when
-		cert, err := sut.GetCertificateCredentials()
+		cert, err := sut.GetCertificateCredentials(testCtx)
 
 		// then
 		require.NoError(t, err)
@@ -58,7 +64,7 @@ func Test_manager_GetCertificateCredentials(t *testing.T) {
 		}
 
 		// when
-		_, err := sut.GetCertificateCredentials()
+		_, err := sut.GetCertificateCredentials(testCtx)
 
 		// then
 		require.Error(t, err)
@@ -73,7 +79,7 @@ func Test_manager_GetCertificateCredentials(t *testing.T) {
 		sut := &manager{globalRegistry: globalConfigMock}
 
 		// when
-		actual, err := sut.GetCertificateCredentials()
+		actual, err := sut.GetCertificateCredentials(testCtx)
 
 		// then
 		require.Error(t, err)
@@ -108,7 +114,7 @@ func Test_manager_GetCertificateCredentials(t *testing.T) {
 		}
 
 		// when
-		actual, err := sut.GetCertificateCredentials()
+		actual, err := sut.GetCertificateCredentials(testCtx)
 
 		// then
 		require.Error(t, err)
@@ -143,7 +149,7 @@ func Test_manager_GetCertificateCredentials(t *testing.T) {
 		}
 
 		// when
-		actual, err := sut.GetCertificateCredentials()
+		actual, err := sut.GetCertificateCredentials(testCtx)
 
 		// then
 		require.Error(t, err)
@@ -179,7 +185,7 @@ func Test_manager_GetCertificateCredentials(t *testing.T) {
 		}
 
 		// when
-		actual, err := sut.GetCertificateCredentials()
+		actual, err := sut.GetCertificateCredentials(testCtx)
 
 		// then
 		require.Error(t, err)
@@ -216,7 +222,7 @@ func Test_manager_GetCertificateCredentials(t *testing.T) {
 		}
 
 		// when
-		actual, err := sut.GetCertificateCredentials()
+		actual, err := sut.GetCertificateCredentials(testCtx)
 
 		// then
 		require.Error(t, err)
