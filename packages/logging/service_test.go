@@ -123,7 +123,40 @@ func Test_realClock_Now(t *testing.T) {
 func Test_compressMessages(t *testing.T) {
 	t.Run("decompressed message should be equal to the input message", func(t *testing.T) {
 		// given
-		const unicodeText = `
+		input := []byte(createUnicodeText())
+
+		// when
+		actualMyDoguLogZip, err := compressMessages("my-dogu", input)
+
+		// then
+		require.NoError(t, err)
+		assert.NotNil(t, actualMyDoguLogZip)
+
+		// test text equality
+		zipreader, err := zip.NewReader(bytes.NewReader(actualMyDoguLogZip), int64(len(actualMyDoguLogZip)))
+		require.NoError(t, err)
+		assert.Len(t, zipreader.File, 1)
+
+		for _, zipfile := range zipreader.File {
+			assert.Equal(t, "my-dogu.log", zipfile.Name)
+
+			fc, err := zipfile.Open()
+			require.NoError(t, err)
+			defer func() { _ = fc.Close() }()
+			actualFileContent, err := io.ReadAll(fc)
+			require.NoError(t, err)
+
+			assert.Equal(t, []byte(createUnicodeText()), actualFileContent)
+		}
+	})
+}
+
+func Test_extractRawLogsFromLokiResponseData(t *testing.T) {
+	t.Fail()
+}
+
+func createUnicodeText() string {
+	return `
 The ASCII compatible UTF-8 encoding of ISO 10646 and Unicode
 plain-text files is defined in RFC 2279 and in ISO 10646-1 Annex R.
 
@@ -141,23 +174,4 @@ Linguistics and dictionaries:
 APL:
   ((V⍳V)=⍳⍴V)/V←,V    ⌷←⍳→⍴∆∇⊃‾⍎⍕⌈
 `
-		input := []byte(unicodeText)
-
-		// when
-		actual, err := compressMessages("my-dogu", input)
-
-		// then
-		require.NoError(t, err)
-		assert.NotNil(t, actual)
-		zipreader, err := zip.NewReader(bytes.NewReader(actual), int64(len(actual)))
-		require.NoError(t, err)
-		for _, zipfile := range zipreader.File {
-			assert.Equal(t, "my-dogu.log", zipfile.Name)
-			fc, err := zipfile.Open()
-			require.NoError(t, err)
-			defer fc.Close()
-			actualFileContent, err := io.ReadAll(fc)
-			assert.Equal(t, []byte(unicodeText), actualFileContent)
-		}
-	})
 }
