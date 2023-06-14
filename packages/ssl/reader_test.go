@@ -1,12 +1,19 @@
 package ssl
 
 import (
+	_ "embed"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v2"
 	"testing"
 )
+
+//go:embed testdata/valid_server.crt
+var validCertBytes []byte
+
+//go:embed testdata/valid_server.key
+var validCertKeyBytes []byte
 
 func TestNewManager(t *testing.T) {
 	t.Run("should not be empty", func(t *testing.T) {
@@ -24,6 +31,41 @@ func TestNewManager(t *testing.T) {
 }
 
 func Test_manager_GetCertificateCredentials(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		// given
+		registryMock := newMockConfigurationContext(t)
+		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.crt").Return(string(validCertBytes), nil)
+		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.key").Return(string(validCertKeyBytes), nil)
+		sut := &manager{
+			globalRegistry: registryMock,
+		}
+
+		// when
+		cert, err := sut.GetCertificateCredentials()
+
+		// then
+		require.NoError(t, err)
+		assert.NotNil(t, cert)
+	})
+
+	t.Run("should return error on certificate creation error", func(t *testing.T) {
+		// given
+		registryMock := newMockConfigurationContext(t)
+		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.crt").Return(string(validCertBytes), nil)
+		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.key").Return("", assert.AnError)
+		sut := &manager{
+			globalRegistry: registryMock,
+		}
+
+		// when
+		_, err := sut.GetCertificateCredentials()
+
+		// then
+		require.Error(t, err)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to create cert from registry")
+	})
+
 	t.Run("should fail to get certificate", func(t *testing.T) {
 		// given
 		globalConfigMock := newMockConfigurationContext(t)
@@ -183,4 +225,72 @@ func Test_manager_GetCertificateCredentials(t *testing.T) {
 		assert.ErrorContains(t, err, "failed to set certificate key in registry")
 	})
 	// TODO write tests for certificate creation
+}
+
+func Test_manager_createCertFromRegistry(t *testing.T) {
+	t.Run("should return error on registry cert read error", func(t *testing.T) {
+		// given
+		registryMock := newMockConfigurationContext(t)
+		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.crt").Return("", assert.AnError)
+		sut := &manager{
+			globalRegistry: registryMock,
+		}
+
+		// when
+		_, err := sut.createCertFromRegistry()
+
+		// then
+		require.Error(t, err)
+		assert.ErrorIs(t, assert.AnError, err)
+	})
+
+	t.Run("should return error on registry key read error", func(t *testing.T) {
+		// given
+		registryMock := newMockConfigurationContext(t)
+		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.crt").Return("server.crt", nil)
+		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.key").Return("", assert.AnError)
+		sut := &manager{
+			globalRegistry: registryMock,
+		}
+
+		// when
+		_, err := sut.createCertFromRegistry()
+
+		// then
+		require.Error(t, err)
+		assert.ErrorIs(t, assert.AnError, err)
+	})
+
+	t.Run("should return error on certificate creation with invalid pem data", func(t *testing.T) {
+		// given
+		registryMock := newMockConfigurationContext(t)
+		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.crt").Return("server.crt", nil)
+		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.key").Return("server.key", nil)
+		sut := &manager{
+			globalRegistry: registryMock,
+		}
+
+		// when
+		_, err := sut.createCertFromRegistry()
+
+		// then
+		require.Error(t, err)
+	})
+
+	t.Run("success", func(t *testing.T) {
+		// given
+		registryMock := newMockConfigurationContext(t)
+		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.crt").Return(string(validCertBytes), nil)
+		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.key").Return(string(validCertKeyBytes), nil)
+		sut := &manager{
+			globalRegistry: registryMock,
+		}
+
+		// when
+		cert, err := sut.createCertFromRegistry()
+
+		// then
+		require.NoError(t, err)
+		assert.NotNil(t, cert)
+	})
 }
