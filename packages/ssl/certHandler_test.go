@@ -9,8 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/client/v2"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/cloudogu/k8s-ces-control/packages/config"
+	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
 )
 
 var testCtx = context.Background()
@@ -38,12 +42,18 @@ func TestNewManager(t *testing.T) {
 
 func Test_manager_GetCertificateCredentials(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
+		oldCurrentNamespace := config.CurrentNamespace
+		config.CurrentNamespace = "test-namespace"
+		defer func() { config.CurrentNamespace = oldCurrentNamespace }()
 		// given
+		fakeClient := fake.NewSimpleClientset()
+		clientMock := &mockClusterClient{fakeClient}
 		registryMock := newMockConfigurationContext(t)
 		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.crt").Return(string(validCertBytes), nil)
 		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.key").Return(string(validCertKeyBytes), nil)
 		sut := &manager{
 			globalRegistry: registryMock,
+			client:         clientMock,
 		}
 
 		// when
@@ -52,6 +62,14 @@ func Test_manager_GetCertificateCredentials(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.NotNil(t, cert)
+		// retrieve created secret and test it
+		var getOpts metav1.GetOptions
+		actual, err := fakeClient.CoreV1().Secrets("test-namespace").Get(testCtx, secretName, getOpts)
+		require.NoError(t, err)
+		assert.NotEmpty(t, actual)
+		assert.Equal(t, v1.SecretTypeTLS, actual.Type)
+		assert.Equal(t, string(validCertBytes), actual.StringData["tls.crt"])
+		assert.Equal(t, string(validCertKeyBytes), actual.StringData["tls.key"])
 	})
 
 	t.Run("should return error on certificate creation error", func(t *testing.T) {
@@ -301,4 +319,13 @@ func Test_manager_createCertFromRegistry(t *testing.T) {
 		assert.Equal(t, validCertBytes, []byte(certPEM))
 		assert.Equal(t, validCertKeyBytes, []byte(keyPEM))
 	})
+}
+
+type mockClusterClient struct {
+	*fake.Clientset
+}
+
+func (m *mockClusterClient) Dogus(namespace string) ecoSystem.DoguInterface {
+	// TODO implement me
+	panic("implement me")
 }

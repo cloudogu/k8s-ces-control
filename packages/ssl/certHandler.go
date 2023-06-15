@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/cloudogu/cesapp-lib/registry"
 	"github.com/cloudogu/cesapp-lib/ssl"
@@ -24,11 +25,15 @@ const (
 	CertificateKeyRegistryKey    = "certificate/k8s-ces-control/server.key"
 )
 
+const secretName = "k8s-ces-control-server-certificate"
+
 type clusterClient interface {
 	ecoSystem.EcoSystemV1Alpha1Interface
 	kubernetes.Interface
 }
-
+type SecretsGetter interface {
+	Secrets(namespace string) v1.SecretInterface
+}
 type manager struct {
 	globalRegistry configurationContext
 	certGenerator  sslGenerator
@@ -90,7 +95,6 @@ func (m *manager) GetCertificateCredentials(ctx context.Context) (credentials.Tr
 func upsertCertificateSecret(ctx context.Context, namespace string, client clusterClient, certPEM, keyPEM string) error {
 
 	data := map[string]string{corev1.TLSCertKey: certPEM, corev1.TLSPrivateKeyKey: keyPEM}
-	const secretName = "k8s-ces-control-server-certificate"
 	var updateOpts metav1.UpdateOptions
 	var getOpts metav1.GetOptions
 	var createOpts metav1.CreateOptions

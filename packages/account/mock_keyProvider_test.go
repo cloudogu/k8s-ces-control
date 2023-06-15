@@ -53,7 +53,7 @@ type mockKeyProvider_FromPrivateKey_Call struct {
 
 // FromPrivateKey is a helper method to define mock.On call
 //   - privateKey []byte
-func (_e *mockKeyProvider_Expecter) FromPrivateKey(privateKey []byte) *mockKeyProvider_FromPrivateKey_Call {
+func (_e *mockKeyProvider_Expecter) FromPrivateKey(privateKey interface{}) *mockKeyProvider_FromPrivateKey_Call {
 	return &mockKeyProvider_FromPrivateKey_Call{Call: _e.mock.On("FromPrivateKey", privateKey)}
 }
 
