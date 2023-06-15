@@ -2,12 +2,11 @@ package ssl
 
 import (
 	"context"
+	_ "embed"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakecorev1 "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	faketesting "k8s.io/client-go/testing"
 	"testing"
-
-	_ "embed"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -411,4 +410,20 @@ type mockClusterClient struct {
 
 func (m *mockClusterClient) Dogus(_ string) ecoSystem.DoguInterface {
 	panic("implement me")
+}
+
+func Test_setCertificateToRegistry(t *testing.T) {
+	t.Run("should return nil if no error occurs", func(t *testing.T) {
+		// given
+		globalConfigMock := newMockConfigurationContext(t)
+		globalConfigMock.EXPECT().Set("certificate/k8s-ces-control/server.crt", "server.crt").Return(nil)
+		globalConfigMock.EXPECT().Set("certificate/cesappd/server.crt", "server.crt").Return(nil)
+		globalConfigMock.EXPECT().Set("certificate/k8s-ces-control/server.key", "server.key").Return(nil)
+
+		// when
+		err := setCertificateToRegistry(globalConfigMock, "server.crt", "server.key")
+
+		// then
+		require.NoError(t, err)
+	})
 }
