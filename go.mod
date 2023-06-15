@@ -8,7 +8,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.23.7
 	go.etcd.io/etcd/client/v2 v2.305.8
 	google.golang.org/grpc v1.51.0
