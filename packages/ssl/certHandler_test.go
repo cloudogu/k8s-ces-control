@@ -2,6 +2,9 @@ package ssl
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/runtime"
+	fakecorev1 "k8s.io/client-go/kubernetes/typed/core/v1/fake"
+	faketesting "k8s.io/client-go/testing"
 	"testing"
 
 	_ "embed"
@@ -70,6 +73,87 @@ func Test_manager_GetCertificateCredentials(t *testing.T) {
 		assert.Equal(t, v1.SecretTypeTLS, actual.Type)
 		assert.Equal(t, string(validCertBytes), actual.StringData["tls.crt"])
 		assert.Equal(t, string(validCertKeyBytes), actual.StringData["tls.key"])
+	})
+
+	t.Run("should fail because an error occur getting the secret", func(t *testing.T) {
+		oldCurrentNamespace := config.CurrentNamespace
+		config.CurrentNamespace = "test-namespace"
+		defer func() { config.CurrentNamespace = oldCurrentNamespace }()
+		// given
+		fakeClient := fake.NewSimpleClientset()
+		fakeClient.CoreV1().(*fakecorev1.FakeCoreV1).PrependReactor("get", "secrets", func(action faketesting.Action) (handled bool, ret runtime.Object, err error) {
+			return true, nil, assert.AnError
+		})
+		clientMock := &mockClusterClient{fakeClient}
+		registryMock := newMockConfigurationContext(t)
+		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.crt").Return(string(validCertBytes), nil)
+		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.key").Return(string(validCertKeyBytes), nil)
+		sut := &manager{
+			globalRegistry: registryMock,
+			client:         clientMock,
+		}
+
+		// when
+		_, err := sut.GetCertificateCredentials(testCtx)
+
+		// then
+		require.Error(t, err)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "error while checking whether certificate secret k8s-ces-control-server-certificate already exists")
+	})
+
+	t.Run("should fail because an error occur creating the secret", func(t *testing.T) {
+		oldCurrentNamespace := config.CurrentNamespace
+		config.CurrentNamespace = "test-namespace"
+		defer func() { config.CurrentNamespace = oldCurrentNamespace }()
+		// given
+		fakeClient := fake.NewSimpleClientset()
+		fakeClient.CoreV1().(*fakecorev1.FakeCoreV1).PrependReactor("create", "secrets", func(action faketesting.Action) (handled bool, ret runtime.Object, err error) {
+			return true, nil, assert.AnError
+		})
+		clientMock := &mockClusterClient{fakeClient}
+		registryMock := newMockConfigurationContext(t)
+		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.crt").Return(string(validCertBytes), nil)
+		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.key").Return(string(validCertKeyBytes), nil)
+		sut := &manager{
+			globalRegistry: registryMock,
+			client:         clientMock,
+		}
+
+		// when
+		_, err := sut.GetCertificateCredentials(testCtx)
+
+		// then
+		require.Error(t, err)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "could not create certificate secret k8s-ces-control-server-certificate")
+	})
+
+	t.Run("should fail because an error occur update the secret", func(t *testing.T) {
+		oldCurrentNamespace := config.CurrentNamespace
+		config.CurrentNamespace = "test-namespace"
+		defer func() { config.CurrentNamespace = oldCurrentNamespace }()
+		// given
+		fakeClient := fake.NewSimpleClientset()
+		fakeClient.CoreV1().(*fakecorev1.FakeCoreV1).PrependReactor("update", "secrets", func(action faketesting.Action) (handled bool, ret runtime.Object, err error) {
+			return true, nil, assert.AnError
+		})
+		clientMock := &mockClusterClient{fakeClient}
+		registryMock := newMockConfigurationContext(t)
+		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.crt").Return(string(validCertBytes), nil)
+		registryMock.EXPECT().Get("certificate/k8s-ces-control/server.key").Return(string(validCertKeyBytes), nil)
+		sut := &manager{
+			globalRegistry: registryMock,
+			client:         clientMock,
+		}
+
+		// when
+		_, err := sut.GetCertificateCredentials(testCtx)
+
+		// then
+		require.Error(t, err)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "could not update certificate secret k8s-ces-control-server-certificate")
 	})
 
 	t.Run("should return error on certificate creation error", func(t *testing.T) {

@@ -117,7 +117,7 @@ func upsertCertificateSecret(ctx context.Context, namespace string, client clust
 		logrus.Info("did not found a certificate secret, creating one now")
 		_, err = client.CoreV1().Secrets(config.CurrentNamespace).Create(ctx, &creds, createOpts)
 		if err != nil {
-			return fmt.Errorf("could not patch certificate secret %s: %w", secretName, err)
+			return fmt.Errorf("could not create certificate secret %s: %w", secretName, err)
 		}
 	}
 
