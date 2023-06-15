@@ -325,7 +325,6 @@ type mockClusterClient struct {
 	*fake.Clientset
 }
 
-func (m *mockClusterClient) Dogus(namespace string) ecoSystem.DoguInterface {
-	// TODO implement me
+func (m *mockClusterClient) Dogus(_ string) ecoSystem.DoguInterface {
 	panic("implement me")
 }
