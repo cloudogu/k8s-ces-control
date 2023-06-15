@@ -171,3 +171,31 @@ APL:
   ((V⍳V)=⍳⍴V)/V←,V    ⌷←⍳→⍴∆∇⊃‾⍎⍕⌈
 `
 }
+
+func Test_extractRawLogsFromLokiResponseData(t *testing.T) {
+	t.Run("should return the response as list of log lines", func(t *testing.T) {
+		// given
+		lokiResponseData := LokiResponseData{
+			ResultType: "streams",
+			Result: []LokiStreamResult{
+				{Values: [][]string{
+					// unsorted map!
+					{"1655722130600667934", `{"log":"Mon Jun 20 10:48:52 UTC 2022 -- Logging3\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+					{"1655722130600667903", `{"log":"Mon Jun 20 10:48:50 UTC 2022 -- Logging1\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+					{"1655722130600667919", `{"log":"Mon Jun 20 10:48:51 UTC 2022 -- Logging2\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+				}},
+			},
+		}
+
+		// when
+		actual := extractRawLogsFromLokiResponseData(lokiResponseData)
+
+		// then
+		expectedLogLines := []string{
+			`{"log":"Mon Jun 20 10:48:50 UTC 2022 -- Logging1\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`,
+			`{"log":"Mon Jun 20 10:48:51 UTC 2022 -- Logging2\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`,
+			`{"log":"Mon Jun 20 10:48:52 UTC 2022 -- Logging3\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`,
+		}
+		assert.Equal(t, expectedLogLines, actual)
+	})
+}
