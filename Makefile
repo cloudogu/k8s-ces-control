@@ -1,7 +1,8 @@
 # Set these to the desired values
 ARTIFACT_ID=k8s-ces-control
 VERSION=0.0.1
-GOTAG=1.19.3
+GOTAG=1.20.4
+LINT_VERSION=v1.53.2
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 SHELL = /usr/bin/env bash -o pipefail
@@ -10,9 +11,8 @@ SHELL = /usr/bin/env bash -o pipefail
 ## Image URL to use all building/pushing image targets
 IMAGE_DEV?=${K3CES_REGISTRY_URL_PREFIX}/${ARTIFACT_ID}:${VERSION}
 IMAGE?=cloudogu/${ARTIFACT_ID}:${VERSION}
-LINT_VERSION=v1.50.1
 
-MAKEFILES_VERSION=7.0.1
+MAKEFILES_VERSION=7.5.0
 .DEFAULT_GOAL:=default
 GENERATION_TARGET_DIR=generated
 GENERATION_SOURCE_DIR=grpc-protobuf
@@ -36,6 +36,8 @@ include build/make/self-update.mk
 include build/make/release.mk
 include build/make/bats.mk
 include build/make/k8s.mk
+MOCKERY_IGNORED=vendor,build,docs,generated
+include build/make/mocks.mk
 include makefiles/grpc.mk
 include makefiles/monitoring.mk
 include makefiles/integration.mk
@@ -43,7 +45,7 @@ include makefiles/integration.mk
 default: build
 
 .PHONY: build
-build: check-env-var-namespace k8s-delete image-import k8s-apply kill-pod ## Builds a new version of the k8s-ces-control and deploys it into the K8s-EcoSystem.
+build: check-env-var-namespace k8s-delete image-import k8s-apply ## Builds a new version of the k8s-ces-control and deploys it into the K8s-EcoSystem.
 
 .PHONY: kill-pod
 kill-pod:

@@ -14,13 +14,14 @@ import (
 const checkTypeContainer = "container"
 const responseMessageMissingDoguname = "dogu name is empty"
 
-func NewDoguHealthService(client config.ClusterClient) pbHealth.DoguHealthServer {
+// NewDoguHealthService return a new health server to retrieve health information from Dogus.
+func NewDoguHealthService(client clusterClient) *server {
 	return &server{client: client}
 }
 
 type server struct {
 	pbHealth.UnimplementedDoguHealthServer
-	client config.ClusterClient
+	client clusterClient
 }
 
 // GetByName retrieves the health information about a given dogu if it is installed.
@@ -30,14 +31,10 @@ func (s *server) GetByName(ctx context.Context, request *pbHealth.DoguHealthRequ
 		return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguname)
 	}
 
-	doguHealthResponse, err := s.getDoguHealthResponse(ctx, request.DoguName)
-	if err != nil {
-		return nil, err
-	}
-
-	return doguHealthResponse, nil
+	return s.getDoguHealthResponse(ctx, request.DoguName)
 }
 
+// GetByNames retrieves the health information about the given dogus if they are installed.
 func (s *server) GetByNames(ctx context.Context, request *pbHealth.DoguHealthListRequest) (*pbHealth.DoguHealthMapResponse, error) {
 	logrus.Debugf("Check healthy state of dogus [%s]", request.Dogus)
 	return s.getDoguListHealthResponse(ctx, request.Dogus)
@@ -46,7 +43,7 @@ func (s *server) GetByNames(ctx context.Context, request *pbHealth.DoguHealthLis
 // GetAll retrieves health information about all installed dogus.
 func (s *server) GetAll(ctx context.Context, _ *pbHealth.DoguHealthAllRequest) (*pbHealth.DoguHealthMapResponse, error) {
 	logrus.Debugf("Check healthy state of all dogus")
-	doguList, err := s.client.EcoSystemApi.Dogus(config.CurrentNamespace).List(ctx, metav1.ListOptions{})
+	doguList, err := s.client.Dogus(config.CurrentNamespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
@@ -87,7 +84,14 @@ func (s *server) getDoguListHealthResponse(ctx context.Context, doguNameList []s
 func (s *server) getDoguHealthResponse(ctx context.Context, doguName string) (*pbHealth.DoguHealthResponse, error) {
 	doguDeployment, err := s.client.AppsV1().Deployments(config.CurrentNamespace).Get(ctx, doguName, metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		errResponse := &pbHealth.DoguHealthResponse{
+			FullName:    doguName,
+			ShortName:   doguName,
+			DisplayName: doguName,
+			Healthy:     false,
+			Results:     []*pbHealth.DoguHealthCheck{},
+		}
+		return errResponse, err
 	}
 
 	isHealthy := doguDeployment.Status.ReadyReplicas > 0

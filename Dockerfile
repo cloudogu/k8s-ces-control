@@ -1,4 +1,4 @@
-FROM golang:1.19.3-alpine3.17 AS backendBuilder
+FROM golang:1.20.4-alpine3.17 AS backendBuilder
 RUN apk add --no-cache build-base git bash
 
 ENV WORKDIR=/k8s-ces-control

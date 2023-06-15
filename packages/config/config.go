@@ -2,13 +2,15 @@ package config
 
 import (
 	"fmt"
+	"os"
+
+	"github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	"github.com/cloudogu/cesapp-lib/core"
 	cesregistry "github.com/cloudogu/cesapp-lib/registry"
 	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
-	"github.com/sirupsen/logrus"
-	"k8s.io/client-go/kubernetes"
-	"os"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 const (
@@ -22,31 +24,31 @@ const (
 	namespaceEnvironmentVariable = "NAMESPACE"
 )
 
-type ClusterClient struct {
-	EcoSystemApi ecoSystem.EcoSystemV1Alpha1Interface
+type clusterClient struct {
+	ecoSystem.EcoSystemV1Alpha1Interface
 	kubernetes.Interface
 }
 
-var currentStage = "development"
+var currentStage = stageProduction
 
 // CreateClusterClient creates a new kubernetes.Interface given the locally available cluster configurations.
-func CreateClusterClient() (ClusterClient, error) {
+func CreateClusterClient() (*clusterClient, error) {
 	clusterConfig, err := ctrl.GetConfig()
 	if err != nil {
-		return ClusterClient{}, fmt.Errorf("failed to load cluster configuration: %w", err)
+		return nil, fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
 	k8sClient, err := kubernetes.NewForConfig(clusterConfig)
 	if err != nil {
-		return ClusterClient{}, fmt.Errorf("failed to create kubernetes client")
+		return nil, fmt.Errorf("failed to create kubernetes client: %w", err)
 	}
 
 	doguClient, err := ecoSystem.NewForConfig(clusterConfig)
 	if err != nil {
-		return ClusterClient{}, fmt.Errorf("failed to create dogu client")
+		return nil, fmt.Errorf("failed to create dogu client: %w", err)
 	}
 
-	return ClusterClient{EcoSystemApi: doguClient, Interface: k8sClient}, nil
+	return &clusterClient{EcoSystemV1Alpha1Interface: doguClient, Interface: k8sClient}, nil
 }
 
 // ConfigureApplication performs the default configuration for the control app including configuring the logging and
@@ -79,10 +81,10 @@ func configureCurrentStage() error {
 	stage, ok := os.LookupEnv(stagingEnvironmentVariable)
 	if !ok {
 		logrus.Printf("No stage was set via the environment variable [%s]. Using default stage [production].", stagingEnvironmentVariable)
+		currentStage = stageProduction
 		return nil
 	}
 
-	currentStage = stage
 	if stage == stageProduction {
 		logrus.Infoln("Using stage [production].")
 	} else if stage == stageDevelopment {
@@ -91,16 +93,17 @@ func configureCurrentStage() error {
 		return fmt.Errorf("found invalid value [%s] for environment variable [%s], only the values [production, development] are valid values", stage, stagingEnvironmentVariable)
 	}
 
+	currentStage = stage
 	return nil
 }
 
+// CurrentNamespace contains the namespace from the k8s-ecs-control pod.
 var CurrentNamespace = ""
 
 func configureNamespace() error {
 	namespace, ok := os.LookupEnv(namespaceEnvironmentVariable)
 	if !ok {
-		logrus.Infof("No namespace was set via the environment variable [%s]. A namespace is required.", namespaceEnvironmentVariable)
-		return nil
+		logrus.Errorf("No namespace was set via the environment variable [%s]. A namespace is required.", namespaceEnvironmentVariable)
 	}
 
 	CurrentNamespace = namespace
@@ -131,20 +134,22 @@ func configureLogLevel() error {
 	return nil
 }
 
+// PrintCloudoguLogo prints the awesome cloudogu logo.
 func PrintCloudoguLogo() {
 	logrus.Println("                                     ./////,                    ")
 	logrus.Println("                                 ./////==//////*                ")
 	logrus.Println("                                ////.  ___   ////.              ")
 	logrus.Println("                         ,**,. ////  ,////A,  */// ,**,.        ")
 	logrus.Println("                    ,/////////////*  */////*  *////////////A    ")
-	logrus.Println("                   ////'        \\VA.   '|'   .///'       '///*  ")
+	logrus.Println("                   ////'        \\VA.   '|'   .///'       '///* ")
 	logrus.Println("                  *///  .*///*,         |         .*//*,   ///* ")
 	logrus.Println("                  (///  (//////)**--_./////_----*//////)   ///) ")
 	logrus.Println("                   V///   '°°°°      (/////)      °°°°'   ////  ")
-	logrus.Println("                    V/////(////////\\. '°°°' ./////////(///(/'   ")
+	logrus.Println("                    V/////(////////\\. '°°°' ./////////(///(/'  ")
 	logrus.Println("                       'V/(/////////////////////////////V'      ")
 }
 
+// GetCesRegistry return the ces registry in the current namespace.
 func GetCesRegistry() (cesregistry.Registry, error) {
 	cesReg, err := cesregistry.New(core.Registry{
 		Type:      "etcd",

@@ -1,7 +1,22 @@
 package main
 
 import (
+	context "context"
 	"fmt"
+	"log"
+	"net"
+	"os"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/reflection"
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/cloudogu/cesapp-lib/core"
 	cesregistry "github.com/cloudogu/cesapp-lib/registry"
 	pbDoguAdministration "github.com/cloudogu/k8s-ces-control/generated/doguAdministration"
@@ -16,17 +31,7 @@ import (
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	"github.com/cloudogu/k8s-ces-control/packages/maintenance"
 	"github.com/cloudogu/k8s-ces-control/packages/ssl"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/health"
-	"google.golang.org/grpc/health/grpc_health_v1"
-	"google.golang.org/grpc/reflection"
-	"log"
-	"net"
-	"os"
+	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
 )
 
 const (
@@ -37,6 +42,11 @@ var (
 	// Version of the application
 	Version string
 )
+
+type clusterClient interface {
+	ecoSystem.EcoSystemV1Alpha1Interface
+	kubernetes.Interface
+}
 
 func main() {
 	err := startCesControl()
@@ -91,18 +101,13 @@ func configureApplication(_ *cli.Context) error {
 	return nil
 }
 
-func registerServices(grpcServer *grpc.Server) error {
+func registerServices(client clusterClient, grpcServer *grpc.Server) error {
 	cesReg, err := cesregistry.New(core.Registry{
 		Type:      "etcd",
 		Endpoints: []string{fmt.Sprintf("http://etcd.%s.svc.cluster.local:4001", config.CurrentNamespace)},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create CES registry: %w", err)
-	}
-
-	client, err := config.CreateClusterClient()
-	if err != nil {
-		return fmt.Errorf("failed to create cluster client")
 	}
 
 	pbLogging.RegisterDoguLogMessagesServer(grpcServer, logging.NewLoggingService(client))
@@ -130,20 +135,25 @@ func startServerCommand() *cli.Command {
 	}
 }
 
-func startServerAction(_ *cli.Context) error {
+func startServerAction(cliCtx *cli.Context) error {
 	config.PrintCloudoguLogo()
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		logrus.Fatalf("failed to listen: %v", err)
 	}
 
-	creds, err := readTLSCredentials()
+	client, err := config.CreateClusterClient()
+	if err != nil {
+		return fmt.Errorf("failed to create cluster client")
+	}
+
+	creds, err := readTLSCredentials(cliCtx.Context, client)
 	if err != nil {
 		log.Fatalf("Failed to setup TLS: %v", err)
 	}
 
 	grpcServer := grpc.NewServer(grpc.Creds(creds), grpc.UnaryInterceptor(auth.BasicAuthUnaryInterceptor))
-	err = registerServices(grpcServer)
+	err = registerServices(client, grpcServer)
 	if err != nil {
 		logrus.Fatalf("failed to register services: %s", err.Error())
 		return err
@@ -162,25 +172,25 @@ func startServerAction(_ *cli.Context) error {
 	return nil
 }
 
-func readTLSCredentials() (credentials.TransportCredentials, error) {
+func readTLSCredentials(ctx context.Context, client clusterClient) (credentials.TransportCredentials, error) {
 	cesReg, err := config.GetCesRegistry()
 	if err != nil {
 		return nil, err
 	}
 
-	reader := ssl.NewManager(cesReg.GlobalConfig())
-	return reader.GetCertificateCredentials()
+	reader := ssl.NewManager(client, cesReg.GlobalConfig())
+	return reader.GetCertificateCredentials(ctx)
 }
 
 func createServiceAccountCommand() *cli.Command {
-	managerCreator := func(serviceName string) (account.ServiceAccountManager, error) {
+	managerCreator := func(serviceName string) (*account.ServiceAccountManager, error) {
 		cesRegistry, err := config.GetCesRegistry()
 		if err != nil {
-			return account.ServiceAccountManager{}, err
+			return &account.ServiceAccountManager{}, err
 		}
 		manager, err := account.NewServiceAccountManager(serviceName, cesRegistry)
 		if err != nil {
-			return account.ServiceAccountManager{}, err
+			return &account.ServiceAccountManager{}, err
 		}
 		return manager, nil
 	}
@@ -192,7 +202,7 @@ func createServiceAccountCommand() *cli.Command {
 	}
 }
 
-type serviceAccountManagerCreator func(serviceName string) (account.ServiceAccountManager, error)
+type serviceAccountManagerCreator func(serviceName string) (*account.ServiceAccountManager, error)
 
 func getServiceAccountAction(getManager serviceAccountManagerCreator) func(ctx *cli.Context) error {
 	return func(ctx *cli.Context) error {
