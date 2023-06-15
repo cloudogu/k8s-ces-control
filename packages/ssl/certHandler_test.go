@@ -243,7 +243,7 @@ func Test_manager_createCertFromRegistry(t *testing.T) {
 		}
 
 		// when
-		_, err := sut.createCertFromRegistry()
+		_, _, _, err := sut.createCertFromRegistry()
 
 		// then
 		require.Error(t, err)
@@ -260,7 +260,7 @@ func Test_manager_createCertFromRegistry(t *testing.T) {
 		}
 
 		// when
-		_, err := sut.createCertFromRegistry()
+		_, _, _, err := sut.createCertFromRegistry()
 
 		// then
 		require.Error(t, err)
@@ -277,7 +277,7 @@ func Test_manager_createCertFromRegistry(t *testing.T) {
 		}
 
 		// when
-		_, err := sut.createCertFromRegistry()
+		_, _, _, err := sut.createCertFromRegistry()
 
 		// then
 		require.Error(t, err)
@@ -293,10 +293,12 @@ func Test_manager_createCertFromRegistry(t *testing.T) {
 		}
 
 		// when
-		cert, err := sut.createCertFromRegistry()
+		certPEM, keyPEM, tlsCert, err := sut.createCertFromRegistry()
 
 		// then
 		require.NoError(t, err)
-		assert.NotNil(t, cert)
+		assert.NotNil(t, tlsCert)
+		assert.Equal(t, validCertBytes, []byte(certPEM))
+		assert.Equal(t, validCertKeyBytes, []byte(keyPEM))
 	})
 }
