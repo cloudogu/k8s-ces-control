@@ -4,12 +4,13 @@ go 1.20
 
 require (
 	github.com/cloudogu/cesapp-lib v0.12.0
-	github.com/cloudogu/k8s-dogu-operator v0.30.0
+	github.com/cloudogu/k8s-dogu-operator v0.31.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.23.7
+	go.etcd.io/etcd/client/v2 v2.305.8
 	google.golang.org/grpc v1.51.0
 	google.golang.org/protobuf v1.30.0
 	k8s.io/api v0.26.4
@@ -60,7 +61,6 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.8 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.8 // indirect
-	go.etcd.io/etcd/client/v2 v2.305.8 // indirect
 	golang.org/x/net v0.9.0 // indirect
 	golang.org/x/oauth2 v0.7.0 // indirect
 	golang.org/x/sys v0.7.0 // indirect
