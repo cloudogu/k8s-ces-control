@@ -55,7 +55,7 @@ func (m *manager) GetCertificateCredentials(ctx context.Context) (credentials.Tr
 	if !hasCertificate {
 		logrus.Println("Found no ssl certificate -> generating new one.")
 
-		cert, key, err := m.certGenerator.GenerateSelfSignedCert(
+		certString, keyString, err := m.certGenerator.GenerateSelfSignedCert(
 			"k8s-ces-control",
 			"k8s-ces-control",
 			24000,
@@ -68,27 +68,28 @@ func (m *manager) GetCertificateCredentials(ctx context.Context) (credentials.Tr
 			return nil, fmt.Errorf("failed to generate self-signed certificate: %w", err)
 		}
 
-		err = setCertificateToRegistry(m.globalRegistry, cert, key)
-		if err != nil {
-			return nil, err
-		}
-
-		err = createCertificateSecret(ctx, config.CurrentNamespace, m.client, cert, key)
+		err = setCertificateToRegistry(m.globalRegistry, certString, keyString)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	cert, err := m.createCertFromRegistry()
+	certPEM, keyPEM, tlsCert, err := m.createCertFromRegistry()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cert from registry: %w", err)
 	}
 
-	return credentials.NewServerTLSFromCert(cert), nil
+	err = upsertCertificateSecret(ctx, config.CurrentNamespace, m.client, certPEM, keyPEM)
+	if err != nil {
+		return nil, err
+	}
+
+	return credentials.NewServerTLSFromCert(tlsCert), nil
 }
 
-func createCertificateSecret(ctx context.Context, namespace string, client clusterClient, cert, key string) error {
-	data := map[string]string{corev1.TLSCertKey: cert, corev1.TLSPrivateKeyKey: key}
+func upsertCertificateSecret(ctx context.Context, namespace string, client clusterClient, certPEM, keyPEM string) error {
+
+	data := map[string]string{corev1.TLSCertKey: certPEM, corev1.TLSPrivateKeyKey: keyPEM}
 	const secretName = "k8s-ces-control-server-certificate"
 	var updateOpts metav1.UpdateOptions
 	var getOpts metav1.GetOptions
@@ -144,23 +145,23 @@ func setCertificateToRegistry(globalReg configurationContext, cert string, key s
 	return nil
 }
 
-func (m *manager) createCertFromRegistry() (*tls.Certificate, error) {
+func (m *manager) createCertFromRegistry() (certPEM, keyPEM string, cert *tls.Certificate, err error) {
 	certPEMBlock, err := m.globalRegistry.Get(certificateRegistryKey)
 	if err != nil {
-		return nil, err
+		return "", "", nil, err
 	}
 
 	keyPEMBlock, err := m.globalRegistry.Get(CertificateKeyRegistryKey)
 	if err != nil {
-		return nil, err
+		return "", "", nil, err
 	}
 
-	cert, err := tls.X509KeyPair([]byte(certPEMBlock), []byte(keyPEMBlock))
+	certValue, err := tls.X509KeyPair([]byte(certPEMBlock), []byte(keyPEMBlock))
 	if err != nil {
-		return nil, err
+		return "", "", nil, err
 	}
 
-	return &cert, nil
+	return certPEMBlock, keyPEMBlock, &certValue, nil
 }
 
 func (m *manager) hasCertificate() (bool, error) {
