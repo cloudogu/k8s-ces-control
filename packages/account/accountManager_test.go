@@ -179,6 +179,29 @@ func TestServiceAccountManager_GetServiceAccountData(t *testing.T) {
 		assert.ErrorIs(t, err, assert.AnError)
 		assert.ErrorContains(t, err, "failed to get password for service account 'myService'")
 	})
+
+	t.Run("should fail getting certificate key from registry", func(t *testing.T) {
+		// given
+		hostConfigMock := newMockRegistryContext(t)
+		hostConfigMock.EXPECT().Get("myService/username").Return("myUser", nil)
+		hostConfigMock.EXPECT().Get("myService/password").Return("myPassword", nil)
+		globalConfigMock := newMockRegistryContext(t)
+		globalConfigMock.EXPECT().Get(ssl.CertificateKeyRegistryKey).Return("", assert.AnError)
+		sut := &ServiceAccountManager{
+			serviceName:         "myService",
+			hostConfiguration:   hostConfigMock,
+			globalConfiguration: globalConfigMock,
+		}
+
+		// when
+		_, err := sut.GetServiceAccountData(testCtx)
+
+		// then
+		require.Error(t, err)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to get private key from global config")
+	})
+
 	t.Run("should fail to load key pair data", func(t *testing.T) {
 		// given
 		hostConfigMock := newMockRegistryContext(t)
@@ -278,6 +301,24 @@ func TestServiceAccountData_String(t *testing.T) {
 }
 
 func TestServiceAccountManager_Create(t *testing.T) {
+	t.Run("should fail to get certificate key from registry", func(t *testing.T) {
+		// given
+		globalConfigMock := newMockRegistryContext(t)
+		globalConfigMock.EXPECT().Get(ssl.CertificateKeyRegistryKey).Return("", assert.AnError)
+		sut := &ServiceAccountManager{
+			serviceName:         "myService",
+			globalConfiguration: globalConfigMock,
+		}
+
+		// when
+		_, err := sut.Create(testCtx)
+
+		// then
+		require.Error(t, err)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to get private key from global config")
+	})
+
 	t.Run("should fail to load key pair data", func(t *testing.T) {
 		// given
 		hostConfigMock := newMockRegistryContext(t)
