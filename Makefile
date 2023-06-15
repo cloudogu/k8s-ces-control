@@ -45,7 +45,7 @@ include makefiles/integration.mk
 default: build
 
 .PHONY: build
-build: check-env-var-namespace k8s-delete image-import k8s-apply kill-pod ## Builds a new version of the k8s-ces-control and deploys it into the K8s-EcoSystem.
+build: check-env-var-namespace k8s-delete image-import k8s-apply ## Builds a new version of the k8s-ces-control and deploys it into the K8s-EcoSystem.
 
 .PHONY: kill-pod
 kill-pod:

@@ -136,30 +136,17 @@ func doLokiHttpQuery(client clusterClient, lokiUrl string) (*http.Response, erro
 }
 
 func readLogs(client clusterClient, clock nowClock, name string, count int) ([]byte, error) {
-	lokiUrl, err := buildLokiQueryUrl(name, count, clock)
+	reqResult, err := queryLoki(client, clock, name, count)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := doLokiHttpQuery(client, lokiUrl)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = resp.Body.Close() }()
+	return parseLokiResult(reqResult)
+}
 
-	isHttpStatusErrorish := resp.StatusCode >= http.StatusMultipleChoices
-	if isHttpStatusErrorish {
-		return nil, createInternalErr(fmt.Errorf("loki http error: status: %s, code: %d", resp.Status, resp.StatusCode), codes.Canceled)
-	}
-
-	scanner := bufio.NewScanner(resp.Body)
-	var reqBytes []byte
-	for scanner.Scan() {
-		reqBytes = append(reqBytes, scanner.Bytes()...)
-	}
-
+func parseLokiResult(lokiResult []byte) ([]byte, error) {
 	lokiResp := &LokiResponse{}
-	err = json.Unmarshal(reqBytes, lokiResp)
+	err := json.Unmarshal(lokiResult, lokiResp)
 	if err != nil {
 		return nil, createInternalErr(fmt.Errorf("failed to unmarshal response: %w", err), codes.Canceled)
 	}
@@ -182,6 +169,32 @@ func readLogs(client clusterClient, clock nowClock, name string, count int) ([]b
 	}
 
 	return buf.Bytes(), nil
+}
+
+func queryLoki(client clusterClient, clock nowClock, name string, count int) ([]byte, error) {
+	lokiUrl, err := buildLokiQueryUrl(name, count, clock)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := doLokiHttpQuery(client, lokiUrl)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	isHttpStatusErrorish := resp.StatusCode >= http.StatusMultipleChoices
+	if isHttpStatusErrorish {
+		return nil, createInternalErr(fmt.Errorf("loki http error: status: %s, code: %d", resp.Status, resp.StatusCode), codes.Canceled)
+	}
+
+	scanner := bufio.NewScanner(resp.Body)
+	var reqBytes []byte
+	for scanner.Scan() {
+		reqBytes = append(reqBytes, scanner.Bytes()...)
+	}
+
+	return reqBytes, nil
 }
 
 func compressMessages(doguName string, logLines []byte) ([]byte, error) {
