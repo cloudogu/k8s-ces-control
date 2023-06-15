@@ -90,7 +90,7 @@ func (accountData ServiceAccountData) String() string {
 	return fmt.Sprintf("username:%s\npassword:%s", accountData.Username, accountData.Password)
 }
 
-// Create creates a new service account.
+// Create creates a new service account and returns it.
 func (manager *ServiceAccountManager) Create(context context.Context) (ServiceAccountData, error) {
 	log.FromContext(context).Info("create service account for service '%s'", manager.serviceName)
 	hostConfig := manager.hostConfiguration
