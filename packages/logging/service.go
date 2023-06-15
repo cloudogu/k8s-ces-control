@@ -260,6 +260,7 @@ type LokiResponse struct {
 
 // LokiResponseData contains log stream results and metadata ResultType. ResultType could be "stream" oder "vector".
 type LokiResponseData struct {
+	// ResultType contains the type of the response data. May be one "stream", "matrix", "vector".
 	ResultType string             `json:"resultType"`
 	Result     []LokiStreamResult `json:"result"`
 }
@@ -267,10 +268,12 @@ type LokiResponseData struct {
 // LokiStreamResult the stream and the log values.
 type LokiStreamResult struct {
 	Stream LokiStream `json:"stream"`
+	// Values contains the logs as slices of which the first field consists of
+	// a timestamp as epoch second and the second the log line as JSON
 	Values [][]string `json:"values"`
 }
 
-// LokiStream contains metadata for the stream result.
+// LokiStream contains label metadata for the stream result.
 type LokiStream struct {
 	Container string `json:"container"`
 	Filename  string `json:"filename"`
