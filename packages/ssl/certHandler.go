@@ -11,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/cloudogu/cesapp-lib/registry"
 	"github.com/cloudogu/cesapp-lib/ssl"
@@ -31,9 +30,7 @@ type clusterClient interface {
 	ecoSystem.EcoSystemV1Alpha1Interface
 	kubernetes.Interface
 }
-type SecretsGetter interface {
-	Secrets(namespace string) v1.SecretInterface
-}
+
 type manager struct {
 	globalRegistry configurationContext
 	certGenerator  sslGenerator
