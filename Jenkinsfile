@@ -106,9 +106,6 @@ node('docker') {
             k3d.collectAndArchiveLogs()
             throw e
         } finally {
-            // try to remove installed grpcurl files
-            sh "rm -rf grpcurlDir"
-
             stage('Remove k3d cluster') {
                 k3d.deleteK3d()
             }
@@ -119,10 +116,6 @@ node('docker') {
 private void testK8sCesControl(K3d k3d) {
     sh "KUBECONFIG=${WORKSPACE}/k3d/.k3d/.kube/config make integration-test-bash"
     junit allowEmptyResults: true, testResults: 'target/bash-integration-test/*.xml'
-}
-
-private String grpcurl(String port, String command) {
-    return sh(returnStdout: true, script: "./grpcurlDir/grpcurl -insecure localhost:${grpcurlPort} command").trim()
 }
 
 void stageLintK8SResources() {
@@ -229,15 +222,4 @@ String generateResources(String makefileCommand = "") {
 
 void make(String makeArgs) {
     sh "make ${makeArgs}"
-}
-
-/**
- * returns a free, unprivileged TCP port
- *
- * @return new free, unprivileged TCP port
- */
-String findFreeTcpPort() {
-    sh 'KUBECTL="sudo KUBECONFIG $(pwd)/.k3d/.kube/config" make integration-test-bash'
-    sh(returnStdout: true, script: 'echo -n $(python3 -c \'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()\');').trim()
-    return sh(returnStdout: true, script: 'echo -n $(python3 -c \'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()\');').trim()
 }
