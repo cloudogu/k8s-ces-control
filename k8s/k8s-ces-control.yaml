@@ -58,7 +58,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: k8s-ces-control
-    namespace: ecosystem
+    namespace: '{{ .Namespace }}'
 ---
 apiVersion: v1
 kind: ServiceAccount

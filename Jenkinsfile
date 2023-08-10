@@ -1,7 +1,6 @@
 #!groovy
-@Library(['github.com/cloudogu/dogu-build-lib@v1.6.0', 'github.com/cloudogu/ces-build-lib@1.60.1'])
+@Library('github.com/cloudogu/ces-build-lib@1.64.2')
 import com.cloudogu.ces.cesbuildlib.*
-import com.cloudogu.ces.dogubuildlib.*
 
 // Creating necessary git objects, object cannot be named 'git' as this conflicts with the method named 'git' from the library
 gitWrapper = new Git(this, "cesmarvin")
@@ -17,6 +16,8 @@ goVersion = "1.20.4"
 repositoryOwner = "cloudogu"
 repositoryName = "k8s-ces-control"
 project = "github.com/${repositoryOwner}/${repositoryName}"
+registry = "registry.cloudogu.com"
+registry_namespace = "k8s"
 
 // Configuration of branches
 productionReleaseBranch = "main"
@@ -202,6 +203,21 @@ void stageAutomaticRelease() {
 
             DoguRegistry registry = new DoguRegistry(this)
             registry.pushK8sYaml(targetSetupResourceYaml, repositoryName, "k8s", "${version}")
+        }
+
+        stage('Push Helm chart to Harbor') {
+            new Docker(this)
+                .image("golang:${goVersion}")
+                .mountJenkinsUser()
+                .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}")
+                        {
+                            make 'k8s-helm-package-release'
+
+                            withCredentials([usernamePassword(credentialsId: 'harborhelmchartpush', usernameVariable: 'HARBOR_USERNAME', passwordVariable: 'HARBOR_PASSWORD')]) {
+                                sh ".bin/helm registry login ${registry} --username '${HARBOR_USERNAME}' --password '${HARBOR_PASSWORD}'"
+                                sh ".bin/helm push target/make/k8s/helm/${repositoryName}-${version}.tgz oci://${registry}/${registry_namespace}/"
+                            }
+                        }
         }
     }
 }
