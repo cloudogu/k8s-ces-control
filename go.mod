@@ -3,6 +3,7 @@ module github.com/cloudogu/k8s-ces-control
 go 1.20
 
 require (
+	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/cloudogu/cesapp-lib v0.12.0
 	github.com/cloudogu/k8s-dogu-operator v0.31.0
 	github.com/hashicorp/go-multierror v1.1.1

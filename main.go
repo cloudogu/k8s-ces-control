@@ -1,7 +1,7 @@
 package main
 
 import (
-	context "context"
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -128,7 +128,7 @@ func startServerCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "start",
 		Aliases:   []string{"s"},
-		Usage:     "starts the service and listens on port 50051",
+		Usage:     fmt.Sprintf("starts the service and listens on port %s", port),
 		ArgsUsage: "",
 		Flags:     []cli.Flag{},
 		Action:    startServerAction,

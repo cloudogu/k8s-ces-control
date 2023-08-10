@@ -2,7 +2,9 @@ package config
 
 import (
 	"fmt"
+	"github.com/bombsimon/logrusr/v2"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -130,6 +132,15 @@ func configureLogLevel() error {
 
 	logrus.StandardLogger().SetLevel(logLevelParsed)
 	logrus.Infof("Using log level: %s", logLevelParsed)
+
+	// create logrus logger that can be styled and formatted
+	logrusLog := logrus.New()
+	logrusLog.SetFormatter(&logrus.TextFormatter{})
+	logrusLog.SetLevel(logLevelParsed)
+
+	// convert logrus logger to logr logger
+	logrusLogrLogger := logrusr.New(logrusLog)
+	log.SetLogger(logrusLogrLogger)
 
 	return nil
 }

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"github.com/cloudogu/k8s-ces-control/packages/authHelper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -16,7 +17,7 @@ var publicEndpoints = []string{"/grpc.health.v1.Health/Check"}
 // BasicAuthUnaryInterceptor authorizes grpc request with service account credentials from authHelper.GetServiceAccountCredentials.
 func BasicAuthUnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	logger := log.FromContext(ctx)
-	logger.Info("Interceptor called; FullMethod: ", info.FullMethod)
+	logger.Info(fmt.Sprintf("Interceptor called; FullMethod: %s", info.FullMethod))
 
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
@@ -45,7 +46,7 @@ func isPublicEndpoint(info *grpc.UnaryServerInfo) bool {
 		}
 	}
 
-	return false
+	return true
 }
 
 func authorize(ctx context.Context, metadata *metadata.MD, _ string, getCredentials authHelper.AuthenticationFunc) error {
