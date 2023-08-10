@@ -121,12 +121,12 @@ spec:
                   fieldPath: metadata.namespace
           startupProbe:
             exec:
-              command: ["/bin/bash", "-c", "/grpc_health_probe -addr localhost:50051 -tls -tls-ca-cert /etc/k8s-ces-control/tls.crt -tls-client-cert /etc/k8s-ces-control/tls.crt -tls-client-key /etc/k8s-ces-control/tls.key || exit 1"]
+              command: ["/bin/bash", "-c", "/grpc_health_probe -addr localhost:50051 || exit 1"]
             failureThreshold: 60
             periodSeconds: 10
           livenessProbe:
             exec:
-              command: ["/bin/bash", "-c", "/grpc_health_probe -addr localhost:50051 -tls -tls-ca-cert /etc/k8s-ces-control/tls.crt -tls-client-cert /etc/k8s-ces-control/tls.crt -tls-client-key /etc/k8s-ces-control/tls.key || exit 1"]
+              command: ["/bin/bash", "-c", "/grpc_health_probe -addr localhost:50051 || exit 1"]
             failureThreshold: 5
             initialDelaySeconds: 10
             periodSeconds: 10
@@ -134,7 +134,7 @@ spec:
             timeoutSeconds: 1
           readinessProbe:
             exec:
-              command: ["/bin/bash", "-c", "/grpc_health_probe -addr localhost:50051 -tls -tls-ca-cert /etc/k8s-ces-control/tls.crt -tls-client-cert /etc/k8s-ces-control/tls.crt -tls-client-key /etc/k8s-ces-control/tls.key || exit 1"]
+              command: ["/bin/bash", "-c", "/grpc_health_probe -addr localhost:50051 || exit 1"]
             failureThreshold: 3
             initialDelaySeconds: 10
             periodSeconds: 10

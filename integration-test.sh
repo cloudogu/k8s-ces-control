@@ -13,7 +13,6 @@ JQ_BIN_PATH="${JQ_BIN:-jq}"
 PORT_FORWARD_PID=
 
 function __error_handling__() {
-  deleteServiceAccount
   killPortForward
   local last_status_code=$1;
   local error_line_number=$2;
@@ -27,7 +26,7 @@ startPortForward() {
   "${KUBECTL_BIN_PATH}" port-forward service/k8s-ces-control "${GRPCURL_PORT}":50051 >/dev/null 2>&1 &
   PORT_FORWARD_PID=$!
   sleep 2s
-  echo "Started Port-Forward on ${PORT_FORWARD_PID}"
+  echo "Started Port-Forward on ${GRPCURL_PORT}"
 }
 
 killPortForward() {
@@ -90,28 +89,6 @@ function finishIntegrationTestFile() {
 EOT
 }
 
-createServiceAccount() {
-  local k8sCesControlPodName
-  k8sCesControlPodName="$("${KUBECTL_BIN_PATH}" get pods -o name | grep k8s-ces-control)"
-
-  local saCreationOutput
-  saCreationOutput="$(kubectl exec "${k8sCesControlPodName}" -- /bin/bash -c "LOG_LEVEL=error /k8s-ces-control/k8s-ces-control service-account-create integrationtest")"
-
-  local username
-  username="$(echo "${saCreationOutput}" | grep username | sed 's|username:||g')"
-
-  local password
-  password="$(echo "${saCreationOutput}" | grep password | sed 's|password:||g')"
-
-  GRPCURL_BIN_PATH_WITH_AUTH="${GRPCURL_BIN_PATH} -rpc-header servicename:integrationtest -rpc-header authorization:${username}:${password}"
-}
-
-deleteServiceAccount() {
-  local etcdClientPodName
-  etcdClientPodName="$("${KUBECTL_BIN_PATH}" get pods -o name | grep etcd-client || true)"
-
-  kubectl exec "${etcdClientPodName}" -- etcdctl rm -r /config/_host/k8s-ces-control/integrationtest || true
-}
 
 runTests() {
   echo "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
@@ -124,7 +101,7 @@ runTests() {
 
 testDoguAdministration_GetAllDogus() {
   local doguListJson
-  doguListJson=$(${GRPCURL_BIN_PATH_WITH_AUTH} -insecure localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.GetDoguList)
+  doguListJson=$(${GRPCURL_BIN_PATH} -plaintext localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.GetDoguList)
   local getDoguList
   getDoguList=$(echo ${doguListJson} | ${JQ_BIN_PATH} '.dogus | map(select(.name)) | .[].name')
 
@@ -149,7 +126,7 @@ ${getDoguList}"
   fi
 }
 testDoguAdministration_StartStopDogus() {
-  ${GRPCURL_BIN_PATH_WITH_AUTH} -insecure -d '{"doguName": "postfix"}' localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.StopDogu >/dev/null 2>&1
+  ${GRPCURL_BIN_PATH} -plaintext -d '{"doguName": "postfix"}' localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.StopDogu >/dev/null 2>&1
 
   local replicas=""
   replicas="$(${KUBECTL_BIN_PATH} get deployment/postfix -o json | ${JQ_BIN_PATH} '.spec.replicas')"
@@ -161,7 +138,7 @@ testDoguAdministration_StartStopDogus() {
     addFailingTestCase "Dogu-Administration-StopDogu-Postfix" "Expected the replicas of postfix to be 0 but got: ${replicas}"
   fi
 
-  ${GRPCURL_BIN_PATH_WITH_AUTH} -insecure -d '{"doguName": "postfix"}' localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.StartDogu >/dev/null 2>&1
+  ${GRPCURL_BIN_PATH} -plaintext -d '{"doguName": "postfix"}' localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.StartDogu >/dev/null 2>&1
   local replicas=""
   replicas="$(${KUBECTL_BIN_PATH} get deployment/postfix -o json | ${JQ_BIN_PATH} '.spec.replicas')"
   if [[ "${replicas}" == 1 ]]; then
@@ -176,7 +153,7 @@ testDoguAdministration_RestartDogus() {
   local postfixBeforePodName=""
   postfixBeforePodName="$(${KUBECTL_BIN_PATH} get pods -o name | grep postfix)"
 
-  ${GRPCURL_BIN_PATH_WITH_AUTH} -insecure -d '{"doguName": "postfix"}' localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.RestartDogu >/dev/null 2>&1
+  ${GRPCURL_BIN_PATH} -plaintext -d '{"doguName": "postfix"}' localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.RestartDogu >/dev/null 2>&1
 
   local postfixAfterPodName=""
   postfixAfterPodName="$(${KUBECTL_BIN_PATH} get pods -o name | grep postfix)"
@@ -198,8 +175,6 @@ echo "Using JQ=${JQ_BIN_PATH}"
 
 createIntegrationTestFile
 startPortForward
-createServiceAccount
 runTests
-deleteServiceAccount
 killPortForward
 finishIntegrationTestFile
