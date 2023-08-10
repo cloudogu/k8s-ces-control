@@ -56,7 +56,7 @@ kill-pod:
 k8s-create-temporary-resource: create-temporary-release-resource template-dev-only-image-pull-policy
 
 .PHONY: create-temporary-release-resource
-create-temporary-release-resource: $(K8S_RESOURCE_TEMP_FOLDER) check-env-var-stage check-env-var-log-level
+create-temporary-release-resource: ${BINARY_YQ} $(K8S_RESOURCE_TEMP_FOLDER) check-env-var-stage check-env-var-log-level
 	@echo "---" > $(K8S_RESOURCE_TEMP_YAML)
 	@cat $(K8S_CES_CONTROL_RESOURCE_YAML) >> $(K8S_RESOURCE_TEMP_YAML)
 	@sed -i "s/'{{\.LOG\_LEVEL}}'/$(LOG_LEVEL)/" $(K8S_RESOURCE_TEMP_YAML)
