@@ -17,7 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const responseMessageMissingDoguname = "dogu name is empty"
+const responseMessageMissingDoguName = "dogu name is empty"
 
 // NewDoguAdministrationServer returns a new administration server instance to start/stop.. etc. Dogus.
 func NewDoguAdministrationServer(client clusterClient, reg cesRegistry) *server {
@@ -55,7 +55,7 @@ func (s *server) GetDoguList(ctx context.Context, _ *pb.DoguListRequest) (*pb.Do
 func (s *server) StartDogu(ctx context.Context, request *pb.DoguAdministrationRequest) (*types.BasicResponse, error) {
 	doguName := request.DoguName
 	if doguName == "" {
-		return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguname)
+		return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguName)
 	}
 
 	err := s.scaleDeployment(ctx, doguName, 1)
@@ -67,7 +67,7 @@ func (s *server) StartDogu(ctx context.Context, request *pb.DoguAdministrationRe
 func (s *server) StopDogu(ctx context.Context, request *pb.DoguAdministrationRequest) (*types.BasicResponse, error) {
 	doguName := request.DoguName
 	if doguName == "" {
-		return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguname)
+		return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguName)
 	}
 
 	err := s.scaleDeployment(ctx, doguName, 0)
@@ -79,7 +79,7 @@ func (s *server) StopDogu(ctx context.Context, request *pb.DoguAdministrationReq
 func (s *server) RestartDogu(ctx context.Context, request *pb.DoguAdministrationRequest) (*types.BasicResponse, error) {
 	doguName := request.DoguName
 	if doguName == "" {
-		return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguname)
+		return nil, status.Errorf(codes.InvalidArgument, responseMessageMissingDoguName)
 	}
 
 	zeroReplicas := int32(0)
@@ -87,7 +87,7 @@ func (s *server) RestartDogu(ctx context.Context, request *pb.DoguAdministration
 	if err != nil {
 		return nil, status.Errorf(codes.Unknown, "failed to get deployment for dogu %s: %s", doguName, err.Error())
 	}
-	println(deployment.Spec.Replicas)
+
 	if *deployment.Spec.Replicas == zeroReplicas {
 		return &types.BasicResponse{}, s.scaleDeployment(ctx, doguName, 1)
 	}
