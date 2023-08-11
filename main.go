@@ -93,7 +93,7 @@ func configureApplication(_ *cli.Context) error {
 	return nil
 }
 
-func registerServices(client clusterClient, grpcServer *grpc.Server) error {
+func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) error {
 	cesReg, err := cesregistry.New(core.Registry{
 		Type:      "etcd",
 		Endpoints: []string{fmt.Sprintf("http://etcd.%s.svc.cluster.local:4001", config.CurrentNamespace)},
