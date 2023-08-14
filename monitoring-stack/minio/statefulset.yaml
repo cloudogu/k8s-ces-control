@@ -1,0 +1,116 @@
+---
+# Source: loki/charts/minio/templates/statefulset.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki-minio-svc
+  namespace: "monitoring"
+  labels:
+    app: minio
+    chart: minio-4.0.12
+    release: "loki"
+    heritage: "Helm"
+spec:
+  publishNotReadyAddresses: true
+  clusterIP: None
+  ports:
+    - name: http
+      port: 9000
+      protocol: TCP
+      targetPort: 9000
+  selector:
+    app: minio
+    release: loki
+---
+# Source: loki/charts/minio/templates/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: loki-minio
+  namespace: "monitoring"
+  labels:
+    app: minio
+    chart: minio-4.0.12
+    release: loki
+    heritage: Helm
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: "Parallel"
+  serviceName: loki-minio-svc
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+      release: loki
+  template:
+    metadata:
+      name: loki-minio
+      labels:
+        app: minio
+        release: loki
+      annotations:
+        checksum/secrets: bdfd43194fe43c4a7014717ccb4ad5b52c7723e7a39d755c0b896e9e035d6897
+        checksum/config: 98d8194c497f96ad86345ec383c451f754961e3a79cf35a40aab0e47027f9456
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+
+      serviceAccountName: minio-sa
+      containers:
+        - name: minio
+          image: quay.io/minio/minio:RELEASE.2022-08-13T21-54-44Z
+          imagePullPolicy: IfNotPresent
+
+          command: [ "/bin/sh",
+            "-ce",
+            "/usr/bin/docker-entrypoint.sh minio server  http://loki-minio-{0...0}.loki-minio-svc.monitoring.svc.cluster.local/export-{0...1} -S /etc/minio/certs/ --address :9000 --console-address :9001" ]
+          volumeMounts:
+            - name: export-0
+              mountPath: /export-0
+            - name: export-1
+              mountPath: /export-1            
+          ports:
+            - name: http
+              containerPort: 9000
+            - name: http-console
+              containerPort: 9001
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: loki-minio
+                  key: rootUser
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: loki-minio
+                  key: rootPassword
+            - name: MINIO_PROMETHEUS_AUTH_TYPE
+              value: "public"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi      
+      volumes:
+        - name: minio-user
+          secret:
+            secretName: loki-minio        
+  volumeClaimTemplates:
+    - metadata:
+        name: export-0
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+    - metadata:
+        name: export-1
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi

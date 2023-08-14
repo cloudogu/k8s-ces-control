@@ -1,0 +1,41 @@
+syntax = "proto3";
+package backup;
+option go_package = "github.com/cloudogu/k8s-ces-control/generated/backup";
+
+// The Backup service provides endpoints to retrieve information about backups.
+service BackupManagement {
+  // LastSuccessful retrieves information about the last successfully created backup.
+  rpc LastSuccessful(LastSuccessfulBackupRequest) returns (BackupResponse);
+  // ResticCredValid retrieves information about the validity of the restic credentials from etcd
+  rpc ResticCredValid(ResticCredentialValidRequest) returns (ResticCredentialResponse);
+}
+
+// LastSuccessfulBackupRequest contains the data which are used to retrieve information about the last successfully
+// created backup.
+message LastSuccessfulBackupRequest {}
+
+// LastBackupResponse contains information about the last successfully created backup.
+message BackupResponse {
+  // id contains the id of the backup.
+  string id = 1;
+  // start_time contains the time when the backup was started.
+  string start_time = 2;
+  // end_time contains the time when the backup process has ended.
+  string end_time = 3;
+  // type provides information about the backup type.
+  string type = 4;
+  // success indicates if the backup was successful.
+  bool success = 5;
+  // error_message contains a possible reason if the backup was not successful.
+  string error_message = 6;
+}
+
+// ResticCredentialValidRequest contains the data which are used to retrieve information about validity of the restic
+// repo credentials entered into etcd.
+message ResticCredentialValidRequest {}
+
+// ResticCredentialResponse contains information about the validity of the restic credentials from etcd.
+message ResticCredentialResponse {
+  // valid indicates if the restic credentials from etcd are correct
+  bool valid = 1;
+}
