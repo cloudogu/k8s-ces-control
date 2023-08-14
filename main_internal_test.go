@@ -45,7 +45,7 @@ func Test_registerServices(tt *testing.T) {
 
 		// then
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed to create CES registry: failed to create etcd client: parse")
+		require.Contains(t, err.Error(), "failed to create CES registry: failed to create etcd client: parse \"http://etcd.%31$:://:../dir%25.svc.cluster.local:4001\"")
 	})
 
 	tt.Run("Should success to register Services", func(t *testing.T) {
