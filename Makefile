@@ -22,8 +22,6 @@ GO_BUILD_FLAGS=-mod=vendor -a -tags netgo,osusergo $(LDFLAGS) -o $(BINARY)
 
 K8S_RESOURCE_DIR=${WORKDIR}/k8s
 K8S_CES_CONTROL_RESOURCE_YAML=${K8S_RESOURCE_DIR}/k8s-ces-control.yaml
-# set cluster root empty as we can ignore it for the k8s-ces-control
-K8S_CLUSTER_ROOT=""
 
 include build/make/variables.mk
 include build/make/dependencies-gomod.mk
