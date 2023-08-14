@@ -76,7 +76,7 @@ node('docker') {
             }
 
             stage('Setup') {
-                k3d.setup("v0.10.0", [
+                k3d.setup("v0.15.0", [
                         dependencies: ["official/postfix", "official/ldap"],
                         defaultDogu : ""
                 ])
