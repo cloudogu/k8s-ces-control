@@ -12,7 +12,7 @@ SHELL = /usr/bin/env bash -o pipefail
 IMAGE_DEV?=${K3CES_REGISTRY_URL_PREFIX}/${ARTIFACT_ID}:${VERSION}
 IMAGE?=cloudogu/${ARTIFACT_ID}:${VERSION}
 
-MAKEFILES_VERSION=7.5.0
+MAKEFILES_VERSION=7.10.0
 .DEFAULT_GOAL:=default
 GENERATION_TARGET_DIR=generated
 GENERATION_SOURCE_DIR=grpc-protobuf
@@ -22,8 +22,6 @@ GO_BUILD_FLAGS=-mod=vendor -a -tags netgo,osusergo $(LDFLAGS) -o $(BINARY)
 
 K8S_RESOURCE_DIR=${WORKDIR}/k8s
 K8S_CES_CONTROL_RESOURCE_YAML=${K8S_RESOURCE_DIR}/k8s-ces-control.yaml
-# set cluster root empty as we can ignore it for the k8s-ces-control
-K8S_CLUSTER_ROOT=""
 
 include build/make/variables.mk
 include build/make/dependencies-gomod.mk
@@ -56,7 +54,7 @@ kill-pod:
 k8s-create-temporary-resource: create-temporary-release-resource template-dev-only-image-pull-policy
 
 .PHONY: create-temporary-release-resource
-create-temporary-release-resource: $(K8S_RESOURCE_TEMP_FOLDER) check-env-var-stage check-env-var-log-level
+create-temporary-release-resource: ${BINARY_YQ} $(K8S_RESOURCE_TEMP_FOLDER) check-env-var-stage check-env-var-log-level
 	@echo "---" > $(K8S_RESOURCE_TEMP_YAML)
 	@cat $(K8S_CES_CONTROL_RESOURCE_YAML) >> $(K8S_RESOURCE_TEMP_YAML)
 	@sed -i "s/'{{\.LOG\_LEVEL}}'/$(LOG_LEVEL)/" $(K8S_RESOURCE_TEMP_YAML)

@@ -627,8 +627,12 @@ func Test_server_RestartDogu(t *testing.T) {
 		watchMock := newMockWatchInterface(t)
 		resultChan := make(chan watch.Event)
 		zeroReplica := int32(0)
+		stillRunningDeployment := &appsv1.Deployment{Status: appsv1.DeploymentStatus{Replicas: oneReplica}}
 		stoppedDeployment := &appsv1.Deployment{Spec: appsv1.DeploymentSpec{Replicas: &zeroReplica}}
-		go func() { resultChan <- watch.Event{Object: stoppedDeployment} }()
+		go func() {
+			resultChan <- watch.Event{Object: stillRunningDeployment}
+			resultChan <- watch.Event{Object: stoppedDeployment}
+		}()
 		watchMock.EXPECT().ResultChan().Return(resultChan)
 		deploymentMock.EXPECT().Watch(context.TODO(), metav1.ListOptions{LabelSelector: "dogu.name=my-dogu"}).Return(watchMock, nil)
 		appsMock := newMockAppsV1Client(t)

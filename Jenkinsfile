@@ -1,7 +1,6 @@
 #!groovy
-@Library(['github.com/cloudogu/dogu-build-lib@v1.6.0', 'github.com/cloudogu/ces-build-lib@1.60.1'])
+@Library('github.com/cloudogu/ces-build-lib@1.65.0')
 import com.cloudogu.ces.cesbuildlib.*
-import com.cloudogu.ces.dogubuildlib.*
 
 // Creating necessary git objects, object cannot be named 'git' as this conflicts with the method named 'git' from the library
 gitWrapper = new Git(this, "cesmarvin")
@@ -17,6 +16,8 @@ goVersion = "1.20.4"
 repositoryOwner = "cloudogu"
 repositoryName = "k8s-ces-control"
 project = "github.com/${repositoryOwner}/${repositoryName}"
+registry = "registry.cloudogu.com"
+registry_namespace = "k8s"
 
 // Configuration of branches
 productionReleaseBranch = "main"
@@ -75,7 +76,7 @@ node('docker') {
             }
 
             stage('Setup') {
-                k3d.setup("v0.10.0", [
+                k3d.setup("v0.15.0", [
                         dependencies: ["official/postfix", "official/ldap"],
                         defaultDogu : ""
                 ])
@@ -106,9 +107,6 @@ node('docker') {
             k3d.collectAndArchiveLogs()
             throw e
         } finally {
-            // try to remove installed grpcurl files
-            sh "rm -rf grpcurlDir"
-
             stage('Remove k3d cluster') {
                 k3d.deleteK3d()
             }
@@ -119,10 +117,6 @@ node('docker') {
 private void testK8sCesControl(K3d k3d) {
     sh "KUBECONFIG=${WORKSPACE}/k3d/.k3d/.kube/config make integration-test-bash"
     junit allowEmptyResults: true, testResults: 'target/bash-integration-test/*.xml'
-}
-
-private String grpcurl(String port, String command) {
-    return sh(returnStdout: true, script: "./grpcurlDir/grpcurl -insecure localhost:${grpcurlPort} command").trim()
 }
 
 void stageLintK8SResources() {
@@ -210,6 +204,21 @@ void stageAutomaticRelease() {
             DoguRegistry registry = new DoguRegistry(this)
             registry.pushK8sYaml(targetSetupResourceYaml, repositoryName, "k8s", "${version}")
         }
+
+        stage('Push Helm chart to Harbor') {
+            new Docker(this)
+                .image("golang:${goVersion}")
+                .mountJenkinsUser()
+                .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}")
+                        {
+                            make 'k8s-helm-package-release'
+
+                            withCredentials([usernamePassword(credentialsId: 'harborhelmchartpush', usernameVariable: 'HARBOR_USERNAME', passwordVariable: 'HARBOR_PASSWORD')]) {
+                                sh ".bin/helm registry login ${registry} --username '${HARBOR_USERNAME}' --password '${HARBOR_PASSWORD}'"
+                                sh ".bin/helm push target/make/k8s/helm/${repositoryName}-${version}.tgz oci://${registry}/${registry_namespace}/"
+                            }
+                        }
+        }
     }
 }
 
@@ -229,15 +238,4 @@ String generateResources(String makefileCommand = "") {
 
 void make(String makeArgs) {
     sh "make ${makeArgs}"
-}
-
-/**
- * returns a free, unprivileged TCP port
- *
- * @return new free, unprivileged TCP port
- */
-String findFreeTcpPort() {
-    sh 'KUBECTL="sudo KUBECONFIG $(pwd)/.k3d/.kube/config" make integration-test-bash'
-    sh(returnStdout: true, script: 'echo -n $(python3 -c \'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()\');').trim()
-    return sh(returnStdout: true, script: 'echo -n $(python3 -c \'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()\');').trim()
 }
