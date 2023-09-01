@@ -128,6 +128,9 @@ ${getDoguList}"
 testDoguAdministration_StartStopDogus() {
   ${GRPCURL_BIN_PATH} -plaintext -d '{"doguName": "postfix"}' localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.StopDogu >/dev/null 2>&1
 
+  # Wait for dogu to be terminated
+  sleep 5s
+
   local replicas=""
   replicas="$(${KUBECTL_BIN_PATH} get deployment/postfix -o json | ${JQ_BIN_PATH} '.spec.replicas')"
   if [[ "${replicas}" == 0 ]]; then
@@ -139,6 +142,10 @@ testDoguAdministration_StartStopDogus() {
   fi
 
   ${GRPCURL_BIN_PATH} -plaintext -d '{"doguName": "postfix"}' localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.StartDogu >/dev/null 2>&1
+
+  # Wait for dogu to be started
+  sleep 5s
+
   local replicas=""
   replicas="$(${KUBECTL_BIN_PATH} get deployment/postfix -o json | ${JQ_BIN_PATH} '.spec.replicas')"
   if [[ "${replicas}" == 1 ]]; then
@@ -154,6 +161,9 @@ testDoguAdministration_RestartDogus() {
   postfixBeforePodName="$(${KUBECTL_BIN_PATH} get pods -o name | grep postfix)"
 
   ${GRPCURL_BIN_PATH} -plaintext -d '{"doguName": "postfix"}' localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.RestartDogu >/dev/null 2>&1
+
+  # Wait for dogu to be restarted
+  sleep 5s
 
   local postfixAfterPodName=""
   postfixAfterPodName="$(${KUBECTL_BIN_PATH} get pods -o name | grep postfix)"
