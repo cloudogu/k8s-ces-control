@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- [#7] Add API-endpoints for start, stop & restart dogus
+- [#9] Add API-endpoints for start, stop & restart dogus
+- [#11] Add API-endpoints for dogu-health
 
 ## [v0.1.1] - 2023-08-31
 ### Added

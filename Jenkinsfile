@@ -76,8 +76,8 @@ node('docker') {
             }
 
             stage('Setup') {
-                k3d.setup("v0.15.0", [
-                        dependencies: ["official/postfix", "official/ldap"],
+                k3d.setup("v0.16.0", [
+                        dependencies: ["official/postfix", "official/ldap", "k8s/nginx-static", "k8s/nginx-ingress"],
                         defaultDogu : ""
                 ])
             }
