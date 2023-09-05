@@ -1,6 +1,6 @@
 # Set these to the desired values
 ARTIFACT_ID=k8s-ces-control
-VERSION=0.1.1
+VERSION=0.2.0
 GOTAG=1.20.4
 LINT_VERSION=v1.53.2
 
@@ -12,7 +12,7 @@ SHELL = /usr/bin/env bash -o pipefail
 IMAGE_DEV?=${K3CES_REGISTRY_URL_PREFIX}/${ARTIFACT_ID}:${VERSION}
 IMAGE?=cloudogu/${ARTIFACT_ID}:${VERSION}
 
-MAKEFILES_VERSION=7.13.0
+MAKEFILES_VERSION=7.13.1
 .DEFAULT_GOAL:=default
 GENERATION_TARGET_DIR=generated
 GENERATION_SOURCE_DIR=grpc-protobuf
