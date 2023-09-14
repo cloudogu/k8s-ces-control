@@ -12,7 +12,7 @@ SHELL = /usr/bin/env bash -o pipefail
 IMAGE_DEV?=${K3CES_REGISTRY_URL_PREFIX}/${ARTIFACT_ID}:${VERSION}
 IMAGE?=cloudogu/${ARTIFACT_ID}:${VERSION}
 
-MAKEFILES_VERSION=7.13.1
+MAKEFILES_VERSION=8.0.0
 .DEFAULT_GOAL:=default
 GENERATION_TARGET_DIR=generated
 GENERATION_SOURCE_DIR=grpc-protobuf
@@ -33,7 +33,7 @@ include build/make/digital-signature.mk
 include build/make/self-update.mk
 include build/make/release.mk
 include build/make/bats.mk
-include build/make/k8s.mk
+include build/make/k8s-component.mk
 MOCKERY_IGNORED=vendor,build,docs,generated
 include build/make/mocks.mk
 include makefiles/grpc.mk
