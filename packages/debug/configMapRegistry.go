@@ -46,7 +46,7 @@ func NewConfigMapDebugModeRegistry(cesRegistry cesregistry.Registry, clusterClie
 }
 
 // Enable writes `enabled: true` in the registry.
-func (c *configMapDebugModeRegistry) Enable(ctx context.Context, endTimestamp int64) error {
+func (c *configMapDebugModeRegistry) Enable(ctx context.Context, timerInMinutes int32) error {
 	cm, err := c.getRegistry(ctx)
 	if err != nil {
 		return err
@@ -57,7 +57,7 @@ func (c *configMapDebugModeRegistry) Enable(ctx context.Context, endTimestamp in
 	}
 
 	cm.Data[keyDebugModeEnabled] = "true"
-	cm.Data[keyDisableAtTimestamp] = strconv.FormatInt(endTimestamp, 10)
+	cm.Data[keyDisableAtTimestamp] = strconv.FormatInt(int64(timerInMinutes), 10)
 
 	return c.updateConfigMap(ctx, cm)
 }

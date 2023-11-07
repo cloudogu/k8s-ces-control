@@ -68,8 +68,7 @@ func (s *debugModeService) Enable(ctx context.Context, req *pbMaintenance.Toggle
 	}()
 
 	// TODO Check if this is a timestamp or just 15Minutes in seconds
-	castedTimer := int64(req.Timer)
-	err = s.debugModeRegistry.Enable(ctx, castedTimer)
+	err = s.debugModeRegistry.Enable(ctx, req.Timer)
 	if err != nil {
 		return nil, createInternalError(ctx, err)
 	}

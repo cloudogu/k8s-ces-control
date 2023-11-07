@@ -36,7 +36,7 @@ type doguRegistry interface {
 // TODO Make the interface more generic e.g. BackupDoguLogLevels should be BackupLogLevels. Implementations should handle backup levels from dogus and components and more.
 type debugModeRegistry interface {
 	// Enable enables the debug mode in the registry.
-	Enable(ctx context.Context, timer int64) error
+	Enable(ctx context.Context, timer int32) error
 	// Disable disables the debug mode registry.
 	Disable(ctx context.Context) error
 	// Status returns a boolean if the mode is enabled or disabled and if the status is enabled the timestamp where the
