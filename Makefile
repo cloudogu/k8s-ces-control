@@ -33,7 +33,7 @@ include build/make/digital-signature.mk
 include build/make/self-update.mk
 include build/make/release.mk
 include build/make/bats.mk
-include build/make/k8s.mk
+include build/make/k8s-component.mk
 MOCKERY_IGNORED=vendor,build,docs,generated
 include build/make/mocks.mk
 include makefiles/grpc.mk
