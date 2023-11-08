@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	appsv1 "k8s.io/api/apps/v1"
 	scalingv1 "k8s.io/api/autoscaling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -13,6 +12,8 @@ import (
 )
 
 var waitTimeout = time.Minute * 10
+
+const containerStateCrashLoop = "CrashLoopBackOff"
 
 type defaultDoguInterActor struct {
 	clientSet clusterClientSet
@@ -89,7 +90,7 @@ func (ddi *defaultDoguInterActor) scaleDeployment(ctx context.Context, doguName 
 	scale := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: doguName, Namespace: ddi.namespace}, Spec: scalingv1.ScaleSpec{Replicas: replicas}}
 	_, err := ddi.clientSet.AppsV1().Deployments(ddi.namespace).UpdateScale(ctx, doguName, scale, metav1.UpdateOptions{})
 	if err != nil {
-		return status.Errorf(codes.Unknown, "failed to scale deployment to %d: %s", replicas, err.Error())
+		return status.Errorf(codes.Unknown, "failed to scale deployment %s to %d: %s", doguName, replicas, err.Error())
 	}
 
 	if waitForRollout {
@@ -101,21 +102,23 @@ func (ddi *defaultDoguInterActor) scaleDeployment(ctx context.Context, doguName 
 
 func (ddi *defaultDoguInterActor) waitForDeploymentRollout(ctx context.Context, doguName string) error {
 	logger := log.FromContext(ctx)
-	deployLabel := fmt.Sprintf("dogu.name=%s", doguName)
-	timeoutSeconds := int64(waitTimeout.Seconds())
-	timer := time.NewTimer(waitTimeout)
-	watch, err := ddi.clientSet.AppsV1().Deployments(ddi.namespace).Watch(ctx, metav1.ListOptions{LabelSelector: deployLabel, TimeoutSeconds: &timeoutSeconds})
-	if err != nil {
-		return fmt.Errorf("failed create watch for deployment wit label %s: %s", deployLabel, err)
-	}
-
+	timeoutTimer := time.NewTimer(waitTimeout)
+	// Use a ticker instead of a kubernetes watch because the watch does not notify on status changes.
+	ticker := time.NewTicker(time.Second * 5)
 	for {
 		select {
-		case event := <-watch.ResultChan():
-			deployment, ok := event.Object.(*appsv1.Deployment)
-			if !ok {
-				logger.Error(fmt.Errorf("watch object %+v is not type of deployment", event.Object), fmt.Sprintf("failed to watch deployment %s", doguName))
+		case <-ticker.C:
+			logger.Info(fmt.Sprintf("check rollout status for deployment %s", doguName))
+			deployment, getErr := ddi.clientSet.AppsV1().Deployments(ddi.namespace).Get(ctx, doguName, metav1.GetOptions{})
+			if getErr != nil {
+				logger.Error(fmt.Errorf("failed to get deployment %s: %w", doguName, getErr), "error in deployment rollout")
 				continue
+			}
+
+			isInCrashLoop, err := ddi.isDoguContainerInCrashLoop(ctx, doguName)
+			if err != nil || isInCrashLoop {
+				stopWaitChannels(timeoutTimer, ticker)
+				return err
 			}
 
 			if deployment.Spec.Replicas != nil && deployment.Status.UpdatedReplicas < *deployment.Spec.Replicas {
@@ -130,10 +133,42 @@ func (ddi *defaultDoguInterActor) waitForDeploymentRollout(ctx context.Context, 
 				logger.Info(fmt.Sprintf("waiting for deployment %q rollout to finish: %d of %d updated replicas are available", deployment.Name, deployment.Status.AvailableReplicas, deployment.Status.UpdatedReplicas))
 				continue
 			}
-			logger.Info(fmt.Sprintf("deployment %q successfully rolled out\n", deployment.Name))
+			logger.Info(fmt.Sprintf("deployment %q successfully rolled out", deployment.Name))
+			stopWaitChannels(timeoutTimer, ticker)
 			return nil
-		case <-timer.C:
+		case <-timeoutTimer.C:
+			ticker.Stop()
 			return fmt.Errorf("failed to wait for deployment %s rollout: timeout reached", doguName)
 		}
 	}
+}
+
+func stopWaitChannels(timer *time.Timer, ticker *time.Ticker) {
+	timer.Stop()
+	ticker.Stop()
+}
+
+func (ddi *defaultDoguInterActor) isDoguContainerInCrashLoop(ctx context.Context, doguName string) (bool, error) {
+	logger := log.FromContext(ctx)
+	list, getErr := ddi.clientSet.CoreV1().Pods(ddi.namespace).List(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("dogu.name=%s", doguName)})
+	if getErr != nil {
+		return false, fmt.Errorf("failed to get pods of deployment %s", doguName)
+	}
+
+	for _, pod := range list.Items {
+		for _, containerStatus := range pod.Status.ContainerStatuses {
+			if containerStatus.Name != doguName {
+				continue
+			}
+
+			containerWaitState := containerStatus.State.Waiting
+
+			if containerWaitState != nil && containerWaitState.Reason == containerStateCrashLoop {
+				logger.Error(fmt.Errorf("some containers are in a crash loop"), fmt.Sprintf("skip waiting rollout for deployment %s", doguName))
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
 }

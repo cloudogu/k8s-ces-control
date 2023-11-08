@@ -16,11 +16,12 @@ import (
 )
 
 const (
-	maintenanceTitle      = "Service unavailable"
-	maintenanceText       = "Activating debug mode"
-	doguConfigKeyLogLevel = "logging/root"
-	logLevelDebug         = "DEBUG"
-	interErrMsg           = "internal error"
+	maintenanceTitle          = "Service unavailable"
+	activateMaintenanceText   = "Activating debug mode"
+	deactivateMaintenanceText = "Deactivating debug mode"
+	doguConfigKeyLogLevel     = "logging/root"
+	logLevelDebug             = "DEBUG"
+	interErrMsg               = "internal error"
 )
 
 type debugModeService struct {
@@ -55,7 +56,7 @@ func NewDebugModeService(registry cesRegistry, clusterClient clusterClientSet, n
 // TODO Use timer to disable debug mode.
 // TODO rotate logs on enable and disable
 func (s *debugModeService) Enable(ctx context.Context, req *pbMaintenance.ToggleDebugModeRequest) (*types.BasicResponse, error) {
-	err := s.maintenanceModeSwitch.ActivateMaintenanceMode(maintenanceTitle, maintenanceText)
+	err := s.maintenanceModeSwitch.ActivateMaintenanceMode(maintenanceTitle, activateMaintenanceText)
 	if err != nil {
 		return nil, createInternalError(ctx, fmt.Errorf("failed to activate maintenance mode: %w", err))
 	}
@@ -84,6 +85,9 @@ func (s *debugModeService) Enable(ctx context.Context, req *pbMaintenance.Toggle
 		return nil, createInternalError(ctx, err)
 	}
 
+	// Create new context because the admin dogu itself will be canceled
+	ctx = context.Background()
+
 	err = s.stopAllDogus(ctx)
 	if err != nil {
 		return nil, createInternalError(ctx, err)
@@ -99,7 +103,7 @@ func (s *debugModeService) Enable(ctx context.Context, req *pbMaintenance.Toggle
 
 // Disable returns an error because the method is unimplemented.
 func (s *debugModeService) Disable(ctx context.Context, _ *pbMaintenance.ToggleDebugModeRequest) (*types.BasicResponse, error) {
-	err := s.maintenanceModeSwitch.ActivateMaintenanceMode(maintenanceTitle, maintenanceText)
+	err := s.maintenanceModeSwitch.ActivateMaintenanceMode(maintenanceTitle, deactivateMaintenanceText)
 	if err != nil {
 		return nil, createInternalError(ctx, fmt.Errorf("failed to activate maintenance mode: %w", err))
 	}
@@ -115,6 +119,9 @@ func (s *debugModeService) Disable(ctx context.Context, _ *pbMaintenance.ToggleD
 	if err != nil {
 		return nil, createInternalError(ctx, err)
 	}
+
+	// Create new context because the admin dogu itself will be canceled
+	ctx = context.Background()
 
 	err = s.stopAllDogus(ctx)
 	if err != nil {

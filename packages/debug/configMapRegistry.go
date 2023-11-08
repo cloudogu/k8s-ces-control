@@ -230,7 +230,6 @@ func (c *configMapDebugModeRegistry) BackupDoguLogLevels(ctx context.Context) er
 
 	newRegistry, err := c.doguLogLevelRegistry.MarshalFromCesRegistryToString()
 	if err != nil {
-		// TODO Log errors here?
 		return fmt.Errorf("failed to renew dogu log level registry: %w", err)
 	}
 

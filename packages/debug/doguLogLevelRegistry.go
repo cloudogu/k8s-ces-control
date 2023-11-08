@@ -33,6 +33,16 @@ func (d *doguLogLevelYamlRegistryMap) MarshalFromCesRegistryToString() (string, 
 	var multiError error
 	for _, dogu := range allDogus {
 		doguConfig := d.cesRegistry.DoguConfig(dogu.GetSimpleName())
+		exists, existsErr := doguConfig.Exists(keyDoguConfigLogLevel)
+		if existsErr != nil {
+			multiError = errors.Join(multiError, existsErr)
+		}
+
+		if !exists {
+			d.registry[dogu.GetSimpleName()] = ""
+			continue
+		}
+
 		logLevel, getErr := doguConfig.Get(keyDoguConfigLogLevel)
 		if getErr != nil {
 			multiError = errors.Join(multiError, getErr)
@@ -67,6 +77,16 @@ func (d *doguLogLevelYamlRegistryMap) restoreToCesRegistry() error {
 	var multiError error
 	for dogu, level := range d.registry {
 		doguConfig := d.cesRegistry.DoguConfig(dogu)
+		// If the dogu had no log level it is defined as an empty string in the registry.
+		// In this case we have to delete the entry.
+		if level == "" {
+			deleteErr := doguConfig.Delete(keyDoguConfigLogLevel)
+			if deleteErr != nil {
+				multiError = errors.Join(multiError, deleteErr)
+			}
+			continue
+		}
+
 		err := doguConfig.Set(keyDoguConfigLogLevel, level)
 		if err != nil {
 			multiError = errors.Join(multiError, err)
