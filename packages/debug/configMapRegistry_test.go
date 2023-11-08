@@ -21,6 +21,10 @@ func TestNewConfigMapDebugModeRegistry(t *testing.T) {
 		// given
 		cesRegistryMock := newMockCesRegistry(t)
 		clientSetMock := newMockClusterClientSet(t)
+		coreV1Mock := newMockCoreV1Interface(t)
+		clientSetMock.EXPECT().CoreV1().Return(coreV1Mock)
+		configMapInterfaceMock := newMockConfigMapInterface(t)
+		coreV1Mock.EXPECT().ConfigMaps(testNamespace).Return(configMapInterfaceMock)
 
 		// when
 		cmRegistry := NewConfigMapDebugModeRegistry(cesRegistryMock, clientSetMock, testNamespace)
@@ -31,7 +35,35 @@ func TestNewConfigMapDebugModeRegistry(t *testing.T) {
 }
 
 func Test_configMapDebugModeRegistry_BackupDoguLogLevels(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		// given
+		expectedDoguLogLevelRegistryStr := "dogua: DEBUG\ndogub: ERROR\n"
+		doguLogLevelRegistryMock := newMockDoguLogLevelRegistry(t)
+		doguLogLevelRegistryMock.EXPECT().MarshalFromCesRegistryToString().Return(expectedDoguLogLevelRegistryStr, nil)
 
+		configMapRegistry := &v1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: "debug-mode-registry", Namespace: testNamespace},
+			Data:       map[string]string{"enabled": "true"},
+		}
+
+		expectedUpdatedConfigMapRegistry := &v1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: "debug-mode-registry", Namespace: testNamespace},
+			Data:       map[string]string{"enabled": "true", "dogus": expectedDoguLogLevelRegistryStr},
+			BinaryData: nil,
+		}
+
+		configMapClientMock := newMockConfigMapInterface(t)
+		configMapClientMock.EXPECT().Get(testCtx, "debug-mode-registry", metav1.GetOptions{}).Return(configMapRegistry, nil)
+		configMapClientMock.EXPECT().Update(testCtx, expectedUpdatedConfigMapRegistry, metav1.UpdateOptions{}).Return(nil, nil)
+
+		sut := configMapDebugModeRegistry{configMapInterface: configMapClientMock, doguLogLevelRegistry: doguLogLevelRegistryMock}
+
+		// when
+		err := sut.BackupDoguLogLevels(testCtx)
+
+		// then
+		require.NoError(t, err)
+	})
 }
 
 func Test_configMapDebugModeRegistry_Disable(t *testing.T) {
@@ -43,10 +75,10 @@ func Test_configMapDebugModeRegistry_Disable(t *testing.T) {
 		sut := configMapDebugModeRegistry{configMapInterface: configMapInterfaceMock}
 
 		// when
-		result := sut.Disable(testCtx)
+		err := sut.Disable(testCtx)
 
 		// then
-		require.NoError(t, result)
+		require.NoError(t, err)
 	})
 
 	t.Run("do not retry if config map is not found", func(t *testing.T) {
@@ -57,10 +89,10 @@ func Test_configMapDebugModeRegistry_Disable(t *testing.T) {
 		sut := configMapDebugModeRegistry{configMapInterface: configMapInterfaceMock}
 
 		// when
-		result := sut.Disable(testCtx)
+		err := sut.Disable(testCtx)
 
 		// then
-		require.NoError(t, result)
+		require.NoError(t, err)
 	})
 
 	t.Run("should delete configmap after error with retry", func(t *testing.T) {
@@ -72,10 +104,10 @@ func Test_configMapDebugModeRegistry_Disable(t *testing.T) {
 		sut := configMapDebugModeRegistry{configMapInterface: configMapInterfaceMock}
 
 		// when
-		result := sut.Disable(testCtx)
+		err := sut.Disable(testCtx)
 
 		// then
-		require.NoError(t, result)
+		require.NoError(t, err)
 	})
 }
 
@@ -100,15 +132,35 @@ func Test_configMapDebugModeRegistry_Enable(t *testing.T) {
 		sut := &configMapDebugModeRegistry{cesRegistry: cesRegistryMock, configMapInterface: configMapInterfaceMock, doguLogLevelRegistry: doguLogeLevelRegistry, namespace: testNamespace}
 
 		// when
-		result := sut.Enable(testCtx, 123456789)
+		err := sut.Enable(testCtx, 123456789)
 
 		// then
-		require.NoError(t, result)
+		require.NoError(t, err)
 	})
 }
 
 func Test_configMapDebugModeRegistry_RestoreDoguLogLevels(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		// given
+		doguLogLevelRegistryStr := "dogua: DEBUG\ndogub: ERROR\n"
+		doguLogLevelRegistryMock := newMockDoguLogLevelRegistry(t)
+		doguLogLevelRegistryMock.EXPECT().UnMarshalFromStringToCesRegistry(doguLogLevelRegistryStr).Return(nil)
 
+		configMapRegistry := &v1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: "debug-mode-registry", Namespace: testNamespace},
+			Data:       map[string]string{"enabled": "true", "dogus": doguLogLevelRegistryStr},
+		}
+		configMapClientMock := newMockConfigMapInterface(t)
+		configMapClientMock.EXPECT().Get(testCtx, "debug-mode-registry", metav1.GetOptions{}).Return(configMapRegistry, nil)
+
+		sut := &configMapDebugModeRegistry{configMapInterface: configMapClientMock, doguLogLevelRegistry: doguLogLevelRegistryMock}
+
+		// when
+		err := sut.RestoreDoguLogLevels(testCtx)
+
+		// then
+		require.NoError(t, err)
+	})
 }
 
 func Test_configMapDebugModeRegistry_Status(t *testing.T) {

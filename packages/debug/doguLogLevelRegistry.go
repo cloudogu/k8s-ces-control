@@ -1,8 +1,8 @@
 package debug
 
 import (
+	"errors"
 	"fmt"
-	hashicorperror "github.com/hashicorp/go-multierror"
 	"gopkg.in/yaml.v3"
 )
 
@@ -21,8 +21,8 @@ func NewDoguLogLevelRegistryMap(registry cesRegistry) *doguLogLevelYamlRegistryM
 	}
 }
 
-// MarshalToString marshals the registry to yaml string.
-func (d *doguLogLevelYamlRegistryMap) MarshalToString() (string, error) {
+// MarshalFromCesRegistryToString marshals the registry to yaml string.
+func (d *doguLogLevelYamlRegistryMap) MarshalFromCesRegistryToString() (string, error) {
 	d.registry = map[string]string{}
 
 	allDogus, err := d.cesRegistry.DoguRegistry().GetAll()
@@ -30,13 +30,12 @@ func (d *doguLogLevelYamlRegistryMap) MarshalToString() (string, error) {
 		return "", fmt.Errorf("failed to get all dogus: %w", err)
 	}
 
-	// TODO errors.Join
-	var multierror *hashicorperror.Error
+	var multiError error
 	for _, dogu := range allDogus {
 		doguConfig := d.cesRegistry.DoguConfig(dogu.GetSimpleName())
 		logLevel, getErr := doguConfig.Get(keyDoguConfigLogLevel)
 		if getErr != nil {
-			multierror = hashicorperror.Append(multierror, getErr)
+			multiError = errors.Join(multiError, getErr)
 			continue
 		}
 
@@ -48,31 +47,32 @@ func (d *doguLogLevelYamlRegistryMap) MarshalToString() (string, error) {
 		return "", fmt.Errorf("failed to marshal registry: %w", err)
 	}
 
-	return string(out), multierror.ErrorOrNil()
+	return string(out), multiError
 }
 
-// UnMarshalFromString unmarshal a map as yaml string to doguLogLevelYamlRegistryMap.
-func (d *doguLogLevelYamlRegistryMap) UnMarshalFromString(unmarshal string) (*doguLogLevelYamlRegistryMap, error) {
+// UnMarshalFromStringToCesRegistry unmarshal a map as yaml string to ces registry.
+func (d *doguLogLevelYamlRegistryMap) UnMarshalFromStringToCesRegistry(unmarshal string) error {
 	out := map[string]string{}
 	err := yaml.Unmarshal([]byte(unmarshal), out)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal dogu log level from string [%s]: %w", unmarshal, err)
+		return fmt.Errorf("failed to unmarshal dogu log level from string [%s]: %w", unmarshal, err)
 	}
 	d.registry = out
 
-	return d, nil
+	return d.restoreToCesRegistry()
 }
 
 // RestoreToCesRegistry writes all log levels to the ces registry.
-func (d *doguLogLevelYamlRegistryMap) RestoreToCesRegistry() error {
-	var multiError *hashicorperror.Error
+func (d *doguLogLevelYamlRegistryMap) restoreToCesRegistry() error {
+	var multiError error
 	for dogu, level := range d.registry {
 		doguConfig := d.cesRegistry.DoguConfig(dogu)
 		err := doguConfig.Set(keyDoguConfigLogLevel, level)
 		if err != nil {
-			return hashicorperror.Append(multiError, err)
+			multiError = errors.Join(multiError, err)
+			continue
 		}
 	}
 
-	return multiError.ErrorOrNil()
+	return multiError
 }

@@ -25,17 +25,21 @@ func TestNewDoguLogLevelRegistry(t *testing.T) {
 func TestUnMarshalFromString(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// given
-		expectedRegistryMap := map[string]string{"dogua": "ERROR", "dogub": "INFO"}
 		cesRegistryMock := newMockCesRegistry(t)
+		doguAConfigMock := newMockDoguConfigurationContext(t)
+		doguBConfigMock := newMockDoguConfigurationContext(t)
+		doguAConfigMock.EXPECT().Set("logging/root", "ERROR").Return(nil)
+		doguBConfigMock.EXPECT().Set("logging/root", "INFO").Return(nil)
+		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
+		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
 
 		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock}
 
 		// when
-		result, err := sut.UnMarshalFromString("dogua: ERROR\ndogub: INFO\n")
+		err := sut.UnMarshalFromStringToCesRegistry("dogua: ERROR\ndogub: INFO\n")
 
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, expectedRegistryMap, result.registry)
 	})
 }
 
@@ -59,31 +63,10 @@ func Test_doguLogLevelRegistry_MarshalToString(t *testing.T) {
 		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock, registry: map[string]string{}}
 
 		// when
-		result, err := sut.MarshalToString()
+		result, err := sut.MarshalFromCesRegistryToString()
 
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, expectedRegistryStr, result)
-	})
-}
-
-func Test_doguLogLevelRegistry_RestoreToCesRegistry(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		// given
-		cesRegistryMock := newMockCesRegistry(t)
-		doguAConfigMock := newMockDoguConfigurationContext(t)
-		doguBConfigMock := newMockDoguConfigurationContext(t)
-		doguAConfigMock.EXPECT().Set("logging/root", "ERROR").Return(nil)
-		doguBConfigMock.EXPECT().Set("logging/root", "INFO").Return(nil)
-		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
-		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
-
-		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock, registry: map[string]string{"dogua": "ERROR", "dogub": "INFO"}}
-
-		// when
-		result := sut.RestoreToCesRegistry()
-
-		// then
-		require.NoError(t, result)
 	})
 }

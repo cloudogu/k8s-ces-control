@@ -63,9 +63,13 @@ func (c *configMapDebugModeRegistry) Enable(ctx context.Context, timerInMinutes 
 }
 
 func (c *configMapDebugModeRegistry) getRegistry(ctx context.Context) (*corev1.ConfigMap, error) {
+	return c.createRegistryIfNotFound(ctx, false)
+}
+
+func (c *configMapDebugModeRegistry) createRegistryIfNotFound(ctx context.Context, ignoreNotFound bool) (*corev1.ConfigMap, error) {
 	cm, err := c.configMapInterface.Get(ctx, registryName, metav1.GetOptions{})
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if errors.IsNotFound(err) && !ignoreNotFound {
 			return c.createRegistry(ctx)
 		} else {
 			return nil, wrapRegistryError(c.namespace, registryName, "get", err)
@@ -142,24 +146,75 @@ func (c *configMapDebugModeRegistry) Disable(ctx context.Context) error {
 
 // Status parses the fields `enabled` and `delete_at_timestamp` and returns them.
 func (c *configMapDebugModeRegistry) Status(ctx context.Context) (isEnabled bool, disableAtTimestamp int64, err error) {
-	registry, err := c.getRegistry(ctx)
+	registry, err := c.createRegistryIfNotFound(ctx, true)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return false, 0, nil
+		}
+		return false, 0, err
+	}
+
+	isEnabled, err = doCheckEnabled(registry)
 	if err != nil {
 		return false, 0, err
 	}
 
-	isEnabledStr := registry.Data[keyDebugModeEnabled]
-	isEnabled, err = strconv.ParseBool(isEnabledStr)
+	disableAtTimestamp, err = getDisableAtTimeStamp(registry)
 	if err != nil {
-		return false, 0, fmt.Errorf("failed to parse bool %s: %w", isEnabledStr, err)
-	}
-
-	disableAtTimestampStr := registry.Data[keyDisableAtTimestamp]
-	disableAtTimestamp, err = strconv.ParseInt(disableAtTimestampStr, 10, 32)
-	if err != nil {
-		return false, 0, fmt.Errorf("failed to parse %s to uint: %w", disableAtTimestampStr, err)
+		return false, 0, err
 	}
 
 	return
+}
+
+func getDisableAtTimeStamp(registry *corev1.ConfigMap) (int64, error) {
+	if registry.Data == nil {
+		return 0, fmt.Errorf("registry %s is not initialized", registry.Name)
+	}
+
+	disableAtTimestampStr, ok := registry.Data[keyDisableAtTimestamp]
+
+	if !ok {
+		return 0, nil
+	}
+
+	disableAtTimestamp, err := strconv.ParseInt(disableAtTimestampStr, 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse %s to uint: %w", disableAtTimestampStr, err)
+	}
+
+	return disableAtTimestamp, nil
+}
+
+func doCheckEnabled(registry *corev1.ConfigMap) (isEnabled bool, err error) {
+	if registry.Data == nil {
+		return false, fmt.Errorf("registry %s is not initialized", registry.Name)
+	}
+
+	isEnabledStr, ok := registry.Data[keyDebugModeEnabled]
+	if !ok {
+		return false, nil
+	}
+
+	isEnabled, err = strconv.ParseBool(isEnabledStr)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse bool %s: %w", isEnabledStr, err)
+	}
+
+	return isEnabled, nil
+}
+
+func isRegistryEnabled(registry *corev1.ConfigMap) error {
+	enabled, err := doCheckEnabled(registry)
+	if err != nil {
+		return err
+	}
+
+	if !enabled {
+		return fmt.Errorf("registry %s is not enabled", registry.Name)
+	}
+
+	return nil
 }
 
 func (c *configMapDebugModeRegistry) BackupDoguLogLevels(ctx context.Context) error {
@@ -168,7 +223,12 @@ func (c *configMapDebugModeRegistry) BackupDoguLogLevels(ctx context.Context) er
 		return err
 	}
 
-	newRegistry, err := c.doguLogLevelRegistry.MarshalToString()
+	err = isRegistryEnabled(registry)
+	if err != nil {
+		return err
+	}
+
+	newRegistry, err := c.doguLogLevelRegistry.MarshalFromCesRegistryToString()
 	if err != nil {
 		// TODO Log errors here?
 		return fmt.Errorf("failed to renew dogu log level registry: %w", err)
@@ -185,16 +245,20 @@ func (c *configMapDebugModeRegistry) RestoreDoguLogLevels(ctx context.Context) e
 		return err
 	}
 
-	doguLogLevelData := registry.Data[keyDoguLogLevel]
-	doguLogLevelReg, err := c.doguLogLevelRegistry.UnMarshalFromString(doguLogLevelData)
+	err = isRegistryEnabled(registry)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal dogu log level registry from [%s]: %w", doguLogLevelData, err)
+		return err
 	}
 
-	err = doguLogLevelReg.RestoreToCesRegistry()
+	doguLogLevelData, ok := registry.Data[keyDoguLogLevel]
+
+	if !ok {
+		return fmt.Errorf("missing registry key %s", keyDoguLogLevel)
+	}
+
+	err = c.doguLogLevelRegistry.UnMarshalFromStringToCesRegistry(doguLogLevelData)
 	if err != nil {
-		// TODO log errors here?
-		return fmt.Errorf("failed to restore dogu log level to ces registry: %w", err)
+		return fmt.Errorf("failed to restore dogu log level [%s]: %w", doguLogLevelData, err)
 	}
 
 	return nil

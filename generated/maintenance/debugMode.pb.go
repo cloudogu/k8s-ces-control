@@ -26,9 +26,8 @@ type ToggleDebugModeRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	WithMaintenanceMode bool `protobuf:"varint,1,opt,name=withMaintenanceMode,proto3" json:"withMaintenanceMode,omitempty"`
-	// TODO
-	Timer int32 `protobuf:"varint,2,opt,name=timer,proto3" json:"timer,omitempty"`
+	WithMaintenanceMode bool  `protobuf:"varint,1,opt,name=withMaintenanceMode,proto3" json:"withMaintenanceMode,omitempty"`
+	Timer               int32 `protobuf:"varint,2,opt,name=timer,proto3" json:"timer,omitempty"`
 }
 
 func (x *ToggleDebugModeRequest) Reset() {

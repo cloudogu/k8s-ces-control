@@ -13,6 +13,12 @@ type clusterClientSet interface {
 	kubernetes.Interface
 }
 
+//nolint:unused
+//goland:noinspection GoUnusedType
+type coreV1Interface interface {
+	v1.CoreV1Interface
+}
+
 type configMapInterface interface {
 	v1.ConfigMapInterface
 }
@@ -49,9 +55,8 @@ type debugModeRegistry interface {
 }
 
 type doguLogLevelRegistry interface {
-	MarshalToString() (string, error)
-	UnMarshalFromString(unmarshal string) (*doguLogLevelYamlRegistryMap, error)
-	RestoreToCesRegistry() error
+	MarshalFromCesRegistryToString() (string, error)
+	UnMarshalFromStringToCesRegistry(unmarshal string) error
 }
 
 type maintenanceModeSwitch interface {

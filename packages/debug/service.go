@@ -2,11 +2,10 @@ package debug
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/cloudogu/cesapp-lib/core"
-	cesregistry "github.com/cloudogu/cesapp-lib/registry"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
-	hashicorperror "github.com/hashicorp/go-multierror"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"google.golang.org/grpc/codes"
@@ -21,13 +20,14 @@ const (
 	maintenanceText       = "Activating debug mode"
 	doguConfigKeyLogLevel = "logging/root"
 	logLevelDebug         = "DEBUG"
+	interErrMsg           = "internal error"
 )
 
 type debugModeService struct {
 	pbMaintenance.UnimplementedDebugModeServer
-	registry              cesregistry.Registry
-	globalConfig          cesregistry.ConfigurationContext
-	doguConfig            cesregistry.DoguRegistry
+	registry              cesRegistry
+	globalConfig          doguConfigurationContext
+	doguConfig            doguRegistry
 	clientSet             clusterClientSet
 	debugModeRegistry     debugModeRegistry
 	maintenanceModeSwitch maintenanceModeSwitch
@@ -36,7 +36,7 @@ type debugModeService struct {
 }
 
 // NewDebugModeService returns an instance of debugModeService.
-func NewDebugModeService(registry cesregistry.Registry, clusterClient clusterClientSet, namespace string) *debugModeService {
+func NewDebugModeService(registry cesRegistry, clusterClient clusterClientSet, namespace string) *debugModeService {
 	cmDebugModeRegistry := NewConfigMapDebugModeRegistry(registry, clusterClient, namespace)
 	globalConfig := registry.GlobalConfig()
 	return &debugModeService{
@@ -63,7 +63,7 @@ func (s *debugModeService) Enable(ctx context.Context, req *pbMaintenance.Toggle
 	defer func() {
 		err = s.maintenanceModeSwitch.DeactivateMaintenanceMode()
 		if err != nil {
-			log.FromContext(ctx).Error(fmt.Errorf("failed to deactivate maintenance mode: %w", err), "internal error")
+			log.FromContext(ctx).Error(fmt.Errorf("failed to deactivate maintenance mode: %w", err), interErrMsg)
 		}
 	}()
 
@@ -107,7 +107,7 @@ func (s *debugModeService) Disable(ctx context.Context, _ *pbMaintenance.ToggleD
 	defer func() {
 		err = s.maintenanceModeSwitch.DeactivateMaintenanceMode()
 		if err != nil {
-			log.FromContext(ctx).Error(fmt.Errorf("failed to deactivate maintenance mode: %w", err), "internal error")
+			log.FromContext(ctx).Error(fmt.Errorf("failed to deactivate maintenance mode: %w", err), interErrMsg)
 		}
 	}()
 
@@ -122,6 +122,11 @@ func (s *debugModeService) Disable(ctx context.Context, _ *pbMaintenance.ToggleD
 	}
 
 	err = s.startAllDogus(ctx)
+	if err != nil {
+		return nil, createInternalError(ctx, err)
+	}
+
+	err = s.debugModeRegistry.Disable(ctx)
 	if err != nil {
 		return nil, createInternalError(ctx, err)
 	}
@@ -143,59 +148,63 @@ func (s *debugModeService) Status(ctx context.Context, _ *types.BasicRequest) (*
 func (s *debugModeService) setLogLevelInAllDogus(logLevel string) error {
 	allDogus, err := s.registry.DoguRegistry().GetAll()
 	if err != nil {
-		return fmt.Errorf("failed to get all dogus: %w", err)
+		return getAllDogusError(err)
 	}
 
-	var multiError *hashicorperror.Error
+	var multiError error
 	for _, dogu := range allDogus {
 		doguConfig := s.registry.DoguConfig(dogu.GetSimpleName())
 		setErr := doguConfig.Set(doguConfigKeyLogLevel, logLevel)
 		if setErr != nil {
-			multiError = hashicorperror.Append(multiError, setErr)
+			multiError = errors.Join(multiError, setErr)
 		}
 	}
 
-	return multiError.ErrorOrNil()
+	return multiError
 }
 
 func (s *debugModeService) stopAllDogus(ctx context.Context) error {
 	allDogus, err := s.registry.DoguRegistry().GetAll()
 	if err != nil {
-		return fmt.Errorf("failed to get all dogus: %w", err)
+		return getAllDogusError(err)
 	}
 
 	sortedDogus := core.SortDogusByInvertedDependency(allDogus)
-	var multiError *hashicorperror.Error
+	var multiError error
 	for _, dogu := range sortedDogus {
 		stopErr := s.doguInterActor.StopDoguWithWait(ctx, dogu.GetSimpleName(), true)
 		if stopErr != nil {
-			multiError = hashicorperror.Append(multiError, stopErr)
+			multiError = errors.Join(multiError, stopErr)
 		}
 	}
 
-	return multiError.ErrorOrNil()
+	return multiError
 }
 
 func (s *debugModeService) startAllDogus(ctx context.Context) error {
 	allDogus, err := s.registry.DoguRegistry().GetAll()
 	if err != nil {
-		return fmt.Errorf("failed to get all dogus: %w", err)
+		return getAllDogusError(err)
 	}
 
 	sortedDogus := core.SortDogusByDependency(allDogus)
-	var multiError *hashicorperror.Error
+	var multiError error
 	for _, dogu := range sortedDogus {
 		startErr := s.doguInterActor.StartDoguWithWait(ctx, dogu.GetSimpleName(), true)
 		if startErr != nil {
-			multiError = hashicorperror.Append(multiError, startErr)
+			multiError = errors.Join(multiError, startErr)
 		}
 	}
 
-	return multiError.ErrorOrNil()
+	return multiError
+}
+
+func getAllDogusError(err error) error {
+	return fmt.Errorf("failed to get all dogus: %w", err)
 }
 
 func createInternalError(ctx context.Context, err error) error {
 	logger := log.FromContext(ctx)
-	logger.Error(err, "internal error")
+	logger.Error(err, interErrMsg)
 	return status.Errorf(codes.Internal, err.Error())
 }

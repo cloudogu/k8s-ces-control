@@ -17,8 +17,8 @@ func (_m *mockDoguLogLevelRegistry) EXPECT() *mockDoguLogLevelRegistry_Expecter 
 	return &mockDoguLogLevelRegistry_Expecter{mock: &_m.Mock}
 }
 
-// MarshalToString provides a mock function with given fields:
-func (_m *mockDoguLogLevelRegistry) MarshalToString() (string, error) {
+// MarshalFromCesRegistryToString provides a mock function with given fields:
+func (_m *mockDoguLogLevelRegistry) MarshalFromCesRegistryToString() (string, error) {
 	ret := _m.Called()
 
 	var r0 string
@@ -41,40 +41,40 @@ func (_m *mockDoguLogLevelRegistry) MarshalToString() (string, error) {
 	return r0, r1
 }
 
-// mockDoguLogLevelRegistry_MarshalToString_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'MarshalToString'
-type mockDoguLogLevelRegistry_MarshalToString_Call struct {
+// mockDoguLogLevelRegistry_MarshalFromCesRegistryToString_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'MarshalFromCesRegistryToString'
+type mockDoguLogLevelRegistry_MarshalFromCesRegistryToString_Call struct {
 	*mock.Call
 }
 
-// MarshalToString is a helper method to define mock.On call
-func (_e *mockDoguLogLevelRegistry_Expecter) MarshalToString() *mockDoguLogLevelRegistry_MarshalToString_Call {
-	return &mockDoguLogLevelRegistry_MarshalToString_Call{Call: _e.mock.On("MarshalToString")}
+// MarshalFromCesRegistryToString is a helper method to define mock.On call
+func (_e *mockDoguLogLevelRegistry_Expecter) MarshalFromCesRegistryToString() *mockDoguLogLevelRegistry_MarshalFromCesRegistryToString_Call {
+	return &mockDoguLogLevelRegistry_MarshalFromCesRegistryToString_Call{Call: _e.mock.On("MarshalFromCesRegistryToString")}
 }
 
-func (_c *mockDoguLogLevelRegistry_MarshalToString_Call) Run(run func()) *mockDoguLogLevelRegistry_MarshalToString_Call {
+func (_c *mockDoguLogLevelRegistry_MarshalFromCesRegistryToString_Call) Run(run func()) *mockDoguLogLevelRegistry_MarshalFromCesRegistryToString_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run()
 	})
 	return _c
 }
 
-func (_c *mockDoguLogLevelRegistry_MarshalToString_Call) Return(_a0 string, _a1 error) *mockDoguLogLevelRegistry_MarshalToString_Call {
+func (_c *mockDoguLogLevelRegistry_MarshalFromCesRegistryToString_Call) Return(_a0 string, _a1 error) *mockDoguLogLevelRegistry_MarshalFromCesRegistryToString_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *mockDoguLogLevelRegistry_MarshalToString_Call) RunAndReturn(run func() (string, error)) *mockDoguLogLevelRegistry_MarshalToString_Call {
+func (_c *mockDoguLogLevelRegistry_MarshalFromCesRegistryToString_Call) RunAndReturn(run func() (string, error)) *mockDoguLogLevelRegistry_MarshalFromCesRegistryToString_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// RestoreToCesRegistry provides a mock function with given fields:
-func (_m *mockDoguLogLevelRegistry) RestoreToCesRegistry() error {
-	ret := _m.Called()
+// UnMarshalFromStringToCesRegistry provides a mock function with given fields: unmarshal
+func (_m *mockDoguLogLevelRegistry) UnMarshalFromStringToCesRegistry(unmarshal string) error {
+	ret := _m.Called(unmarshal)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(unmarshal)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -82,83 +82,30 @@ func (_m *mockDoguLogLevelRegistry) RestoreToCesRegistry() error {
 	return r0
 }
 
-// mockDoguLogLevelRegistry_RestoreToCesRegistry_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RestoreToCesRegistry'
-type mockDoguLogLevelRegistry_RestoreToCesRegistry_Call struct {
+// mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UnMarshalFromStringToCesRegistry'
+type mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call struct {
 	*mock.Call
 }
 
-// RestoreToCesRegistry is a helper method to define mock.On call
-func (_e *mockDoguLogLevelRegistry_Expecter) RestoreToCesRegistry() *mockDoguLogLevelRegistry_RestoreToCesRegistry_Call {
-	return &mockDoguLogLevelRegistry_RestoreToCesRegistry_Call{Call: _e.mock.On("RestoreToCesRegistry")}
-}
-
-func (_c *mockDoguLogLevelRegistry_RestoreToCesRegistry_Call) Run(run func()) *mockDoguLogLevelRegistry_RestoreToCesRegistry_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *mockDoguLogLevelRegistry_RestoreToCesRegistry_Call) Return(_a0 error) *mockDoguLogLevelRegistry_RestoreToCesRegistry_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *mockDoguLogLevelRegistry_RestoreToCesRegistry_Call) RunAndReturn(run func() error) *mockDoguLogLevelRegistry_RestoreToCesRegistry_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// UnMarshalFromString provides a mock function with given fields: unmarshal
-func (_m *mockDoguLogLevelRegistry) UnMarshalFromString(unmarshal string) (*doguLogLevelYamlRegistryMap, error) {
-	ret := _m.Called(unmarshal)
-
-	var r0 *doguLogLevelYamlRegistryMap
-	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (*doguLogLevelYamlRegistryMap, error)); ok {
-		return rf(unmarshal)
-	}
-	if rf, ok := ret.Get(0).(func(string) *doguLogLevelYamlRegistryMap); ok {
-		r0 = rf(unmarshal)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*doguLogLevelYamlRegistryMap)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(unmarshal)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// mockDoguLogLevelRegistry_UnMarshalFromString_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UnMarshalFromString'
-type mockDoguLogLevelRegistry_UnMarshalFromString_Call struct {
-	*mock.Call
-}
-
-// UnMarshalFromString is a helper method to define mock.On call
+// UnMarshalFromStringToCesRegistry is a helper method to define mock.On call
 //   - unmarshal string
-func (_e *mockDoguLogLevelRegistry_Expecter) UnMarshalFromString(unmarshal interface{}) *mockDoguLogLevelRegistry_UnMarshalFromString_Call {
-	return &mockDoguLogLevelRegistry_UnMarshalFromString_Call{Call: _e.mock.On("UnMarshalFromString", unmarshal)}
+func (_e *mockDoguLogLevelRegistry_Expecter) UnMarshalFromStringToCesRegistry(unmarshal interface{}) *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call {
+	return &mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call{Call: _e.mock.On("UnMarshalFromStringToCesRegistry", unmarshal)}
 }
 
-func (_c *mockDoguLogLevelRegistry_UnMarshalFromString_Call) Run(run func(unmarshal string)) *mockDoguLogLevelRegistry_UnMarshalFromString_Call {
+func (_c *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call) Run(run func(unmarshal string)) *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(string))
 	})
 	return _c
 }
 
-func (_c *mockDoguLogLevelRegistry_UnMarshalFromString_Call) Return(_a0 *doguLogLevelYamlRegistryMap, _a1 error) *mockDoguLogLevelRegistry_UnMarshalFromString_Call {
-	_c.Call.Return(_a0, _a1)
+func (_c *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call) Return(_a0 error) *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call {
+	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *mockDoguLogLevelRegistry_UnMarshalFromString_Call) RunAndReturn(run func(string) (*doguLogLevelYamlRegistryMap, error)) *mockDoguLogLevelRegistry_UnMarshalFromString_Call {
+func (_c *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call) RunAndReturn(run func(string) error) *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call {
 	_c.Call.Return(run)
 	return _c
 }
