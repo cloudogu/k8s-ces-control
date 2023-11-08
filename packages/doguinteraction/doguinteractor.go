@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const waitTimeout = time.Minute * 10
+var waitTimeout = time.Minute * 10
 
 type defaultDoguInterActor struct {
 	clientSet clusterClientSet
@@ -35,12 +35,7 @@ func (ddi *defaultDoguInterActor) StartDoguWithWait(ctx context.Context, doguNam
 		return emptyDoguNameError()
 	}
 
-	err := ddi.scaleDeployment(ctx, doguName, 1, waitForRollout)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ddi.scaleDeployment(ctx, doguName, 1, waitForRollout)
 }
 
 // StopDogu stops the specified dogu.
@@ -54,9 +49,7 @@ func (ddi *defaultDoguInterActor) StopDoguWithWait(ctx context.Context, doguName
 		return emptyDoguNameError()
 	}
 
-	err := ddi.scaleDeployment(ctx, doguName, 0, waitForRollout)
-
-	return err
+	return ddi.scaleDeployment(ctx, doguName, 0, waitForRollout)
 }
 
 // RestartDoguWithWait restarts the specified dogu waits for the deployment rollouts if specified.
@@ -111,14 +104,14 @@ func (ddi *defaultDoguInterActor) waitForDeploymentRollout(ctx context.Context, 
 	deployLabel := fmt.Sprintf("dogu.name=%s", doguName)
 	timeoutSeconds := int64(waitTimeout.Seconds())
 	timer := time.NewTimer(waitTimeout)
-	watchInterface, err := ddi.clientSet.AppsV1().Deployments(ddi.namespace).Watch(ctx, metav1.ListOptions{LabelSelector: deployLabel, TimeoutSeconds: &timeoutSeconds})
+	watch, err := ddi.clientSet.AppsV1().Deployments(ddi.namespace).Watch(ctx, metav1.ListOptions{LabelSelector: deployLabel, TimeoutSeconds: &timeoutSeconds})
 	if err != nil {
 		return fmt.Errorf("failed create watch for deployment wit label %s: %s", deployLabel, err)
 	}
 
 	for {
 		select {
-		case event := <-watchInterface.ResultChan():
+		case event := <-watch.ResultChan():
 			deployment, ok := event.Object.(*appsv1.Deployment)
 			if !ok {
 				logger.Error(fmt.Errorf("watch object %+v is not type of deployment", event.Object), fmt.Sprintf("failed to watch deployment %s", doguName))
