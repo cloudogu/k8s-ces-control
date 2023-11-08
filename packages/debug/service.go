@@ -40,6 +40,8 @@ type debugModeService struct {
 func NewDebugModeService(registry cesRegistry, clusterClient clusterClientSet, namespace string) *debugModeService {
 	cmDebugModeRegistry := NewConfigMapDebugModeRegistry(registry, clusterClient, namespace)
 	globalConfig := registry.GlobalConfig()
+	watcher := NewDefaultConfigMapRegistryWatcher(clusterClient.CoreV1().ConfigMaps(namespace), cmDebugModeRegistry)
+	watcher.StartWatch(context.Background())
 	return &debugModeService{
 		registry:              registry,
 		globalConfig:          globalConfig,
@@ -52,9 +54,7 @@ func NewDebugModeService(registry cesRegistry, clusterClient clusterClientSet, n
 	}
 }
 
-// Enable returns an error because the method is unimplemented.
-// TODO Use timer to disable debug mode.
-// TODO rotate logs on enable and disable
+// Enable enables the debug mode, sets dogu log level to debug and restarts all dogus.
 func (s *debugModeService) Enable(ctx context.Context, req *pbMaintenance.ToggleDebugModeRequest) (*types.BasicResponse, error) {
 	err := s.maintenanceModeSwitch.ActivateMaintenanceMode(maintenanceTitle, activateMaintenanceText)
 	if err != nil {
