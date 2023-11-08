@@ -76,6 +76,6 @@ type mockServiceRegistrar struct {
 	registeredServices []string
 }
 
-func (sr *mockServiceRegistrar) RegisterService(desc *grpc.ServiceDesc, impl interface{}) {
+func (sr *mockServiceRegistrar) RegisterService(desc *grpc.ServiceDesc, _ interface{}) {
 	sr.registeredServices = append(sr.registeredServices, desc.ServiceName)
 }
