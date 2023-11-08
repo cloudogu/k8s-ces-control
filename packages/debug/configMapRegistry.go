@@ -18,6 +18,7 @@ const (
 	keyDebugModeEnabled   = "enabled"
 	keyDisableAtTimestamp = "disable-at-timestamp"
 	keyDoguLogLevel       = "dogus"
+	timestampFormat       = time.RFC822
 )
 
 var maxThirtySecondsBackoff = wait.Backoff{
@@ -56,8 +57,10 @@ func (c *configMapDebugModeRegistry) Enable(ctx context.Context, timerInMinutes 
 		cm.Data = map[string]string{}
 	}
 
+	timerDuration := time.Duration(timerInMinutes)
+	disableAtTimestamp := time.Now().Add(time.Minute * timerDuration)
+	cm.Data[keyDisableAtTimestamp] = disableAtTimestamp.Format(timestampFormat)
 	cm.Data[keyDebugModeEnabled] = "true"
-	cm.Data[keyDisableAtTimestamp] = strconv.FormatInt(int64(timerInMinutes), 10)
 
 	return c.updateConfigMap(ctx, cm)
 }
@@ -178,12 +181,12 @@ func getDisableAtTimeStamp(registry *corev1.ConfigMap) (int64, error) {
 		return 0, nil
 	}
 
-	disableAtTimestamp, err := strconv.ParseInt(disableAtTimestampStr, 10, 32)
+	timeDisableAt, err := time.Parse(timestampFormat, disableAtTimestampStr)
 	if err != nil {
-		return 0, fmt.Errorf("failed to parse %s to uint: %w", disableAtTimestampStr, err)
+		return 0, fmt.Errorf("failed to parse time from disableAtTimestampStr %s: %w", disableAtTimestampStr, err)
 	}
 
-	return disableAtTimestamp, nil
+	return timeDisableAt.UnixMilli(), nil
 }
 
 func doCheckEnabled(registry *corev1.ConfigMap) (isEnabled bool, err error) {
