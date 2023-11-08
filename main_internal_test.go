@@ -52,9 +52,14 @@ func Test_registerServices(tt *testing.T) {
 		// given
 		mockGrpcServerRegistrar := &mockServiceRegistrar{registeredServices: []string{}}
 		config.CurrentNamespace = "ecosystem"
+		clientSetMock := newMockClusterClientSet(t)
+		coreV1Mock := newMockCoreV1Interface(t)
+		clientSetMock.EXPECT().CoreV1().Return(coreV1Mock)
+		configMapInterfaceMock := newMockConfigMapInterface(t)
+		coreV1Mock.EXPECT().ConfigMaps(config.CurrentNamespace).Return(configMapInterfaceMock)
 
 		// when
-		err := registerServices(nil, mockGrpcServerRegistrar)
+		err := registerServices(clientSetMock, mockGrpcServerRegistrar)
 
 		// then
 		require.NoError(t, err)
