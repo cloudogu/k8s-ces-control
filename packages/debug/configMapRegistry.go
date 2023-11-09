@@ -157,7 +157,7 @@ func (c *configMapDebugModeRegistry) Status(ctx context.Context) (isEnabled bool
 		return false, 0, err
 	}
 
-	isEnabled, err = doCheckEnabled(registry)
+	isEnabled, err = isRegistryEnabled(registry)
 	if err != nil {
 		return false, 0, err
 	}
@@ -189,7 +189,7 @@ func getDisableAtTimeStamp(registry *corev1.ConfigMap) (int64, error) {
 	return timeDisableAt.UnixMilli(), nil
 }
 
-func doCheckEnabled(registry *corev1.ConfigMap) (isEnabled bool, err error) {
+func isRegistryEnabled(registry *corev1.ConfigMap) (isEnabled bool, err error) {
 	if registry.Data == nil {
 		return false, fmt.Errorf("registry %s is not initialized", registry.Name)
 	}
@@ -207,28 +207,19 @@ func doCheckEnabled(registry *corev1.ConfigMap) (isEnabled bool, err error) {
 	return isEnabled, nil
 }
 
-func isRegistryEnabled(registry *corev1.ConfigMap) error {
-	enabled, err := doCheckEnabled(registry)
-	if err != nil {
-		return err
-	}
-
-	if !enabled {
-		return fmt.Errorf("registry %s is not enabled", registry.Name)
-	}
-
-	return nil
-}
-
 func (c *configMapDebugModeRegistry) BackupDoguLogLevels(ctx context.Context) error {
 	registry, err := c.getRegistry(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = isRegistryEnabled(registry)
+	enabled, err := isRegistryEnabled(registry)
 	if err != nil {
 		return err
+	}
+
+	if !enabled {
+		return registryNotEnabledError()
 	}
 
 	newRegistry, err := c.doguLogLevelRegistry.MarshalFromCesRegistryToString()
@@ -241,15 +232,23 @@ func (c *configMapDebugModeRegistry) BackupDoguLogLevels(ctx context.Context) er
 	return c.updateConfigMap(ctx, registry)
 }
 
+func registryNotEnabledError() error {
+	return fmt.Errorf("registry is not enabled")
+}
+
 func (c *configMapDebugModeRegistry) RestoreDoguLogLevels(ctx context.Context) error {
 	registry, err := c.getRegistry(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = isRegistryEnabled(registry)
+	enabled, err := isRegistryEnabled(registry)
 	if err != nil {
 		return err
+	}
+
+	if !enabled {
+		return registryNotEnabledError()
 	}
 
 	doguLogLevelData, ok := registry.Data[keyDoguLogLevel]

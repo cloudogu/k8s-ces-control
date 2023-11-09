@@ -1,6 +1,7 @@
 package doguinteraction
 
 import (
+	"github.com/cloudogu/cesapp-lib/registry"
 	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
 	"k8s.io/client-go/kubernetes"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -34,4 +35,20 @@ type deploymentInterface interface {
 //goland:noinspection GoUnusedType
 type podInterface interface {
 	corev1.PodInterface
+}
+
+type cesRegistry interface {
+	registry.Registry
+}
+
+//nolint:unused
+//goland:noinspection GoUnusedType
+type doguRegistry interface {
+	registry.DoguRegistry
+}
+
+//nolint:unused
+//goland:noinspection GoUnusedType
+type configurationContext interface {
+	registry.ConfigurationContext
 }

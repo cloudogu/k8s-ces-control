@@ -29,7 +29,7 @@ type cesRegistry interface {
 
 //nolint:unused
 //goland:noinspection GoUnusedType
-type doguConfigurationContext interface {
+type configurationContext interface {
 	registry.ConfigurationContext
 }
 
@@ -39,7 +39,6 @@ type doguRegistry interface {
 	registry.DoguRegistry
 }
 
-// TODO Make the interface more generic e.g. BackupDoguLogLevels should be BackupLogLevels. Implementations should handle backup levels from dogus and components and more.
 type debugModeRegistry interface {
 	// Enable enables the debug mode in the registry.
 	Enable(ctx context.Context, timer int32) error
@@ -67,10 +66,7 @@ type maintenanceModeSwitch interface {
 }
 
 type doguInterActor interface {
-	// StartDoguWithWait starts the specified dogu
-	StartDoguWithWait(ctx context.Context, doguName string, waitForRollout bool) error
-	// StopDoguWithWait stops the specified dogu
-	StopDoguWithWait(ctx context.Context, doguName string, waitForRollout bool) error
-	// RestartDoguWithWait restarts the specified dogu
-	RestartDoguWithWait(ctx context.Context, doguName string, waitForRollout bool) error
+	StopAllDogus(ctx context.Context) error
+	StartAllDogus(ctx context.Context) error
+	SetLogLevelInAllDogus(logLevel string) error
 }

@@ -21,13 +21,13 @@ func (_m *mockDoguInterActor) EXPECT() *mockDoguInterActor_Expecter {
 	return &mockDoguInterActor_Expecter{mock: &_m.Mock}
 }
 
-// RestartDoguWithWait provides a mock function with given fields: ctx, doguName, waitForRollout
-func (_m *mockDoguInterActor) RestartDoguWithWait(ctx context.Context, doguName string, waitForRollout bool) error {
-	ret := _m.Called(ctx, doguName, waitForRollout)
+// SetLogLevelInAllDogus provides a mock function with given fields: logLevel
+func (_m *mockDoguInterActor) SetLogLevelInAllDogus(logLevel string) error {
+	ret := _m.Called(logLevel)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, bool) error); ok {
-		r0 = rf(ctx, doguName, waitForRollout)
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(logLevel)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -35,43 +35,41 @@ func (_m *mockDoguInterActor) RestartDoguWithWait(ctx context.Context, doguName 
 	return r0
 }
 
-// mockDoguInterActor_RestartDoguWithWait_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RestartDoguWithWait'
-type mockDoguInterActor_RestartDoguWithWait_Call struct {
+// mockDoguInterActor_SetLogLevelInAllDogus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetLogLevelInAllDogus'
+type mockDoguInterActor_SetLogLevelInAllDogus_Call struct {
 	*mock.Call
 }
 
-// RestartDoguWithWait is a helper method to define mock.On call
-//   - ctx context.Context
-//   - doguName string
-//   - waitForRollout bool
-func (_e *mockDoguInterActor_Expecter) RestartDoguWithWait(ctx interface{}, doguName interface{}, waitForRollout interface{}) *mockDoguInterActor_RestartDoguWithWait_Call {
-	return &mockDoguInterActor_RestartDoguWithWait_Call{Call: _e.mock.On("RestartDoguWithWait", ctx, doguName, waitForRollout)}
+// SetLogLevelInAllDogus is a helper method to define mock.On call
+//   - logLevel string
+func (_e *mockDoguInterActor_Expecter) SetLogLevelInAllDogus(logLevel interface{}) *mockDoguInterActor_SetLogLevelInAllDogus_Call {
+	return &mockDoguInterActor_SetLogLevelInAllDogus_Call{Call: _e.mock.On("SetLogLevelInAllDogus", logLevel)}
 }
 
-func (_c *mockDoguInterActor_RestartDoguWithWait_Call) Run(run func(ctx context.Context, doguName string, waitForRollout bool)) *mockDoguInterActor_RestartDoguWithWait_Call {
+func (_c *mockDoguInterActor_SetLogLevelInAllDogus_Call) Run(run func(logLevel string)) *mockDoguInterActor_SetLogLevelInAllDogus_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(bool))
+		run(args[0].(string))
 	})
 	return _c
 }
 
-func (_c *mockDoguInterActor_RestartDoguWithWait_Call) Return(_a0 error) *mockDoguInterActor_RestartDoguWithWait_Call {
+func (_c *mockDoguInterActor_SetLogLevelInAllDogus_Call) Return(_a0 error) *mockDoguInterActor_SetLogLevelInAllDogus_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *mockDoguInterActor_RestartDoguWithWait_Call) RunAndReturn(run func(context.Context, string, bool) error) *mockDoguInterActor_RestartDoguWithWait_Call {
+func (_c *mockDoguInterActor_SetLogLevelInAllDogus_Call) RunAndReturn(run func(string) error) *mockDoguInterActor_SetLogLevelInAllDogus_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// StartDoguWithWait provides a mock function with given fields: ctx, doguName, waitForRollout
-func (_m *mockDoguInterActor) StartDoguWithWait(ctx context.Context, doguName string, waitForRollout bool) error {
-	ret := _m.Called(ctx, doguName, waitForRollout)
+// StartAllDogus provides a mock function with given fields: ctx
+func (_m *mockDoguInterActor) StartAllDogus(ctx context.Context) error {
+	ret := _m.Called(ctx)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, bool) error); ok {
-		r0 = rf(ctx, doguName, waitForRollout)
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -79,43 +77,41 @@ func (_m *mockDoguInterActor) StartDoguWithWait(ctx context.Context, doguName st
 	return r0
 }
 
-// mockDoguInterActor_StartDoguWithWait_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StartDoguWithWait'
-type mockDoguInterActor_StartDoguWithWait_Call struct {
+// mockDoguInterActor_StartAllDogus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StartAllDogus'
+type mockDoguInterActor_StartAllDogus_Call struct {
 	*mock.Call
 }
 
-// StartDoguWithWait is a helper method to define mock.On call
+// StartAllDogus is a helper method to define mock.On call
 //   - ctx context.Context
-//   - doguName string
-//   - waitForRollout bool
-func (_e *mockDoguInterActor_Expecter) StartDoguWithWait(ctx interface{}, doguName interface{}, waitForRollout interface{}) *mockDoguInterActor_StartDoguWithWait_Call {
-	return &mockDoguInterActor_StartDoguWithWait_Call{Call: _e.mock.On("StartDoguWithWait", ctx, doguName, waitForRollout)}
+func (_e *mockDoguInterActor_Expecter) StartAllDogus(ctx interface{}) *mockDoguInterActor_StartAllDogus_Call {
+	return &mockDoguInterActor_StartAllDogus_Call{Call: _e.mock.On("StartAllDogus", ctx)}
 }
 
-func (_c *mockDoguInterActor_StartDoguWithWait_Call) Run(run func(ctx context.Context, doguName string, waitForRollout bool)) *mockDoguInterActor_StartDoguWithWait_Call {
+func (_c *mockDoguInterActor_StartAllDogus_Call) Run(run func(ctx context.Context)) *mockDoguInterActor_StartAllDogus_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(bool))
+		run(args[0].(context.Context))
 	})
 	return _c
 }
 
-func (_c *mockDoguInterActor_StartDoguWithWait_Call) Return(_a0 error) *mockDoguInterActor_StartDoguWithWait_Call {
+func (_c *mockDoguInterActor_StartAllDogus_Call) Return(_a0 error) *mockDoguInterActor_StartAllDogus_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *mockDoguInterActor_StartDoguWithWait_Call) RunAndReturn(run func(context.Context, string, bool) error) *mockDoguInterActor_StartDoguWithWait_Call {
+func (_c *mockDoguInterActor_StartAllDogus_Call) RunAndReturn(run func(context.Context) error) *mockDoguInterActor_StartAllDogus_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// StopDoguWithWait provides a mock function with given fields: ctx, doguName, waitForRollout
-func (_m *mockDoguInterActor) StopDoguWithWait(ctx context.Context, doguName string, waitForRollout bool) error {
-	ret := _m.Called(ctx, doguName, waitForRollout)
+// StopAllDogus provides a mock function with given fields: ctx
+func (_m *mockDoguInterActor) StopAllDogus(ctx context.Context) error {
+	ret := _m.Called(ctx)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, bool) error); ok {
-		r0 = rf(ctx, doguName, waitForRollout)
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -123,32 +119,30 @@ func (_m *mockDoguInterActor) StopDoguWithWait(ctx context.Context, doguName str
 	return r0
 }
 
-// mockDoguInterActor_StopDoguWithWait_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StopDoguWithWait'
-type mockDoguInterActor_StopDoguWithWait_Call struct {
+// mockDoguInterActor_StopAllDogus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StopAllDogus'
+type mockDoguInterActor_StopAllDogus_Call struct {
 	*mock.Call
 }
 
-// StopDoguWithWait is a helper method to define mock.On call
+// StopAllDogus is a helper method to define mock.On call
 //   - ctx context.Context
-//   - doguName string
-//   - waitForRollout bool
-func (_e *mockDoguInterActor_Expecter) StopDoguWithWait(ctx interface{}, doguName interface{}, waitForRollout interface{}) *mockDoguInterActor_StopDoguWithWait_Call {
-	return &mockDoguInterActor_StopDoguWithWait_Call{Call: _e.mock.On("StopDoguWithWait", ctx, doguName, waitForRollout)}
+func (_e *mockDoguInterActor_Expecter) StopAllDogus(ctx interface{}) *mockDoguInterActor_StopAllDogus_Call {
+	return &mockDoguInterActor_StopAllDogus_Call{Call: _e.mock.On("StopAllDogus", ctx)}
 }
 
-func (_c *mockDoguInterActor_StopDoguWithWait_Call) Run(run func(ctx context.Context, doguName string, waitForRollout bool)) *mockDoguInterActor_StopDoguWithWait_Call {
+func (_c *mockDoguInterActor_StopAllDogus_Call) Run(run func(ctx context.Context)) *mockDoguInterActor_StopAllDogus_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(bool))
+		run(args[0].(context.Context))
 	})
 	return _c
 }
 
-func (_c *mockDoguInterActor_StopDoguWithWait_Call) Return(_a0 error) *mockDoguInterActor_StopDoguWithWait_Call {
+func (_c *mockDoguInterActor_StopAllDogus_Call) Return(_a0 error) *mockDoguInterActor_StopAllDogus_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *mockDoguInterActor_StopDoguWithWait_Call) RunAndReturn(run func(context.Context, string, bool) error) *mockDoguInterActor_StopDoguWithWait_Call {
+func (_c *mockDoguInterActor_StopAllDogus_Call) RunAndReturn(run func(context.Context) error) *mockDoguInterActor_StopAllDogus_Call {
 	_c.Call.Return(run)
 	return _c
 }

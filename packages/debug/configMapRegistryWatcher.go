@@ -3,13 +3,14 @@ package debug
 import (
 	"context"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	"time"
 )
 
-const tickerInterval = time.Second * 30
+var tickerInterval = time.Second * 30
 
 type defaultConfigMapRegistryWatcher struct {
 	configMapInterface         configMapInterface
@@ -33,44 +34,47 @@ func (w *defaultConfigMapRegistryWatcher) StartWatch(ctx context.Context) {
 
 func (w *defaultConfigMapRegistryWatcher) doWatch(ctx context.Context) {
 	ticker := time.NewTicker(tickerInterval)
-	logger := log.FromContext(ctx)
-
 	for {
 		select {
 		case <-ticker.C:
-			registryConfigMap, err := w.configMapInterface.Get(ctx, registryName, v1.GetOptions{})
-			errorMsg := "watch debug mode registry error"
+			err := w.checkDisableRegistry(ctx)
 			if err != nil {
-				if errors.IsNotFound(err) {
-					continue
-				}
-				logger.Error(fmt.Errorf("failed to get debug mode registry %s: %w", registryName, err), errorMsg)
-				continue
-			}
-
-			if registryConfigMap.Data == nil {
-				continue
-			}
-
-			timestamp, ok := registryConfigMap.Data[keyDisableAtTimestamp]
-			if !ok {
-				logger.Error(fmt.Errorf("failed to get debug mode disableAtTimestamp"), errorMsg)
-				continue
-			}
-
-			disableAtTimestamp, err := time.Parse(timestampFormat, timestamp)
-			if err != nil {
-				logger.Error(fmt.Errorf("failed parse disableAtTimestamp %s: %w", timestamp, err), errorMsg)
-				continue
-			}
-
-			logger.Info("disable debug mode registry")
-			if time.Now().After(disableAtTimestamp) {
-				err = w.configMapDebugModeRegistry.Disable(ctx)
-				if err != nil {
-					logger.Error(fmt.Errorf("failed to disable debug mode: %w", err), errorMsg)
-				}
+				logrus.Error(fmt.Errorf("watch debug mode registry: %w", err))
 			}
 		}
 	}
+}
+
+func (w *defaultConfigMapRegistryWatcher) checkDisableRegistry(ctx context.Context) error {
+	registryConfigMap, err := w.configMapInterface.Get(ctx, registryName, v1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to get debug mode registry %s: %w", registryName, err)
+	}
+
+	if registryConfigMap.Data == nil {
+		return nil
+	}
+
+	timestamp, ok := registryConfigMap.Data[keyDisableAtTimestamp]
+	if !ok {
+		return nil
+	}
+
+	disableAtTimestamp, err := time.Parse(timestampFormat, timestamp)
+	if err != nil {
+		return fmt.Errorf("failed parse disableAtTimestamp %s: %w", timestamp, err)
+	}
+
+	logrus.Info("disable debug mode registry")
+	if time.Now().After(disableAtTimestamp) {
+		err = w.configMapDebugModeRegistry.Disable(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to disable debug mode: %w", err)
+		}
+	}
+
+	return nil
 }

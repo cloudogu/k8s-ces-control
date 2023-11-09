@@ -2,9 +2,7 @@ package debug
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"github.com/cloudogu/cesapp-lib/core"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -19,15 +17,13 @@ const (
 	maintenanceTitle          = "Service unavailable"
 	activateMaintenanceText   = "Activating debug mode"
 	deactivateMaintenanceText = "Deactivating debug mode"
-	doguConfigKeyLogLevel     = "logging/root"
 	logLevelDebug             = "DEBUG"
 	interErrMsg               = "internal error"
 )
 
 type debugModeService struct {
 	pbMaintenance.UnimplementedDebugModeServer
-	registry              cesRegistry
-	globalConfig          doguConfigurationContext
+	globalConfig          configurationContext
 	doguConfig            doguRegistry
 	clientSet             clusterClientSet
 	debugModeRegistry     debugModeRegistry
@@ -43,7 +39,6 @@ func NewDebugModeService(registry cesRegistry, clusterClient clusterClientSet, n
 	watcher := NewDefaultConfigMapRegistryWatcher(clusterClient.CoreV1().ConfigMaps(namespace), cmDebugModeRegistry)
 	watcher.StartWatch(context.Background())
 	return &debugModeService{
-		registry:              registry,
 		globalConfig:          globalConfig,
 		doguConfig:            registry.DoguRegistry(),
 		clientSet:             clusterClient,
@@ -70,31 +65,30 @@ func (s *debugModeService) Enable(ctx context.Context, req *pbMaintenance.Toggle
 
 	err = s.debugModeRegistry.Enable(ctx, req.Timer)
 	if err != nil {
-		return nil, createInternalError(ctx, err)
+		return nil, createInternalError(ctx, fmt.Errorf("failed to enable debug mode registry: %w", err))
 	}
 
 	err = s.debugModeRegistry.BackupDoguLogLevels(ctx)
 	if err != nil {
-		return nil, createInternalError(ctx, err)
+		return nil, createInternalError(ctx, fmt.Errorf("failed to backup dogu log levels: %w", err))
 	}
 
-	err = s.setLogLevelInAllDogus(logLevelDebug)
+	err = s.doguInterActor.SetLogLevelInAllDogus(logLevelDebug)
 	if err != nil {
-		// TODO only log errors here?
-		return nil, createInternalError(ctx, err)
+		return nil, createInternalError(ctx, fmt.Errorf("failed to set dogu log levels to debug: %w", err))
 	}
 
 	// Create new context because the admin dogu itself will be canceled
 	ctx = context.Background()
 
-	err = s.stopAllDogus(ctx)
+	err = s.doguInterActor.StopAllDogus(ctx)
 	if err != nil {
-		return nil, createInternalError(ctx, err)
+		return nil, createInternalError(ctx, fmt.Errorf("failed to stop all dogus: %w", err))
 	}
 
-	err = s.startAllDogus(ctx)
+	err = s.doguInterActor.StartAllDogus(ctx)
 	if err != nil {
-		return nil, createInternalError(ctx, err)
+		return nil, createInternalError(ctx, fmt.Errorf("failed to start all dogus %w", err))
 	}
 
 	return &types.BasicResponse{}, nil
@@ -116,25 +110,25 @@ func (s *debugModeService) Disable(ctx context.Context, _ *pbMaintenance.ToggleD
 
 	err = s.debugModeRegistry.RestoreDoguLogLevels(ctx)
 	if err != nil {
-		return nil, createInternalError(ctx, err)
+		return nil, createInternalError(ctx, fmt.Errorf("failed to restore log levels to ces registry: %w", err))
 	}
 
 	// Create new context because the admin dogu itself will be canceled
 	ctx = context.Background()
 
-	err = s.stopAllDogus(ctx)
+	err = s.doguInterActor.StopAllDogus(ctx)
 	if err != nil {
-		return nil, createInternalError(ctx, err)
+		return nil, createInternalError(ctx, fmt.Errorf("failed to stop all dogus: %w", err))
 	}
 
-	err = s.startAllDogus(ctx)
+	err = s.doguInterActor.StartAllDogus(ctx)
 	if err != nil {
-		return nil, createInternalError(ctx, err)
+		return nil, createInternalError(ctx, fmt.Errorf("failed to start all dogus: %w", err))
 	}
 
 	err = s.debugModeRegistry.Disable(ctx)
 	if err != nil {
-		return nil, createInternalError(ctx, err)
+		return nil, createInternalError(ctx, fmt.Errorf("failed to disable the debug mode registry: %w", err))
 	}
 
 	return &types.BasicResponse{}, nil
@@ -144,69 +138,10 @@ func (s *debugModeService) Disable(ctx context.Context, _ *pbMaintenance.ToggleD
 func (s *debugModeService) Status(ctx context.Context, _ *types.BasicRequest) (*pbMaintenance.DebugModeStatusResponse, error) {
 	enabled, timestamp, err := s.debugModeRegistry.Status(ctx)
 	if err != nil {
-		return nil, createInternalError(ctx, err)
+		return nil, createInternalError(ctx, fmt.Errorf("failed to get status of debug mode registry: %w", err))
 	}
 
 	return &pbMaintenance.DebugModeStatusResponse{IsEnabled: enabled, DisableAtTimestamp: timestamp}, nil
-}
-
-// TODO move this to doguinteraction? Or to debugmoderegistry?
-func (s *debugModeService) setLogLevelInAllDogus(logLevel string) error {
-	allDogus, err := s.registry.DoguRegistry().GetAll()
-	if err != nil {
-		return getAllDogusError(err)
-	}
-
-	var multiError error
-	for _, dogu := range allDogus {
-		doguConfig := s.registry.DoguConfig(dogu.GetSimpleName())
-		setErr := doguConfig.Set(doguConfigKeyLogLevel, logLevel)
-		if setErr != nil {
-			multiError = errors.Join(multiError, setErr)
-		}
-	}
-
-	return multiError
-}
-
-func (s *debugModeService) stopAllDogus(ctx context.Context) error {
-	allDogus, err := s.registry.DoguRegistry().GetAll()
-	if err != nil {
-		return getAllDogusError(err)
-	}
-
-	sortedDogus := core.SortDogusByInvertedDependency(allDogus)
-	var multiError error
-	for _, dogu := range sortedDogus {
-		stopErr := s.doguInterActor.StopDoguWithWait(ctx, dogu.GetSimpleName(), true)
-		if stopErr != nil {
-			multiError = errors.Join(multiError, stopErr)
-		}
-	}
-
-	return multiError
-}
-
-func (s *debugModeService) startAllDogus(ctx context.Context) error {
-	allDogus, err := s.registry.DoguRegistry().GetAll()
-	if err != nil {
-		return getAllDogusError(err)
-	}
-
-	sortedDogus := core.SortDogusByDependency(allDogus)
-	var multiError error
-	for _, dogu := range sortedDogus {
-		startErr := s.doguInterActor.StartDoguWithWait(ctx, dogu.GetSimpleName(), true)
-		if startErr != nil {
-			multiError = errors.Join(multiError, startErr)
-		}
-	}
-
-	return multiError
-}
-
-func getAllDogusError(err error) error {
-	return fmt.Errorf("failed to get all dogus: %w", err)
 }
 
 func createInternalError(ctx context.Context, err error) error {
