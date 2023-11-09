@@ -2,9 +2,9 @@ package doguinteraction
 
 import (
 	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 type clusterClientSet interface {
@@ -20,12 +20,18 @@ type appsV1Interface interface {
 
 //nolint:unused
 //goland:noinspection GoUnusedType
+type coreV1Interface interface {
+	corev1.CoreV1Interface
+}
+
+//nolint:unused
+//goland:noinspection GoUnusedType
 type deploymentInterface interface {
 	appsv1.DeploymentInterface
 }
 
 //nolint:unused
 //goland:noinspection GoUnusedType
-type watchInterface interface {
-	watch.Interface
+type podInterface interface {
+	corev1.PodInterface
 }

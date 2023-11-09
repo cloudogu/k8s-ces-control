@@ -12,6 +12,7 @@ import (
 )
 
 var waitTimeout = time.Minute * 10
+var waitInterval = time.Second * 5
 
 const containerStateCrashLoop = "CrashLoopBackOff"
 
@@ -104,7 +105,7 @@ func (ddi *defaultDoguInterActor) waitForDeploymentRollout(ctx context.Context, 
 	logger := log.FromContext(ctx)
 	timeoutTimer := time.NewTimer(waitTimeout)
 	// Use a ticker instead of a kubernetes watch because the watch does not notify on status changes.
-	ticker := time.NewTicker(time.Second * 5)
+	ticker := time.NewTicker(waitInterval)
 	for {
 		select {
 		case <-ticker.C:

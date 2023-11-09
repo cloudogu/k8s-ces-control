@@ -5,8 +5,8 @@ import (
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/apps/v1"
 	scalingv1 "k8s.io/api/autoscaling/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
 	"testing"
 	"time"
 )
@@ -35,16 +35,22 @@ func Test_defaultDoguInterActor_RestartDogu(t *testing.T) {
 		waitTimeout = time.Second * 10
 		defer func() { waitTimeout = oldWaitTimeout }()
 
+		oldWaitInterval := waitInterval
+		waitInterval = time.Second * 1
+		defer func() { waitInterval = oldWaitInterval }()
+
 		clientSetMock := newMockClusterClientSet(t)
 		appsV1Mock := newMockAppsV1Interface(t)
+		coreV1Mock := newMockCoreV1Interface(t)
 		clientSetMock.EXPECT().AppsV1().Return(appsV1Mock)
+		clientSetMock.EXPECT().CoreV1().Return(coreV1Mock)
 		deploymentMock := newMockDeploymentInterface(t)
+		podMock := newMockPodInterface(t)
 		appsV1Mock.EXPECT().Deployments(testNamespace).Return(deploymentMock)
-		watchMock := newMockWatchInterface(t)
-		seconds := int64(waitTimeout.Seconds())
-		deploymentMock.EXPECT().Watch(testCtx, metav1.ListOptions{LabelSelector: "dogu.name=postgresql", TimeoutSeconds: &seconds}).Return(watchMock, nil)
-		watchChannel := make(chan watch.Event)
-		watchMock.EXPECT().ResultChan().Return(watchChannel)
+		coreV1Mock.EXPECT().Pods(testNamespace).Return(podMock)
+		runningPostgresPod := corev1.Pod{Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{Name: "postgresql"}}}}
+		podList := &corev1.PodList{Items: []corev1.Pod{runningPostgresPod}}
+		podMock.EXPECT().List(testCtx, metav1.ListOptions{LabelSelector: "dogu.name=postgresql"}).Return(podList, nil)
 
 		scaleDown := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: "postgresql", Namespace: testNamespace}, Spec: scalingv1.ScaleSpec{Replicas: 0}}
 		scaleUp := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: "postgresql", Namespace: testNamespace}, Spec: scalingv1.ScaleSpec{Replicas: 1}}
@@ -62,15 +68,7 @@ func Test_defaultDoguInterActor_RestartDogu(t *testing.T) {
 			Spec:       v1.DeploymentSpec{Replicas: &zeroReplicas},
 			Status:     v1.DeploymentStatus{Replicas: zeroReplicas, ReadyReplicas: zeroReplicas, UpdatedReplicas: zeroReplicas, AvailableReplicas: zeroReplicas},
 		}
-
-		timer := time.NewTimer(time.Second * 1)
-		go func() {
-			<-timer.C
-			watchChannel <- watch.Event{
-				Type:   watch.Modified,
-				Object: rolledOutDeployment,
-			}
-		}()
+		deploymentMock.EXPECT().Get(testCtx, "postgresql", metav1.GetOptions{}).Return(rolledOutDeployment, nil)
 
 		// when
 		err := sut.RestartDogu(testCtx, "postgresql")
@@ -116,16 +114,22 @@ func Test_defaultDoguInterActor_StartDoguWithWait(t *testing.T) {
 		waitTimeout = time.Second * 10
 		defer func() { waitTimeout = oldWaitTimeout }()
 
+		oldWaitInterval := waitInterval
+		waitInterval = time.Second * 1
+		defer func() { waitInterval = oldWaitInterval }()
+
 		clientSetMock := newMockClusterClientSet(t)
 		appsV1Mock := newMockAppsV1Interface(t)
+		coreV1Mock := newMockCoreV1Interface(t)
 		clientSetMock.EXPECT().AppsV1().Return(appsV1Mock)
+		clientSetMock.EXPECT().CoreV1().Return(coreV1Mock)
 		deploymentMock := newMockDeploymentInterface(t)
+		podMock := newMockPodInterface(t)
 		appsV1Mock.EXPECT().Deployments(testNamespace).Return(deploymentMock)
-		watchMock := newMockWatchInterface(t)
-		seconds := int64(waitTimeout.Seconds())
-		deploymentMock.EXPECT().Watch(testCtx, metav1.ListOptions{LabelSelector: "dogu.name=postgresql", TimeoutSeconds: &seconds}).Return(watchMock, nil)
-		watchChannel := make(chan watch.Event)
-		watchMock.EXPECT().ResultChan().Return(watchChannel)
+		coreV1Mock.EXPECT().Pods(testNamespace).Return(podMock)
+		runningPostgresPod := corev1.Pod{Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{Name: "postgresql"}}}}
+		podList := &corev1.PodList{Items: []corev1.Pod{runningPostgresPod}}
+		podMock.EXPECT().List(testCtx, metav1.ListOptions{LabelSelector: "dogu.name=postgresql"}).Return(podList, nil)
 
 		scale := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: "postgresql", Namespace: testNamespace}, Spec: scalingv1.ScaleSpec{Replicas: 1}}
 		deploymentMock.EXPECT().UpdateScale(context.TODO(), "postgresql", scale, metav1.UpdateOptions{}).Return(nil, nil)
@@ -140,15 +144,7 @@ func Test_defaultDoguInterActor_StartDoguWithWait(t *testing.T) {
 			Spec:       v1.DeploymentSpec{Replicas: &zeroReplicas},
 			Status:     v1.DeploymentStatus{Replicas: zeroReplicas, ReadyReplicas: zeroReplicas, UpdatedReplicas: zeroReplicas, AvailableReplicas: zeroReplicas},
 		}
-
-		timer := time.NewTimer(time.Second * 1)
-		go func() {
-			<-timer.C
-			watchChannel <- watch.Event{
-				Type:   watch.Modified,
-				Object: rolledOutDeployment,
-			}
-		}()
+		deploymentMock.EXPECT().Get(testCtx, "postgresql", metav1.GetOptions{}).Return(rolledOutDeployment, nil)
 
 		// when
 		err := sut.StartDoguWithWait(testCtx, "postgresql", true)
