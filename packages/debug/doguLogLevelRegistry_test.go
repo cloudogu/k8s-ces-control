@@ -57,7 +57,9 @@ func Test_doguLogLevelRegistry_MarshalToString(t *testing.T) {
 		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
 		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
 		doguRegistryMock.EXPECT().GetAll().Return([]*core.Dogu{doguA, doguB}, nil)
+		doguAConfigMock.EXPECT().Exists("logging/root").Return(true, nil)
 		doguAConfigMock.EXPECT().Get("logging/root").Return("ERROR", nil)
+		doguBConfigMock.EXPECT().Exists("logging/root").Return(true, nil)
 		doguBConfigMock.EXPECT().Get("logging/root").Return("INFO", nil)
 
 		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock, registry: map[string]string{}}

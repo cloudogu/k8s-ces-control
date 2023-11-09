@@ -48,7 +48,7 @@ func Test_debugModeService_Disable(t *testing.T) {
 		cesRegistryMock := newMockCesRegistry(t)
 		cesRegistryMock.EXPECT().DoguRegistry().Return(doguRegistryMock)
 		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
-		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Activating debug mode").Return(nil)
+		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Deactivating debug mode").Return(nil)
 		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(nil)
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().RestoreDoguLogLevels(testCtx).Return(nil)

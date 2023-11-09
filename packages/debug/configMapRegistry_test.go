@@ -8,8 +8,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"strconv"
 	"testing"
+	"time"
 )
 
 const testNamespace = "ecosystem"
@@ -118,9 +118,10 @@ func Test_configMapDebugModeRegistry_Enable(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "debug-mode-registry", Namespace: testNamespace},
 			Data:       nil,
 		}
+
 		expectedUpdatedConfigMapRegistry := &v1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{Name: "debug-mode-registry", Namespace: testNamespace},
-			Data:       map[string]string{"enabled": "true", "disable-at-timestamp": strconv.FormatInt(123456789, 10)},
+			Data:       map[string]string{"enabled": "true", "disable-at-timestamp": time.Now().Add(time.Minute * 15).Format(time.RFC822)},
 		}
 
 		cesRegistryMock := newMockCesRegistry(t)
@@ -132,7 +133,7 @@ func Test_configMapDebugModeRegistry_Enable(t *testing.T) {
 		sut := &configMapDebugModeRegistry{cesRegistry: cesRegistryMock, configMapInterface: configMapInterfaceMock, doguLogLevelRegistry: doguLogeLevelRegistry, namespace: testNamespace}
 
 		// when
-		err := sut.Enable(testCtx, 123456789)
+		err := sut.Enable(testCtx, 15)
 
 		// then
 		require.NoError(t, err)
@@ -166,9 +167,11 @@ func Test_configMapDebugModeRegistry_RestoreDoguLogLevels(t *testing.T) {
 func Test_configMapDebugModeRegistry_Status(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// given
+		now := time.Now()
+		expectedFormat := now.Format(time.RFC822)
 		registryCm := &v1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{Name: "debug-mode-registry", Namespace: testNamespace},
-			Data:       map[string]string{"enabled": "true", "disable-at-timestamp": strconv.FormatInt(123456789, 10)},
+			Data:       map[string]string{"enabled": "true", "disable-at-timestamp": expectedFormat},
 		}
 		configMapInterfaceMock := newMockConfigMapInterface(t)
 		configMapInterfaceMock.EXPECT().Get(testCtx, "debug-mode-registry", metav1.GetOptions{}).Return(registryCm, nil)
@@ -181,6 +184,6 @@ func Test_configMapDebugModeRegistry_Status(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, true, enabled)
-		assert.Equal(t, int64(123456789), timestamp)
+		assert.Equal(t, expectedFormat, time.UnixMilli(timestamp).Format(time.RFC822))
 	})
 }
