@@ -10,7 +10,6 @@ import (
 	"google.golang.org/grpc/status"
 	scalingv1 "k8s.io/api/autoscaling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	"time"
 )
 
@@ -167,7 +166,6 @@ func stopWaitChannels(timer *time.Timer, ticker *time.Ticker) {
 }
 
 func (ddi *defaultDoguInterActor) isDoguContainerInCrashLoop(ctx context.Context, doguName string) (bool, error) {
-	logger := log.FromContext(ctx)
 	list, getErr := ddi.clientSet.CoreV1().Pods(ddi.namespace).List(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("dogu.name=%s", doguName)})
 	if getErr != nil {
 		return false, fmt.Errorf("failed to get pods of deployment %s", doguName)
@@ -182,7 +180,7 @@ func (ddi *defaultDoguInterActor) isDoguContainerInCrashLoop(ctx context.Context
 			containerWaitState := containerStatus.State.Waiting
 
 			if containerWaitState != nil && containerWaitState.Reason == containerStateCrashLoop {
-				logger.Error(fmt.Errorf("some containers are in a crash loop"), fmt.Sprintf("skip waiting rollout for deployment %s", doguName))
+				logrus.Error(fmt.Errorf("some containers are in a crash loop"), fmt.Sprintf("skip waiting rollout for deployment %s", doguName))
 				return true, nil
 			}
 		}

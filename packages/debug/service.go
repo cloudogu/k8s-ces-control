@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	"github.com/sirupsen/logrus"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -53,29 +53,29 @@ func NewDebugModeService(registry cesRegistry, clusterClient clusterClientSet, n
 func (s *debugModeService) Enable(ctx context.Context, req *pbMaintenance.ToggleDebugModeRequest) (*types.BasicResponse, error) {
 	err := s.maintenanceModeSwitch.ActivateMaintenanceMode(maintenanceTitle, activateMaintenanceText)
 	if err != nil {
-		return nil, createInternalError(ctx, fmt.Errorf("failed to activate maintenance mode: %w", err))
+		return nil, createInternalError(fmt.Errorf("failed to activate maintenance mode: %w", err))
 	}
 
 	defer func() {
 		err = s.maintenanceModeSwitch.DeactivateMaintenanceMode()
 		if err != nil {
-			log.FromContext(ctx).Error(fmt.Errorf("failed to deactivate maintenance mode: %w", err), interErrMsg)
+			logrus.Error(fmt.Errorf("failed to deactivate maintenance mode: %w", err), interErrMsg)
 		}
 	}()
 
 	err = s.debugModeRegistry.Enable(ctx, req.Timer)
 	if err != nil {
-		return nil, createInternalError(ctx, fmt.Errorf("failed to enable debug mode registry: %w", err))
+		return nil, createInternalError(fmt.Errorf("failed to enable debug mode registry: %w", err))
 	}
 
 	err = s.debugModeRegistry.BackupDoguLogLevels(ctx)
 	if err != nil {
-		return nil, createInternalError(ctx, fmt.Errorf("failed to backup dogu log levels: %w", err))
+		return nil, createInternalError(fmt.Errorf("failed to backup dogu log levels: %w", err))
 	}
 
 	err = s.doguInterActor.SetLogLevelInAllDogus(logLevelDebug)
 	if err != nil {
-		return nil, createInternalError(ctx, fmt.Errorf("failed to set dogu log levels to debug: %w", err))
+		return nil, createInternalError(fmt.Errorf("failed to set dogu log levels to debug: %w", err))
 	}
 
 	// Create new context because the admin dogu itself will be canceled
@@ -83,12 +83,12 @@ func (s *debugModeService) Enable(ctx context.Context, req *pbMaintenance.Toggle
 
 	err = s.doguInterActor.StopAllDogus(ctx)
 	if err != nil {
-		return nil, createInternalError(ctx, fmt.Errorf("failed to stop all dogus: %w", err))
+		return nil, createInternalError(fmt.Errorf("failed to stop all dogus: %w", err))
 	}
 
 	err = s.doguInterActor.StartAllDogus(ctx)
 	if err != nil {
-		return nil, createInternalError(ctx, fmt.Errorf("failed to start all dogus %w", err))
+		return nil, createInternalError(fmt.Errorf("failed to start all dogus %w", err))
 	}
 
 	return &types.BasicResponse{}, nil
@@ -98,19 +98,19 @@ func (s *debugModeService) Enable(ctx context.Context, req *pbMaintenance.Toggle
 func (s *debugModeService) Disable(ctx context.Context, _ *pbMaintenance.ToggleDebugModeRequest) (*types.BasicResponse, error) {
 	err := s.maintenanceModeSwitch.ActivateMaintenanceMode(maintenanceTitle, deactivateMaintenanceText)
 	if err != nil {
-		return nil, createInternalError(ctx, fmt.Errorf("failed to activate maintenance mode: %w", err))
+		return nil, createInternalError(fmt.Errorf("failed to activate maintenance mode: %w", err))
 	}
 
 	defer func() {
 		err = s.maintenanceModeSwitch.DeactivateMaintenanceMode()
 		if err != nil {
-			log.FromContext(ctx).Error(fmt.Errorf("failed to deactivate maintenance mode: %w", err), interErrMsg)
+			logrus.Error(fmt.Errorf("failed to deactivate maintenance mode: %w", err), interErrMsg)
 		}
 	}()
 
 	err = s.debugModeRegistry.RestoreDoguLogLevels(ctx)
 	if err != nil {
-		return nil, createInternalError(ctx, fmt.Errorf("failed to restore log levels to ces registry: %w", err))
+		return nil, createInternalError(fmt.Errorf("failed to restore log levels to ces registry: %w", err))
 	}
 
 	// Create new context because the admin dogu itself will be canceled
@@ -118,17 +118,17 @@ func (s *debugModeService) Disable(ctx context.Context, _ *pbMaintenance.ToggleD
 
 	err = s.doguInterActor.StopAllDogus(ctx)
 	if err != nil {
-		return nil, createInternalError(ctx, fmt.Errorf("failed to stop all dogus: %w", err))
+		return nil, createInternalError(fmt.Errorf("failed to stop all dogus: %w", err))
 	}
 
 	err = s.doguInterActor.StartAllDogus(ctx)
 	if err != nil {
-		return nil, createInternalError(ctx, fmt.Errorf("failed to start all dogus: %w", err))
+		return nil, createInternalError(fmt.Errorf("failed to start all dogus: %w", err))
 	}
 
 	err = s.debugModeRegistry.Disable(ctx)
 	if err != nil {
-		return nil, createInternalError(ctx, fmt.Errorf("failed to disable the debug mode registry: %w", err))
+		return nil, createInternalError(fmt.Errorf("failed to disable the debug mode registry: %w", err))
 	}
 
 	return &types.BasicResponse{}, nil
@@ -138,14 +138,13 @@ func (s *debugModeService) Disable(ctx context.Context, _ *pbMaintenance.ToggleD
 func (s *debugModeService) Status(ctx context.Context, _ *types.BasicRequest) (*pbMaintenance.DebugModeStatusResponse, error) {
 	enabled, timestamp, err := s.debugModeRegistry.Status(ctx)
 	if err != nil {
-		return nil, createInternalError(ctx, fmt.Errorf("failed to get status of debug mode registry: %w", err))
+		return nil, createInternalError(fmt.Errorf("failed to get status of debug mode registry: %w", err))
 	}
 
 	return &pbMaintenance.DebugModeStatusResponse{IsEnabled: enabled, DisableAtTimestamp: timestamp}, nil
 }
 
-func createInternalError(ctx context.Context, err error) error {
-	logger := log.FromContext(ctx)
-	logger.Error(err, interErrMsg)
+func createInternalError(err error) error {
+	logrus.Error(err, interErrMsg)
 	return status.Errorf(codes.Internal, err.Error())
 }
