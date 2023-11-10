@@ -17,12 +17,14 @@ type maintenanceRegistryObject struct {
 	Text  string `json:"text,omitempty"`
 }
 
+// NewDefaultMaintenanceModeSwitch creates a new instance of defaultMaintenanceModeSwitch.
 func NewDefaultMaintenanceModeSwitch(globalConfig registry.ConfigurationContext) *defaultMaintenanceModeSwitch {
 	return &defaultMaintenanceModeSwitch{
 		globalConfig: globalConfig,
 	}
 }
 
+// ActivateMaintenanceMode activates the maintenance mode.
 func (d *defaultMaintenanceModeSwitch) ActivateMaintenanceMode(title, text string) error {
 	value := maintenanceRegistryObject{
 		Title: title,
@@ -43,6 +45,7 @@ func (d *defaultMaintenanceModeSwitch) ActivateMaintenanceMode(title, text strin
 	return nil
 }
 
+// DeactivateMaintenanceMode deactivates the maintenance mode.
 func (d *defaultMaintenanceModeSwitch) DeactivateMaintenanceMode() error {
 	err := d.globalConfig.Delete(maintenanceKey)
 	if err != nil {

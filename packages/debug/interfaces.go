@@ -54,7 +54,9 @@ type debugModeRegistry interface {
 }
 
 type doguLogLevelRegistry interface {
+	// MarshalFromCesRegistryToString converts the log levels from the ces registry to a string
 	MarshalFromCesRegistryToString() (string, error)
+	// UnMarshalFromStringToCesRegistry writes the log level string to the ces registry.
 	UnMarshalFromStringToCesRegistry(unmarshal string) error
 }
 
@@ -66,7 +68,10 @@ type maintenanceModeSwitch interface {
 }
 
 type doguInterActor interface {
+	// StopAllDogus stops all dogus.
 	StopAllDogus(ctx context.Context) error
+	// StartAllDogus starts all dogus.
 	StartAllDogus(ctx context.Context) error
+	// SetLogLevelInAllDogus sets the specified log level to all dogus.
 	SetLogLevelInAllDogus(logLevel string) error
 }

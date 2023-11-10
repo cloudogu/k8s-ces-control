@@ -84,7 +84,7 @@ func (ddi *defaultDoguInterActor) RestartDoguWithWait(ctx context.Context, doguN
 	return ddi.scaleDeployment(ctx, doguName, 1, waitForRollout)
 }
 
-// RestartDogu restarts the specified dogu
+// RestartDogu restarts the specified dogu.
 func (ddi *defaultDoguInterActor) RestartDogu(ctx context.Context, doguName string) error {
 	return ddi.RestartDoguWithWait(ctx, doguName, false)
 }
@@ -189,6 +189,7 @@ func (ddi *defaultDoguInterActor) isDoguContainerInCrashLoop(ctx context.Context
 	return false, nil
 }
 
+// SetLogLevelInAllDogus sets the specified log level to all dogus.
 func (ddi *defaultDoguInterActor) SetLogLevelInAllDogus(logLevel string) error {
 	allDogus, err := ddi.registry.DoguRegistry().GetAll()
 	if err != nil {
@@ -207,6 +208,7 @@ func (ddi *defaultDoguInterActor) SetLogLevelInAllDogus(logLevel string) error {
 	return multiError
 }
 
+// StopAllDogus stops all dogus in the correct dependency order.
 func (ddi *defaultDoguInterActor) StopAllDogus(ctx context.Context) error {
 	allDogus, err := ddi.registry.DoguRegistry().GetAll()
 	if err != nil {
@@ -225,6 +227,7 @@ func (ddi *defaultDoguInterActor) StopAllDogus(ctx context.Context) error {
 	return multiError
 }
 
+// StartAllDogus starts all dogus in the correct dependency order.
 func (ddi *defaultDoguInterActor) StartAllDogus(ctx context.Context) error {
 	allDogus, err := ddi.registry.DoguRegistry().GetAll()
 	if err != nil {

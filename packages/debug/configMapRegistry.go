@@ -207,6 +207,7 @@ func isRegistryEnabled(registry *corev1.ConfigMap) (isEnabled bool, err error) {
 	return isEnabled, nil
 }
 
+// BackupDoguLogLevels save the actual log levels from the ces registry to the debug mode registry.
 func (c *configMapDebugModeRegistry) BackupDoguLogLevels(ctx context.Context) error {
 	registry, err := c.getRegistry(ctx)
 	if err != nil {
@@ -236,6 +237,7 @@ func registryNotEnabledError() error {
 	return fmt.Errorf("registry is not enabled")
 }
 
+// RestoreDoguLogLevels restores all log levels from the debug mode registry to the ces registry.
 func (c *configMapDebugModeRegistry) RestoreDoguLogLevels(ctx context.Context) error {
 	registry, err := c.getRegistry(ctx)
 	if err != nil {
