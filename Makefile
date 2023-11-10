@@ -36,6 +36,7 @@ include build/make/bats.mk
 include build/make/k8s-component.mk
 MOCKERY_IGNORED=vendor,build,docs,generated
 include build/make/mocks.mk
+include build/make/clean.mk
 include makefiles/grpc.mk
 include makefiles/monitoring.mk
 include makefiles/integration.mk
@@ -43,7 +44,7 @@ include makefiles/integration.mk
 default: build
 
 .PHONY: build
-build: check-env-var-namespace k8s-delete image-import k8s-apply ## Builds a new version of the k8s-ces-control and deploys it into the K8s-EcoSystem.
+build: k8s-delete image-import k8s-apply ## Builds a new version of the k8s-ces-control and deploys it into the K8s-EcoSystem.
 
 .PHONY: kill-pod
 kill-pod:
