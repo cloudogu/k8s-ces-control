@@ -22,7 +22,7 @@ einfließen (z.B. Log-Level anderer Komponenten im Cluster).
 * Typ: `string`
 * Notwendige Konfiguration
 * Beschreibung: Gibt an, wann der Debug-Mode automatisch wieder deaktiviert wird.
-* Beispiel: `true`
+* Beispiel: `10 Nov 23 10:48 UTC`
 
 > **Hinweis:** Der String ist ein Zeitstempel formatiert nach RFC822. Es wird in regelmäßigen Takt dieser Key abgefragt und entschieden, ob der Debug-Mode deaktiviert werden kann.
 

@@ -22,7 +22,7 @@ The regular CES registry in the ETCD was not used because in the Kubernetes cont
 * Type: `string`
 * Necessary configuration
 * Description: Specifies when the debug mode is automatically deactivated.
-* Example: `true`
+* Example: `10 Nov 23 10:48 UTC`
 
 **Note:** The string is a timestamp formatted according to RFC822. This key is queried at regular intervals and a decision is made whether debug mode can be deactivated.
 
