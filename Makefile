@@ -61,30 +61,6 @@ create-temporary-release-resource: ${BINARY_YQ} $(K8S_RESOURCE_TEMP_FOLDER) chec
 	@sed -i "s/'{{\.STAGE}}'/$(STAGE)/" $(K8S_RESOURCE_TEMP_YAML)
 	@$(BINARY_YQ) -i e "(select(.kind == \"Deployment\").spec.template.spec.containers[]|select(.image == \"*$(ARTIFACT_ID)*\").image)=\"$(IMAGE)\"" $(K8S_RESOURCE_TEMP_YAML);
 
-.PHONY: template-dev-only-image-pull-policy
-template-dev-only-image-pull-policy: $(BINARY_YQ)
-	@if [[ "${STAGE}""X" == "development""X" ]]; \
-		then echo "Setting pull policy to always for development stage!" && $(BINARY_YQ) -i e "(select(.kind == \"Deployment\").spec.template.spec.containers[]|select(.image == \"*$(ARTIFACT_ID)*\").imagePullPolicy)=\"Always\"" $(K8S_RESOURCE_TEMP_YAML); \
-	fi
-
-STAGE?=production
-.PHONY: check-env-var-stage
-check-env-var-stage:
-	@echo "Found stage [$(STAGE)]!"
-	@$(call check_defined, STAGE, STAGE is not set. You need to export it before executing this command. Valid Values: [development, prodution])
-
-LOG_LEVEL?=INFO
-.PHONY: check-env-var-log-level
-check-env-var-log-level:
-	@echo "Found log level [$(LOG_LEVEL)]!"
-	@$(call check_defined, LOG_LEVEL, LOG_LEVEL is not set. You need to export it before executing this command. Valid Values: [DEBUG,INFO,WARN,ERROR])
-
-NAMESPACE?=ecosystem
-.PHONY: check-env-var-namespace
-check-env-var-namespace:
-	@echo "Found namespace [$(NAMESPACE)]!"
-	@$(call check_defined, NAMESPACE, NAMESPACE is not set. You need to export it before executing this command.)
-
 ### Reimplementation to also clean build/deb
 .PHONY: clean
 clean: $(ADDITIONAL_CLEAN) ## Remove target and tmp directories

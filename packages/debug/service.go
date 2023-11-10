@@ -3,13 +3,13 @@ package debug
 import (
 	"context"
 	"fmt"
+	"github.com/cloudogu/k8s-ces-control/generated/debug"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
 	"github.com/sirupsen/logrus"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pbMaintenance "github.com/cloudogu/k8s-ces-control/generated/maintenance"
 	"github.com/cloudogu/k8s-ces-control/generated/types"
 )
 
@@ -21,8 +21,8 @@ const (
 	interErrMsg               = "internal error"
 )
 
-type debugModeService struct {
-	pbMaintenance.UnimplementedDebugModeServer
+type defaultDebugModeService struct {
+	debug.UnimplementedDebugModeServer
 	globalConfig          configurationContext
 	doguConfig            doguRegistry
 	clientSet             clusterClientSet
@@ -32,13 +32,13 @@ type debugModeService struct {
 	doguInterActor        doguInterActor
 }
 
-// NewDebugModeService returns an instance of debugModeService.
-func NewDebugModeService(registry cesRegistry, clusterClient clusterClientSet, namespace string) *debugModeService {
+// NewDebugModeService returns an instance of defaultDebugModeService.
+func NewDebugModeService(registry cesRegistry, clusterClient clusterClientSet, namespace string) *defaultDebugModeService {
 	cmDebugModeRegistry := NewConfigMapDebugModeRegistry(registry, clusterClient, namespace)
 	globalConfig := registry.GlobalConfig()
 	watcher := NewDefaultConfigMapRegistryWatcher(clusterClient.CoreV1().ConfigMaps(namespace), cmDebugModeRegistry)
 	watcher.StartWatch(context.Background())
-	return &debugModeService{
+	return &defaultDebugModeService{
 		globalConfig:          globalConfig,
 		doguConfig:            registry.DoguRegistry(),
 		clientSet:             clusterClient,
@@ -50,7 +50,7 @@ func NewDebugModeService(registry cesRegistry, clusterClient clusterClientSet, n
 }
 
 // Enable enables the debug mode, sets dogu log level to debug and restarts all dogus.
-func (s *debugModeService) Enable(ctx context.Context, req *pbMaintenance.ToggleDebugModeRequest) (*types.BasicResponse, error) {
+func (s *defaultDebugModeService) Enable(ctx context.Context, req *debug.ToggleDebugModeRequest) (*types.BasicResponse, error) {
 	err := s.maintenanceModeSwitch.ActivateMaintenanceMode(maintenanceTitle, activateMaintenanceText)
 	if err != nil {
 		return nil, createInternalError(fmt.Errorf("failed to activate maintenance mode: %w", err))
@@ -96,7 +96,7 @@ func (s *debugModeService) Enable(ctx context.Context, req *pbMaintenance.Toggle
 }
 
 // Disable returns an error because the method is unimplemented.
-func (s *debugModeService) Disable(ctx context.Context, _ *pbMaintenance.ToggleDebugModeRequest) (*types.BasicResponse, error) {
+func (s *defaultDebugModeService) Disable(ctx context.Context, _ *debug.ToggleDebugModeRequest) (*types.BasicResponse, error) {
 	err := s.maintenanceModeSwitch.ActivateMaintenanceMode(maintenanceTitle, deactivateMaintenanceText)
 	if err != nil {
 		return nil, createInternalError(fmt.Errorf("failed to activate maintenance mode: %w", err))
@@ -137,13 +137,13 @@ func (s *debugModeService) Disable(ctx context.Context, _ *pbMaintenance.ToggleD
 }
 
 // Status return an error because the method is unimplemented.
-func (s *debugModeService) Status(ctx context.Context, _ *types.BasicRequest) (*pbMaintenance.DebugModeStatusResponse, error) {
+func (s *defaultDebugModeService) Status(ctx context.Context, _ *types.BasicRequest) (*debug.DebugModeStatusResponse, error) {
 	enabled, timestamp, err := s.debugModeRegistry.Status(ctx)
 	if err != nil {
 		return nil, createInternalError(fmt.Errorf("failed to get status of debug mode registry: %w", err))
 	}
 
-	return &pbMaintenance.DebugModeStatusResponse{IsEnabled: enabled, DisableAtTimestamp: timestamp}, nil
+	return &debug.DebugModeStatusResponse{IsEnabled: enabled, DisableAtTimestamp: timestamp}, nil
 }
 
 func createInternalError(err error) error {

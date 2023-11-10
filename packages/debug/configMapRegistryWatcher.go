@@ -3,6 +3,7 @@ package debug
 import (
 	"context"
 	"fmt"
+	"github.com/cloudogu/k8s-ces-control/generated/debug"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,6 +16,7 @@ var tickerInterval = time.Second * 30
 type defaultConfigMapRegistryWatcher struct {
 	configMapInterface         configMapInterface
 	configMapDebugModeRegistry debugModeRegistry
+	debugModeService           debugModeServer
 }
 
 // NewDefaultConfigMapRegistryWatcher creates an instance of defaultConfigMapRegistryWatcher.
@@ -68,7 +70,7 @@ func (w *defaultConfigMapRegistryWatcher) checkDisableRegistry(ctx context.Conte
 
 	logrus.Info("disable debug mode registry")
 	if time.Now().After(disableAtTimestamp) {
-		err = w.configMapDebugModeRegistry.Disable(ctx)
+		_, err = w.debugModeService.Disable(ctx, &debug.ToggleDebugModeRequest{})
 		if err != nil {
 			return fmt.Errorf("failed to disable debug mode: %w", err)
 		}
