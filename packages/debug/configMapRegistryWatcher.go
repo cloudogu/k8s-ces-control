@@ -3,7 +3,6 @@ package debug
 import (
 	"context"
 	"fmt"
-	"github.com/cloudogu/k8s-ces-control/generated/debug"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

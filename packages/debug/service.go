@@ -3,13 +3,13 @@ package debug
 import (
 	"context"
 	"fmt"
-	"github.com/cloudogu/k8s-ces-control/generated/debug"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
 	"github.com/sirupsen/logrus"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	pbMaintenance "github.com/cloudogu/k8s-ces-control/generated/maintenance"
 	"github.com/cloudogu/k8s-ces-control/generated/types"
 )
 
@@ -21,8 +21,8 @@ const (
 	interErrMsg               = "internal error"
 )
 
-type defaultDebugModeService struct {
-	debug.UnimplementedDebugModeServer
+type debugModeService struct {
+	pbMaintenance.UnimplementedDebugModeServer
 	globalConfig          configurationContext
 	doguConfig            doguRegistry
 	clientSet             clusterClientSet
@@ -32,8 +32,8 @@ type defaultDebugModeService struct {
 	doguInterActor        doguInterActor
 }
 
-// NewDebugModeService returns an instance of defaultDebugModeService.
-func NewDebugModeService(registry cesRegistry, clusterClient clusterClientSet, namespace string) *defaultDebugModeService {
+// NewDebugModeService returns an instance of debugModeService.
+func NewDebugModeService(registry cesRegistry, clusterClient clusterClientSet, namespace string) *debugModeService {
 	cmDebugModeRegistry := NewConfigMapDebugModeRegistry(registry, clusterClient, namespace)
 	globalConfig := registry.GlobalConfig()
 	return &defaultDebugModeService{
@@ -141,7 +141,7 @@ func (s *defaultDebugModeService) Status(ctx context.Context, _ *types.BasicRequ
 		return nil, createInternalError(fmt.Errorf("failed to get status of debug mode registry: %w", err))
 	}
 
-	return &debug.DebugModeStatusResponse{IsEnabled: enabled, DisableAtTimestamp: timestamp}, nil
+	return &pbMaintenance.DebugModeStatusResponse{IsEnabled: enabled, DisableAtTimestamp: timestamp}, nil
 }
 
 func createInternalError(err error) error {

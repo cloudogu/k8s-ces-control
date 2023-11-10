@@ -20,6 +20,7 @@ import (
 	pbDoguAdministration "github.com/cloudogu/k8s-ces-control/generated/doguAdministration"
 	pgHealth "github.com/cloudogu/k8s-ces-control/generated/health"
 	pbLogging "github.com/cloudogu/k8s-ces-control/generated/logging"
+	pbMaintenance "github.com/cloudogu/k8s-ces-control/generated/maintenance"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
 	"github.com/cloudogu/k8s-ces-control/packages/debug"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"

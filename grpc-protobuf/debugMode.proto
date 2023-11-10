@@ -1,6 +1,6 @@
 syntax = "proto3";
-package debug;
-option go_package = "github.com/cloudogu/k8s-ces-control/generated/debug";
+package maintenance;
+option go_package = "github.com/cloudogu/k8s-ces-control/generated/maintenance";
 import "response.proto";
 import "request.proto";
 
