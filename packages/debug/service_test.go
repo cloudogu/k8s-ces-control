@@ -2,13 +2,13 @@ package debug
 
 import (
 	"context"
-	"github.com/cloudogu/k8s-ces-control/generated/debug"
+	"github.com/cloudogu/k8s-ces-control/generated/maintenance"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
-func TestNewDebugModeService(t *testing.T) {
+func TestNewdefaultDebugModeService(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// given
 		cesRegistryMock := newMockCesRegistry(t)
@@ -31,7 +31,7 @@ func TestNewDebugModeService(t *testing.T) {
 	})
 }
 
-func Test_debugModeService_Disable(t *testing.T) {
+func Test_defaultDebugModeService_Disable(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// given
 		doguInterActorMock := newMockDoguInterActor(t)
@@ -44,7 +44,7 @@ func Test_debugModeService_Disable(t *testing.T) {
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().RestoreDoguLogLevels(testCtx).Return(nil)
 		debugModeRegistryMock.EXPECT().Disable(noInheritedTestCtx).Return(nil)
-		sut := debugModeService{maintenanceModeSwitch: maintenanceModeSwitchMock, debugModeRegistry: debugModeRegistryMock, doguInterActor: doguInterActorMock}
+		sut := defaultDebugModeService{maintenanceModeSwitch: maintenanceModeSwitchMock, debugModeRegistry: debugModeRegistryMock, doguInterActor: doguInterActorMock}
 
 		// when
 		_, err := sut.Disable(testCtx, nil)
@@ -58,10 +58,10 @@ func Test_debugModeService_Disable(t *testing.T) {
 		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
 		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Deactivating debug mode").Return(assert.AnError)
 
-		sut := debugModeService{maintenanceModeSwitch: maintenanceModeSwitchMock}
+		sut := defaultDebugModeService{maintenanceModeSwitch: maintenanceModeSwitchMock}
 
 		// when
-		_, err := sut.Disable(testCtx, &debug.ToggleDebugModeRequest{})
+		_, err := sut.Disable(testCtx, &maintenance.ToggleDebugModeRequest{})
 
 		// then
 		require.Error(t, err)
@@ -75,10 +75,10 @@ func Test_debugModeService_Disable(t *testing.T) {
 		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(assert.AnError)
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().RestoreDoguLogLevels(testCtx).Return(assert.AnError)
-		sut := debugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock}
+		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock}
 
 		// when
-		_, err := sut.Disable(testCtx, &debug.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+		_, err := sut.Disable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
 
 		// then
 		require.Error(t, err)
@@ -94,10 +94,10 @@ func Test_debugModeService_Disable(t *testing.T) {
 		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(nil)
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().RestoreDoguLogLevels(testCtx).Return(nil)
-		sut := debugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
+		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
 
 		// when
-		_, err := sut.Disable(testCtx, &debug.ToggleDebugModeRequest{})
+		_, err := sut.Disable(testCtx, &maintenance.ToggleDebugModeRequest{})
 
 		// then
 		require.Error(t, err)
@@ -114,10 +114,10 @@ func Test_debugModeService_Disable(t *testing.T) {
 		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(nil)
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().RestoreDoguLogLevels(testCtx).Return(nil)
-		sut := debugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
+		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
 
 		// when
-		_, err := sut.Disable(testCtx, &debug.ToggleDebugModeRequest{})
+		_, err := sut.Disable(testCtx, &maintenance.ToggleDebugModeRequest{})
 
 		// then
 		require.Error(t, err)
@@ -135,10 +135,10 @@ func Test_debugModeService_Disable(t *testing.T) {
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().RestoreDoguLogLevels(testCtx).Return(nil)
 		debugModeRegistryMock.EXPECT().Disable(noInheritedTestCtx).Return(assert.AnError)
-		sut := debugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
+		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
 
 		// when
-		_, err := sut.Disable(testCtx, &debug.ToggleDebugModeRequest{})
+		_, err := sut.Disable(testCtx, &maintenance.ToggleDebugModeRequest{})
 
 		// then
 		require.Error(t, err)
@@ -146,7 +146,7 @@ func Test_debugModeService_Disable(t *testing.T) {
 	})
 }
 
-func Test_debugModeService_Enable(t *testing.T) {
+func Test_defaultDebugModeService_Enable(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// given
 		doguInterActorMock := newMockDoguInterActor(t)
@@ -160,10 +160,10 @@ func Test_debugModeService_Enable(t *testing.T) {
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().Enable(testCtx, int32(15)).Return(nil)
 		debugModeRegistryMock.EXPECT().BackupDoguLogLevels(testCtx).Return(nil)
-		sut := debugModeService{maintenanceModeSwitch: maintenanceModeSwitchMock, debugModeRegistry: debugModeRegistryMock, doguInterActor: doguInterActorMock}
+		sut := defaultDebugModeService{maintenanceModeSwitch: maintenanceModeSwitchMock, debugModeRegistry: debugModeRegistryMock, doguInterActor: doguInterActorMock}
 
 		// when
-		_, err := sut.Enable(testCtx, &debug.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
 
 		// then
 		require.NoError(t, err)
@@ -174,10 +174,10 @@ func Test_debugModeService_Enable(t *testing.T) {
 		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
 		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Activating debug mode").Return(assert.AnError)
 
-		sut := debugModeService{maintenanceModeSwitch: maintenanceModeSwitchMock}
+		sut := defaultDebugModeService{maintenanceModeSwitch: maintenanceModeSwitchMock}
 
 		// when
-		_, err := sut.Enable(testCtx, &debug.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
 
 		// then
 		require.Error(t, err)
@@ -191,10 +191,10 @@ func Test_debugModeService_Enable(t *testing.T) {
 		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(assert.AnError)
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().Enable(testCtx, int32(15)).Return(assert.AnError)
-		sut := debugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock}
+		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock}
 
 		// when
-		_, err := sut.Enable(testCtx, &debug.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
 
 		// then
 		require.Error(t, err)
@@ -209,10 +209,10 @@ func Test_debugModeService_Enable(t *testing.T) {
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().Enable(testCtx, int32(15)).Return(nil)
 		debugModeRegistryMock.EXPECT().BackupDoguLogLevels(testCtx).Return(assert.AnError)
-		sut := debugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock}
+		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock}
 
 		// when
-		_, err := sut.Enable(testCtx, &debug.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
 
 		// then
 		require.Error(t, err)
@@ -229,10 +229,10 @@ func Test_debugModeService_Enable(t *testing.T) {
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().Enable(testCtx, int32(15)).Return(nil)
 		debugModeRegistryMock.EXPECT().BackupDoguLogLevels(testCtx).Return(nil)
-		sut := debugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
+		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
 
 		// when
-		_, err := sut.Enable(testCtx, &debug.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
 
 		// then
 		require.Error(t, err)
@@ -250,10 +250,10 @@ func Test_debugModeService_Enable(t *testing.T) {
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().Enable(testCtx, int32(15)).Return(nil)
 		debugModeRegistryMock.EXPECT().BackupDoguLogLevels(testCtx).Return(nil)
-		sut := debugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
+		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
 
 		// when
-		_, err := sut.Enable(testCtx, &debug.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
 
 		// then
 		require.Error(t, err)
@@ -272,10 +272,10 @@ func Test_debugModeService_Enable(t *testing.T) {
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().Enable(testCtx, int32(15)).Return(nil)
 		debugModeRegistryMock.EXPECT().BackupDoguLogLevels(testCtx).Return(nil)
-		sut := debugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
+		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
 
 		// when
-		_, err := sut.Enable(testCtx, &debug.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
 
 		// then
 		require.Error(t, err)
@@ -283,12 +283,12 @@ func Test_debugModeService_Enable(t *testing.T) {
 	})
 }
 
-func Test_debugModeService_Status(t *testing.T) {
+func Test_defaultDebugModeService_Status(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// given
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().Status(testCtx).Return(true, 15, nil)
-		sut := debugModeService{debugModeRegistry: debugModeRegistryMock}
+		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock}
 
 		// when
 		response, err := sut.Status(context.TODO(), nil)
@@ -303,7 +303,7 @@ func Test_debugModeService_Status(t *testing.T) {
 		// given
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().Status(testCtx).Return(false, 0, assert.AnError)
-		sut := debugModeService{debugModeRegistry: debugModeRegistryMock}
+		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock}
 
 		// when
 		_, err := sut.Status(context.TODO(), nil)

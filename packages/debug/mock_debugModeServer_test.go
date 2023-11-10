@@ -5,7 +5,7 @@ package debug
 import (
 	context "context"
 
-	generateddebug "github.com/cloudogu/k8s-ces-control/generated/debug"
+	maintenance "github.com/cloudogu/k8s-ces-control/generated/maintenance"
 	mock "github.com/stretchr/testify/mock"
 
 	types "github.com/cloudogu/k8s-ces-control/generated/types"
@@ -25,15 +25,15 @@ func (_m *mockDebugModeServer) EXPECT() *mockDebugModeServer_Expecter {
 }
 
 // Disable provides a mock function with given fields: _a0, _a1
-func (_m *mockDebugModeServer) Disable(_a0 context.Context, _a1 *generateddebug.ToggleDebugModeRequest) (*types.BasicResponse, error) {
+func (_m *mockDebugModeServer) Disable(_a0 context.Context, _a1 *maintenance.ToggleDebugModeRequest) (*types.BasicResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
 	var r0 *types.BasicResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *generateddebug.ToggleDebugModeRequest) (*types.BasicResponse, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *maintenance.ToggleDebugModeRequest) (*types.BasicResponse, error)); ok {
 		return rf(_a0, _a1)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *generateddebug.ToggleDebugModeRequest) *types.BasicResponse); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *maintenance.ToggleDebugModeRequest) *types.BasicResponse); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
@@ -41,7 +41,7 @@ func (_m *mockDebugModeServer) Disable(_a0 context.Context, _a1 *generateddebug.
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *generateddebug.ToggleDebugModeRequest) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *maintenance.ToggleDebugModeRequest) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)
@@ -57,14 +57,14 @@ type mockDebugModeServer_Disable_Call struct {
 
 // Disable is a helper method to define mock.On call
 //   - _a0 context.Context
-//   - _a1 *generateddebug.ToggleDebugModeRequest
+//   - _a1 *maintenance.ToggleDebugModeRequest
 func (_e *mockDebugModeServer_Expecter) Disable(_a0 interface{}, _a1 interface{}) *mockDebugModeServer_Disable_Call {
 	return &mockDebugModeServer_Disable_Call{Call: _e.mock.On("Disable", _a0, _a1)}
 }
 
-func (_c *mockDebugModeServer_Disable_Call) Run(run func(_a0 context.Context, _a1 *generateddebug.ToggleDebugModeRequest)) *mockDebugModeServer_Disable_Call {
+func (_c *mockDebugModeServer_Disable_Call) Run(run func(_a0 context.Context, _a1 *maintenance.ToggleDebugModeRequest)) *mockDebugModeServer_Disable_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*generateddebug.ToggleDebugModeRequest))
+		run(args[0].(context.Context), args[1].(*maintenance.ToggleDebugModeRequest))
 	})
 	return _c
 }
@@ -74,7 +74,7 @@ func (_c *mockDebugModeServer_Disable_Call) Return(_a0 *types.BasicResponse, _a1
 	return _c
 }
 
-func (_c *mockDebugModeServer_Disable_Call) RunAndReturn(run func(context.Context, *generateddebug.ToggleDebugModeRequest) (*types.BasicResponse, error)) *mockDebugModeServer_Disable_Call {
+func (_c *mockDebugModeServer_Disable_Call) RunAndReturn(run func(context.Context, *maintenance.ToggleDebugModeRequest) (*types.BasicResponse, error)) *mockDebugModeServer_Disable_Call {
 	_c.Call.Return(run)
 	return _c
 }

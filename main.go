@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	pgdebug "github.com/cloudogu/k8s-ces-control/generated/debug"
 	"net"
 	"os"
 
@@ -108,7 +107,7 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministration.NewDoguAdministrationServer(client, cesReg))
 	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService(client))
 	debugModeService := debug.NewDebugModeService(cesReg, client, config.CurrentNamespace)
-	pgdebug.RegisterDebugModeServer(grpcServer, debugModeService)
+	pbMaintenance.RegisterDebugModeServer(grpcServer, debugModeService)
 	watcher := debug.NewDefaultConfigMapRegistryWatcher(client.CoreV1().ConfigMaps(config.CurrentNamespace), debugModeService)
 	watcher.StartWatch(context.Background())
 

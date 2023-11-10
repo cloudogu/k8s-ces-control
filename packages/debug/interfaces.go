@@ -3,6 +3,8 @@ package debug
 import (
 	"context"
 	"github.com/cloudogu/cesapp-lib/registry"
+	pbMaintenance "github.com/cloudogu/k8s-ces-control/generated/maintenance"
+	"github.com/cloudogu/k8s-ces-control/generated/types"
 	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -74,4 +76,9 @@ type doguInterActor interface {
 	StartAllDogus(ctx context.Context) error
 	// SetLogLevelInAllDogus sets the specified log level to all dogus.
 	SetLogLevelInAllDogus(logLevel string) error
+}
+
+type debugModeServer interface {
+	// Disable disables the debug mode.
+	Disable(context.Context, *pbMaintenance.ToggleDebugModeRequest) (*types.BasicResponse, error)
 }

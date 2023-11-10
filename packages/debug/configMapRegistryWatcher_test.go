@@ -1,7 +1,7 @@
 package debug
 
 import (
-	"github.com/cloudogu/k8s-ces-control/generated/debug"
+	"github.com/cloudogu/k8s-ces-control/generated/maintenance"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
@@ -26,7 +26,7 @@ func Test_defaultConfigMapRegistryWatcher_StartWatch(t *testing.T) {
 		configMapMock := newMockConfigMapInterface(t)
 		configMapMock.EXPECT().Get(testCtx, "debug-mode-registry", v12.GetOptions{}).Return(registryCm, nil)
 		debugModeService := newMockDebugModeServer(t)
-		debugModeService.EXPECT().Disable(testCtx, &debug.ToggleDebugModeRequest{}).Return(nil, nil)
+		debugModeService.EXPECT().Disable(testCtx, &maintenance.ToggleDebugModeRequest{}).Return(nil, nil)
 
 		sut := defaultConfigMapRegistryWatcher{
 			configMapInterface: configMapMock,
@@ -163,7 +163,7 @@ func Test_defaultConfigMapRegistryWatcher_StartWatch(t *testing.T) {
 			configMapMock := newMockConfigMapInterface(t)
 			configMapMock.EXPECT().Get(testCtx, "debug-mode-registry", v12.GetOptions{}).Return(registryCm, nil)
 			debugModeServiceMock := newMockDebugModeServer(t)
-			debugModeServiceMock.EXPECT().Disable(testCtx, &debug.ToggleDebugModeRequest{}).Return(nil, assert.AnError)
+			debugModeServiceMock.EXPECT().Disable(testCtx, &maintenance.ToggleDebugModeRequest{}).Return(nil, assert.AnError)
 
 			sut := defaultConfigMapRegistryWatcher{
 				configMapInterface: configMapMock,

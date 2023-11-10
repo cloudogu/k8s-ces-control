@@ -3,6 +3,7 @@ package debug
 import (
 	"context"
 	"fmt"
+	"github.com/cloudogu/k8s-ces-control/generated/maintenance"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,7 +69,7 @@ func (w *defaultConfigMapRegistryWatcher) checkDisableRegistry(ctx context.Conte
 
 	logrus.Info("disable debug mode registry")
 	if time.Now().After(disableAtTimestamp) {
-		_, err = w.debugModeService.Disable(ctx, &debug.ToggleDebugModeRequest{})
+		_, err = w.debugModeService.Disable(ctx, &maintenance.ToggleDebugModeRequest{})
 		if err != nil {
 			return fmt.Errorf("failed to disable debug mode: %w", err)
 		}
