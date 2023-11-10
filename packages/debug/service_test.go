@@ -35,15 +35,15 @@ func Test_debugModeService_Disable(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// given
 		doguInterActorMock := newMockDoguInterActor(t)
-		doguInterActorMock.EXPECT().StopAllDogus(testCtx).Return(nil).Run(func(ctx context.Context) {
-			doguInterActorMock.EXPECT().StartAllDogus(testCtx).Return(nil)
+		doguInterActorMock.EXPECT().StopAllDogus(noInheritedTestCtx).Return(nil).Run(func(ctx context.Context) {
+			doguInterActorMock.EXPECT().StartAllDogus(noInheritedTestCtx).Return(nil)
 		})
 		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
 		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Deactivating debug mode").Return(nil)
 		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(nil)
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().RestoreDoguLogLevels(testCtx).Return(nil)
-		debugModeRegistryMock.EXPECT().Disable(testCtx).Return(nil)
+		debugModeRegistryMock.EXPECT().Disable(noInheritedTestCtx).Return(nil)
 		sut := debugModeService{maintenanceModeSwitch: maintenanceModeSwitchMock, debugModeRegistry: debugModeRegistryMock, doguInterActor: doguInterActorMock}
 
 		// when
@@ -88,7 +88,7 @@ func Test_debugModeService_Disable(t *testing.T) {
 	t.Run("should return error on error stop all dogus", func(t *testing.T) {
 		// given
 		doguInterActorMock := newMockDoguInterActor(t)
-		doguInterActorMock.EXPECT().StopAllDogus(testCtx).Return(assert.AnError)
+		doguInterActorMock.EXPECT().StopAllDogus(noInheritedTestCtx).Return(assert.AnError)
 		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
 		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Deactivating debug mode").Return(nil)
 		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(nil)
@@ -107,8 +107,8 @@ func Test_debugModeService_Disable(t *testing.T) {
 	t.Run("should return error on start all dogus", func(t *testing.T) {
 		// given
 		doguInterActorMock := newMockDoguInterActor(t)
-		doguInterActorMock.EXPECT().StopAllDogus(testCtx).Return(nil)
-		doguInterActorMock.EXPECT().StartAllDogus(testCtx).Return(assert.AnError)
+		doguInterActorMock.EXPECT().StopAllDogus(noInheritedTestCtx).Return(nil)
+		doguInterActorMock.EXPECT().StartAllDogus(noInheritedTestCtx).Return(assert.AnError)
 		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
 		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Deactivating debug mode").Return(nil)
 		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(nil)
@@ -127,14 +127,14 @@ func Test_debugModeService_Disable(t *testing.T) {
 	t.Run("should return error on error disable debug mode registry", func(t *testing.T) {
 		// given
 		doguInterActorMock := newMockDoguInterActor(t)
-		doguInterActorMock.EXPECT().StopAllDogus(testCtx).Return(nil)
-		doguInterActorMock.EXPECT().StartAllDogus(testCtx).Return(nil)
+		doguInterActorMock.EXPECT().StopAllDogus(noInheritedTestCtx).Return(nil)
+		doguInterActorMock.EXPECT().StartAllDogus(noInheritedTestCtx).Return(nil)
 		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
 		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Deactivating debug mode").Return(nil)
 		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(nil)
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().RestoreDoguLogLevels(testCtx).Return(nil)
-		debugModeRegistryMock.EXPECT().Disable(testCtx).Return(assert.AnError)
+		debugModeRegistryMock.EXPECT().Disable(noInheritedTestCtx).Return(assert.AnError)
 		sut := debugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
 
 		// when
@@ -150,8 +150,8 @@ func Test_debugModeService_Enable(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// given
 		doguInterActorMock := newMockDoguInterActor(t)
-		doguInterActorMock.EXPECT().StopAllDogus(testCtx).Return(nil).Run(func(ctx context.Context) {
-			doguInterActorMock.EXPECT().StartAllDogus(testCtx).Return(nil)
+		doguInterActorMock.EXPECT().StopAllDogus(noInheritedTestCtx).Return(nil).Run(func(ctx context.Context) {
+			doguInterActorMock.EXPECT().StartAllDogus(noInheritedTestCtx).Return(nil)
 		})
 		doguInterActorMock.EXPECT().SetLogLevelInAllDogus("DEBUG").Return(nil)
 		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
@@ -243,7 +243,7 @@ func Test_debugModeService_Enable(t *testing.T) {
 		// given
 		doguInterActorMock := newMockDoguInterActor(t)
 		doguInterActorMock.EXPECT().SetLogLevelInAllDogus("DEBUG").Return(nil)
-		doguInterActorMock.EXPECT().StopAllDogus(testCtx).Return(assert.AnError)
+		doguInterActorMock.EXPECT().StopAllDogus(noInheritedTestCtx).Return(assert.AnError)
 		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
 		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Activating debug mode").Return(nil)
 		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(nil)
@@ -264,8 +264,8 @@ func Test_debugModeService_Enable(t *testing.T) {
 		// given
 		doguInterActorMock := newMockDoguInterActor(t)
 		doguInterActorMock.EXPECT().SetLogLevelInAllDogus("DEBUG").Return(nil)
-		doguInterActorMock.EXPECT().StopAllDogus(testCtx).Return(nil)
-		doguInterActorMock.EXPECT().StartAllDogus(testCtx).Return(assert.AnError)
+		doguInterActorMock.EXPECT().StopAllDogus(noInheritedTestCtx).Return(nil)
+		doguInterActorMock.EXPECT().StartAllDogus(noInheritedTestCtx).Return(assert.AnError)
 		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
 		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Activating debug mode").Return(nil)
 		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(nil)

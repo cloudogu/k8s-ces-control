@@ -16,7 +16,10 @@ import (
 
 const testNamespace = "ecosystem"
 
-var testCtx = context.TODO()
+var (
+	testCtx               = context.TODO()
+	noInheritedTestCtx, _ = noInheritCancel(testCtx)
+)
 
 func TestNewConfigMapDebugModeRegistry(t *testing.T) {
 	t.Run("success", func(t *testing.T) {

@@ -79,14 +79,15 @@ func (s *debugModeService) Enable(ctx context.Context, req *pbMaintenance.Toggle
 	}
 
 	// Create new context because the admin dogu itself will be canceled
-	ctx = context.Background()
+	noInheritedCtx, cancel := noInheritCancel(ctx)
+	defer cancel()
 
-	err = s.doguInterActor.StopAllDogus(ctx)
+	err = s.doguInterActor.StopAllDogus(noInheritedCtx)
 	if err != nil {
 		return nil, createInternalError(fmt.Errorf("failed to stop all dogus: %w", err))
 	}
 
-	err = s.doguInterActor.StartAllDogus(ctx)
+	err = s.doguInterActor.StartAllDogus(noInheritedCtx)
 	if err != nil {
 		return nil, createInternalError(fmt.Errorf("failed to start all dogus %w", err))
 	}
@@ -114,19 +115,20 @@ func (s *debugModeService) Disable(ctx context.Context, _ *pbMaintenance.ToggleD
 	}
 
 	// Create new context because the admin dogu itself will be canceled
-	ctx = context.Background()
+	noInheritedCtx, cancel := noInheritCancel(ctx)
+	defer cancel()
 
-	err = s.doguInterActor.StopAllDogus(ctx)
+	err = s.doguInterActor.StopAllDogus(noInheritedCtx)
 	if err != nil {
 		return nil, createInternalError(fmt.Errorf("failed to stop all dogus: %w", err))
 	}
 
-	err = s.doguInterActor.StartAllDogus(ctx)
+	err = s.doguInterActor.StartAllDogus(noInheritedCtx)
 	if err != nil {
 		return nil, createInternalError(fmt.Errorf("failed to start all dogus: %w", err))
 	}
 
-	err = s.debugModeRegistry.Disable(ctx)
+	err = s.debugModeRegistry.Disable(noInheritedCtx)
 	if err != nil {
 		return nil, createInternalError(fmt.Errorf("failed to disable the debug mode registry: %w", err))
 	}
@@ -147,4 +149,8 @@ func (s *debugModeService) Status(ctx context.Context, _ *types.BasicRequest) (*
 func createInternalError(err error) error {
 	logrus.Error(err, interErrMsg)
 	return status.Errorf(codes.Internal, err.Error())
+}
+
+func noInheritCancel(_ context.Context) (context.Context, context.CancelFunc) {
+	return context.WithCancel(context.Background())
 }
