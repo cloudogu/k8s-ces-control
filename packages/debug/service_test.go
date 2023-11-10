@@ -2,7 +2,7 @@ package debug
 
 import (
 	"context"
-	"github.com/cloudogu/k8s-ces-control/generated/maintenance"
+	"github.com/cloudogu/k8s-ces-control/generated/debug"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -61,7 +61,7 @@ func Test_debugModeService_Disable(t *testing.T) {
 		sut := defaultDebugModeService{maintenanceModeSwitch: maintenanceModeSwitchMock}
 
 		// when
-		_, err := sut.Disable(testCtx, &maintenance.ToggleDebugModeRequest{})
+		_, err := sut.Disable(testCtx, &debug.ToggleDebugModeRequest{})
 
 		// then
 		require.Error(t, err)
@@ -78,7 +78,7 @@ func Test_debugModeService_Disable(t *testing.T) {
 		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock}
 
 		// when
-		_, err := sut.Disable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+		_, err := sut.Disable(testCtx, &debug.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
 
 		// then
 		require.Error(t, err)
@@ -97,7 +97,7 @@ func Test_debugModeService_Disable(t *testing.T) {
 		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
 
 		// when
-		_, err := sut.Disable(testCtx, &maintenance.ToggleDebugModeRequest{})
+		_, err := sut.Disable(testCtx, &debug.ToggleDebugModeRequest{})
 
 		// then
 		require.Error(t, err)
@@ -117,7 +117,7 @@ func Test_debugModeService_Disable(t *testing.T) {
 		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
 
 		// when
-		_, err := sut.Disable(testCtx, &maintenance.ToggleDebugModeRequest{})
+		_, err := sut.Disable(testCtx, &debug.ToggleDebugModeRequest{})
 
 		// then
 		require.Error(t, err)
@@ -138,7 +138,7 @@ func Test_debugModeService_Disable(t *testing.T) {
 		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
 
 		// when
-		_, err := sut.Disable(testCtx, &maintenance.ToggleDebugModeRequest{})
+		_, err := sut.Disable(testCtx, &debug.ToggleDebugModeRequest{})
 
 		// then
 		require.Error(t, err)
@@ -163,7 +163,7 @@ func Test_debugModeService_Enable(t *testing.T) {
 		sut := defaultDebugModeService{maintenanceModeSwitch: maintenanceModeSwitchMock, debugModeRegistry: debugModeRegistryMock, doguInterActor: doguInterActorMock}
 
 		// when
-		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+		_, err := sut.Enable(testCtx, &debug.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
 
 		// then
 		require.NoError(t, err)
@@ -177,7 +177,7 @@ func Test_debugModeService_Enable(t *testing.T) {
 		sut := defaultDebugModeService{maintenanceModeSwitch: maintenanceModeSwitchMock}
 
 		// when
-		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+		_, err := sut.Enable(testCtx, &debug.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
 
 		// then
 		require.Error(t, err)
@@ -194,7 +194,7 @@ func Test_debugModeService_Enable(t *testing.T) {
 		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock}
 
 		// when
-		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+		_, err := sut.Enable(testCtx, &debug.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
 
 		// then
 		require.Error(t, err)
@@ -212,7 +212,7 @@ func Test_debugModeService_Enable(t *testing.T) {
 		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock}
 
 		// when
-		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+		_, err := sut.Enable(testCtx, &debug.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
 
 		// then
 		require.Error(t, err)
@@ -232,7 +232,7 @@ func Test_debugModeService_Enable(t *testing.T) {
 		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
 
 		// when
-		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+		_, err := sut.Enable(testCtx, &debug.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
 
 		// then
 		require.Error(t, err)
@@ -253,7 +253,7 @@ func Test_debugModeService_Enable(t *testing.T) {
 		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
 
 		// when
-		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+		_, err := sut.Enable(testCtx, &debug.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
 
 		// then
 		require.Error(t, err)
@@ -275,7 +275,7 @@ func Test_debugModeService_Enable(t *testing.T) {
 		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
 
 		// when
-		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+		_, err := sut.Enable(testCtx, &debug.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
 
 		// then
 		require.Error(t, err)

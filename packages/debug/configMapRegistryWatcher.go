@@ -14,16 +14,15 @@ import (
 var tickerInterval = time.Second * 30
 
 type defaultConfigMapRegistryWatcher struct {
-	configMapInterface         configMapInterface
-	configMapDebugModeRegistry debugModeRegistry
-	debugModeService           debugModeServer
+	configMapInterface configMapInterface
+	debugModeService   debugModeServer
 }
 
 // NewDefaultConfigMapRegistryWatcher creates an instance of defaultConfigMapRegistryWatcher.
-func NewDefaultConfigMapRegistryWatcher(configMapInterface configMapInterface, registry debugModeRegistry) *defaultConfigMapRegistryWatcher {
+func NewDefaultConfigMapRegistryWatcher(configMapInterface configMapInterface, debugModeService debugModeServer) *defaultConfigMapRegistryWatcher {
 	return &defaultConfigMapRegistryWatcher{
-		configMapInterface:         configMapInterface,
-		configMapDebugModeRegistry: registry,
+		configMapInterface: configMapInterface,
+		debugModeService:   debugModeService,
 	}
 }
 

@@ -1,6 +1,7 @@
 package debug
 
 import (
+	"github.com/cloudogu/k8s-ces-control/generated/debug"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
@@ -24,12 +25,12 @@ func Test_defaultConfigMapRegistryWatcher_StartWatch(t *testing.T) {
 
 		configMapMock := newMockConfigMapInterface(t)
 		configMapMock.EXPECT().Get(testCtx, "debug-mode-registry", v12.GetOptions{}).Return(registryCm, nil)
-		registry := newMockDebugModeRegistry(t)
-		registry.EXPECT().Disable(testCtx).Return(nil)
+		debugModeService := newMockDebugModeServer(t)
+		debugModeService.EXPECT().Disable(testCtx, &debug.ToggleDebugModeRequest{}).Return(nil, nil)
 
 		sut := defaultConfigMapRegistryWatcher{
-			configMapInterface:         configMapMock,
-			configMapDebugModeRegistry: registry,
+			configMapInterface: configMapMock,
+			debugModeService:   debugModeService,
 		}
 
 		// when
@@ -47,11 +48,9 @@ func Test_defaultConfigMapRegistryWatcher_StartWatch(t *testing.T) {
 
 		configMapMock := newMockConfigMapInterface(t)
 		configMapMock.EXPECT().Get(testCtx, "debug-mode-registry", v12.GetOptions{}).Return(nil, errors.NewNotFound(schema.GroupResource{}, ""))
-		registry := newMockDebugModeRegistry(t)
 
 		sut := defaultConfigMapRegistryWatcher{
-			configMapInterface:         configMapMock,
-			configMapDebugModeRegistry: registry,
+			configMapInterface: configMapMock,
 		}
 
 		// when
@@ -69,11 +68,9 @@ func Test_defaultConfigMapRegistryWatcher_StartWatch(t *testing.T) {
 
 		configMapMock := newMockConfigMapInterface(t)
 		configMapMock.EXPECT().Get(testCtx, "debug-mode-registry", v12.GetOptions{}).Return(nil, assert.AnError)
-		registry := newMockDebugModeRegistry(t)
 
 		sut := defaultConfigMapRegistryWatcher{
-			configMapInterface:         configMapMock,
-			configMapDebugModeRegistry: registry,
+			configMapInterface: configMapMock,
 		}
 
 		// when
@@ -95,11 +92,9 @@ func Test_defaultConfigMapRegistryWatcher_StartWatch(t *testing.T) {
 
 		configMapMock := newMockConfigMapInterface(t)
 		configMapMock.EXPECT().Get(testCtx, "debug-mode-registry", v12.GetOptions{}).Return(registryCm, nil)
-		registry := newMockDebugModeRegistry(t)
 
 		sut := defaultConfigMapRegistryWatcher{
-			configMapInterface:         configMapMock,
-			configMapDebugModeRegistry: registry,
+			configMapInterface: configMapMock,
 		}
 
 		// when
@@ -119,11 +114,9 @@ func Test_defaultConfigMapRegistryWatcher_StartWatch(t *testing.T) {
 
 		configMapMock := newMockConfigMapInterface(t)
 		configMapMock.EXPECT().Get(testCtx, "debug-mode-registry", v12.GetOptions{}).Return(registryCm, nil)
-		registry := newMockDebugModeRegistry(t)
 
 		sut := defaultConfigMapRegistryWatcher{
-			configMapInterface:         configMapMock,
-			configMapDebugModeRegistry: registry,
+			configMapInterface: configMapMock,
 		}
 
 		// when
@@ -143,11 +136,9 @@ func Test_defaultConfigMapRegistryWatcher_StartWatch(t *testing.T) {
 
 		configMapMock := newMockConfigMapInterface(t)
 		configMapMock.EXPECT().Get(testCtx, "debug-mode-registry", v12.GetOptions{}).Return(registryCm, nil)
-		registry := newMockDebugModeRegistry(t)
 
 		sut := defaultConfigMapRegistryWatcher{
-			configMapInterface:         configMapMock,
-			configMapDebugModeRegistry: registry,
+			configMapInterface: configMapMock,
 		}
 
 		// when
@@ -171,12 +162,12 @@ func Test_defaultConfigMapRegistryWatcher_StartWatch(t *testing.T) {
 
 			configMapMock := newMockConfigMapInterface(t)
 			configMapMock.EXPECT().Get(testCtx, "debug-mode-registry", v12.GetOptions{}).Return(registryCm, nil)
-			registry := newMockDebugModeRegistry(t)
-			registry.EXPECT().Disable(testCtx).Return(assert.AnError)
+			debugModeServiceMock := newMockDebugModeServer(t)
+			debugModeServiceMock.EXPECT().Disable(testCtx, &debug.ToggleDebugModeRequest{}).Return(nil, assert.AnError)
 
 			sut := defaultConfigMapRegistryWatcher{
-				configMapInterface:         configMapMock,
-				configMapDebugModeRegistry: registry,
+				configMapInterface: configMapMock,
+				debugModeService:   debugModeServiceMock,
 			}
 
 			// when

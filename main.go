@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	pgdebug "github.com/cloudogu/k8s-ces-control/generated/debug"
 	"net"
@@ -105,7 +106,10 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 	pbLogging.RegisterDoguLogMessagesServer(grpcServer, logging.NewLoggingService(client))
 	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministration.NewDoguAdministrationServer(client, cesReg))
 	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService(client))
-	pgdebug.RegisterDebugModeServer(grpcServer, debug.NewDebugModeService(cesReg, client, config.CurrentNamespace))
+	debugModeService := debug.NewDebugModeService(cesReg, client, config.CurrentNamespace)
+	pgdebug.RegisterDebugModeServer(grpcServer, debugModeService)
+	watcher := debug.NewDefaultConfigMapRegistryWatcher(client.CoreV1().ConfigMaps(config.CurrentNamespace), debugModeService)
+	watcher.StartWatch(context.Background())
 
 	// health endpoint used to determine the healthiness of the app
 	grpc_health_v1.RegisterHealthServer(grpcServer, health.NewServer())

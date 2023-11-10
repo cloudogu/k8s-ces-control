@@ -36,8 +36,6 @@ type defaultDebugModeService struct {
 func NewDebugModeService(registry cesRegistry, clusterClient clusterClientSet, namespace string) *defaultDebugModeService {
 	cmDebugModeRegistry := NewConfigMapDebugModeRegistry(registry, clusterClient, namespace)
 	globalConfig := registry.GlobalConfig()
-	watcher := NewDefaultConfigMapRegistryWatcher(clusterClient.CoreV1().ConfigMaps(namespace), cmDebugModeRegistry)
-	watcher.StartWatch(context.Background())
 	return &defaultDebugModeService{
 		globalConfig:          globalConfig,
 		doguConfig:            registry.DoguRegistry(),
