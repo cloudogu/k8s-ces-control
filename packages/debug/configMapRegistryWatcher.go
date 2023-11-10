@@ -34,13 +34,11 @@ func (w *defaultConfigMapRegistryWatcher) StartWatch(ctx context.Context) {
 
 func (w *defaultConfigMapRegistryWatcher) doWatch(ctx context.Context) {
 	ticker := time.NewTicker(tickerInterval)
-	for {
-		select {
-		case <-ticker.C:
-			err := w.checkDisableRegistry(ctx)
-			if err != nil {
-				logrus.Error(fmt.Errorf("watch debug mode registry: %w", err))
-			}
+
+	for range ticker.C {
+		err := w.checkDisableRegistry(ctx)
+		if err != nil {
+			logrus.Error(fmt.Errorf("watch debug mode registry: %w", err))
 		}
 	}
 }
