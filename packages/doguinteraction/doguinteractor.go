@@ -28,8 +28,8 @@ type defaultDoguInterActor struct {
 }
 
 // NewDefaultDoguInterActor creates a new instance of defaultDoguInterActor.
-func NewDefaultDoguInterActor(clientSet clusterClientSet, namespace string) *defaultDoguInterActor {
-	return &defaultDoguInterActor{clientSet: clientSet, namespace: namespace}
+func NewDefaultDoguInterActor(clientSet clusterClientSet, namespace string, registry cesRegistry) *defaultDoguInterActor {
+	return &defaultDoguInterActor{clientSet: clientSet, namespace: namespace, registry: registry}
 }
 
 // StartDogu starts the specified dogu.

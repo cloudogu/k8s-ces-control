@@ -22,7 +22,7 @@ const responseMessageMissingDoguName = "dogu name is empty"
 func NewDoguAdministrationServer(client clusterClient, reg cesRegistry) *server {
 	return &server{client: client,
 		doguRegistry:   reg.DoguRegistry(),
-		doguInterActor: doguinteraction.NewDefaultDoguInterActor(client, config.CurrentNamespace),
+		doguInterActor: doguinteraction.NewDefaultDoguInterActor(client, config.CurrentNamespace, reg),
 	}
 }
 

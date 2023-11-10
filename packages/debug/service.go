@@ -45,7 +45,7 @@ func NewDebugModeService(registry cesRegistry, clusterClient clusterClientSet, n
 		debugModeRegistry:     cmDebugModeRegistry,
 		maintenanceModeSwitch: NewDefaultMaintenanceModeSwitch(globalConfig),
 		namespace:             namespace,
-		doguInterActor:        doguinteraction.NewDefaultDoguInterActor(clusterClient, namespace),
+		doguInterActor:        doguinteraction.NewDefaultDoguInterActor(clusterClient, namespace, registry),
 	}
 }
 

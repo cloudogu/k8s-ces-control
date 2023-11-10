@@ -22,12 +22,15 @@ func TestNewDefaultDoguInterActor(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// given
 		clientSetMock := newMockClusterClientSet(t)
+		registryMock := newMockCesRegistry(t)
 
 		// when
-		actor := NewDefaultDoguInterActor(clientSetMock, testNamespace)
+		actor := NewDefaultDoguInterActor(clientSetMock, testNamespace, registryMock)
 
 		// then
 		require.NotNil(t, actor)
+		assert.NotNil(t, actor.registry)
+		assert.NotNil(t, actor.clientSet)
 	})
 }
 
