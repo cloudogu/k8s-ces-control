@@ -2,6 +2,7 @@ package debug
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
 	"github.com/sirupsen/logrus"
@@ -63,17 +64,17 @@ func (s *defaultDebugModeService) Enable(ctx context.Context, req *pbMaintenance
 
 	err = s.debugModeRegistry.Enable(ctx, req.Timer)
 	if err != nil {
-		return nil, createInternalError(fmt.Errorf("failed to enable debug mode registry: %w", err))
+		return nil, s.rollbackDisable(ctx, createInternalError(fmt.Errorf("failed to enable debug mode registry: %w", err)))
 	}
 
 	err = s.debugModeRegistry.BackupDoguLogLevels(ctx)
 	if err != nil {
-		return nil, createInternalError(fmt.Errorf("failed to backup dogu log levels: %w", err))
+		return nil, s.rollbackDisable(ctx, createInternalError(fmt.Errorf("failed to backup dogu log levels: %w", err)))
 	}
 
 	err = s.doguInterActor.SetLogLevelInAllDogus(logLevelDebug)
 	if err != nil {
-		return nil, createInternalError(fmt.Errorf("failed to set dogu log levels to debug: %w", err))
+		return nil, s.rollbackRestoreDisable(ctx, createInternalError(fmt.Errorf("failed to set dogu log levels to debug: %w", err)))
 	}
 
 	// Create new context because the admin dogu itself will be canceled
@@ -82,15 +83,45 @@ func (s *defaultDebugModeService) Enable(ctx context.Context, req *pbMaintenance
 
 	err = s.doguInterActor.StopAllDogus(noInheritedCtx)
 	if err != nil {
-		return nil, createInternalError(fmt.Errorf("failed to stop all dogus: %w", err))
+		return nil, s.rollbackRestoreStartDisable(ctx, createInternalError(fmt.Errorf("failed to stop all dogus: %w", err)))
 	}
 
 	err = s.doguInterActor.StartAllDogus(noInheritedCtx)
 	if err != nil {
-		return nil, createInternalError(fmt.Errorf("failed to start all dogus %w", err))
+		return nil, s.rollbackRestoreStartDisable(ctx, createInternalError(fmt.Errorf("failed to start all dogus %w", err)))
 	}
 
 	return &types.BasicResponse{}, nil
+}
+
+func (s *defaultDebugModeService) rollbackRestoreStartDisable(ctx context.Context, err error) error {
+	startErr := s.doguInterActor.StartAllDogus(ctx)
+	if startErr != nil {
+		err = errors.Join(wrapRollBackErr(startErr), err)
+	}
+
+	return s.rollbackRestoreDisable(ctx, err)
+}
+
+func (s *defaultDebugModeService) rollbackRestoreDisable(ctx context.Context, err error) error {
+	restoreErr := s.debugModeRegistry.RestoreDoguLogLevels(ctx)
+	if restoreErr != nil {
+		err = errors.Join(wrapRollBackErr(restoreErr), err)
+	}
+
+	return s.rollbackDisable(ctx, err)
+}
+
+func (s *defaultDebugModeService) rollbackDisable(ctx context.Context, err error) error {
+	rollbackErr := s.debugModeRegistry.Disable(ctx)
+	if rollbackErr != nil {
+		err = errors.Join(wrapRollBackErr(rollbackErr), err)
+	}
+	return err
+}
+
+func wrapRollBackErr(err error) error {
+	return fmt.Errorf("rollback error: %w", err)
 }
 
 // Disable returns an error because the method is unimplemented.

@@ -191,6 +191,7 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(assert.AnError)
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().Enable(testCtx, int32(15)).Return(assert.AnError)
+		debugModeRegistryMock.EXPECT().Disable(testCtx).Return(nil)
 		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock}
 
 		// when
@@ -201,6 +202,25 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 		assert.ErrorContains(t, err, "rpc error: code = Internal desc = failed to enable debug mode registry")
 	})
 
+	t.Run("should return wrapped error on error rollback enable debug mode registry", func(t *testing.T) {
+		// given
+		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
+		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Activating debug mode").Return(nil)
+		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(assert.AnError)
+		debugModeRegistryMock := newMockDebugModeRegistry(t)
+		debugModeRegistryMock.EXPECT().Enable(testCtx, int32(15)).Return(assert.AnError)
+		debugModeRegistryMock.EXPECT().Disable(testCtx).Return(assert.AnError)
+		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock}
+
+		// when
+		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+
+		// then
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "rollback error: assert.AnError general error for testing")
+		assert.ErrorContains(t, err, "rpc error: code = Internal desc = failed to enable debug mode registry: assert.AnError general error for testing")
+	})
+
 	t.Run("should return error on error backup dogu log levels", func(t *testing.T) {
 		// given
 		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
@@ -209,6 +229,7 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().Enable(testCtx, int32(15)).Return(nil)
 		debugModeRegistryMock.EXPECT().BackupDoguLogLevels(testCtx).Return(assert.AnError)
+		debugModeRegistryMock.EXPECT().Disable(testCtx).Return(nil)
 		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock}
 
 		// when
@@ -229,6 +250,8 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().Enable(testCtx, int32(15)).Return(nil)
 		debugModeRegistryMock.EXPECT().BackupDoguLogLevels(testCtx).Return(nil)
+		debugModeRegistryMock.EXPECT().Disable(testCtx).Return(nil)
+		debugModeRegistryMock.EXPECT().RestoreDoguLogLevels(testCtx).Return(nil)
 		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
 
 		// when
@@ -237,6 +260,29 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 		// then
 		require.Error(t, err)
 		assert.ErrorContains(t, err, "rpc error: code = Internal desc = failed to set dogu log levels to debug")
+	})
+
+	t.Run("should return wrapped error on rollback error set debug log level", func(t *testing.T) {
+		// given
+		doguInterActorMock := newMockDoguInterActor(t)
+		doguInterActorMock.EXPECT().SetLogLevelInAllDogus("DEBUG").Return(assert.AnError)
+		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
+		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Activating debug mode").Return(nil)
+		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(nil)
+		debugModeRegistryMock := newMockDebugModeRegistry(t)
+		debugModeRegistryMock.EXPECT().Enable(testCtx, int32(15)).Return(nil)
+		debugModeRegistryMock.EXPECT().BackupDoguLogLevels(testCtx).Return(nil)
+		debugModeRegistryMock.EXPECT().Disable(testCtx).Return(nil)
+		debugModeRegistryMock.EXPECT().RestoreDoguLogLevels(testCtx).Return(assert.AnError)
+		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
+
+		// when
+		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+
+		// then
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "rpc error: code = Internal desc = failed to set dogu log levels to debug")
+		assert.ErrorContains(t, err, "rollback error: assert.AnError general error for testing")
 	})
 
 	t.Run("should return error on error stop all dogus", func(t *testing.T) {
@@ -250,6 +296,10 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().Enable(testCtx, int32(15)).Return(nil)
 		debugModeRegistryMock.EXPECT().BackupDoguLogLevels(testCtx).Return(nil)
+		debugModeRegistryMock.EXPECT().Disable(testCtx).Return(nil)
+		debugModeRegistryMock.EXPECT().RestoreDoguLogLevels(testCtx).Return(nil)
+		doguInterActorMock.EXPECT().StartAllDogus(testCtx).Return(nil)
+
 		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
 
 		// when
@@ -258,6 +308,32 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 		// then
 		require.Error(t, err)
 		assert.ErrorContains(t, err, "rpc error: code = Internal desc = failed to stop all dogus")
+	})
+
+	t.Run("should return wrapped error on error rollback stop all dogus", func(t *testing.T) {
+		// given
+		doguInterActorMock := newMockDoguInterActor(t)
+		doguInterActorMock.EXPECT().SetLogLevelInAllDogus("DEBUG").Return(nil)
+		doguInterActorMock.EXPECT().StopAllDogus(noInheritedTestCtx).Return(assert.AnError)
+		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
+		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Activating debug mode").Return(nil)
+		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(nil)
+		debugModeRegistryMock := newMockDebugModeRegistry(t)
+		debugModeRegistryMock.EXPECT().Enable(testCtx, int32(15)).Return(nil)
+		debugModeRegistryMock.EXPECT().BackupDoguLogLevels(testCtx).Return(nil)
+		debugModeRegistryMock.EXPECT().Disable(testCtx).Return(nil)
+		debugModeRegistryMock.EXPECT().RestoreDoguLogLevels(testCtx).Return(nil)
+		doguInterActorMock.EXPECT().StartAllDogus(testCtx).Return(assert.AnError)
+
+		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
+
+		// when
+		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+
+		// then
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "rpc error: code = Internal desc = failed to stop all dogus")
+		assert.ErrorContains(t, err, "rollback error: assert.AnError general error for testing")
 	})
 
 	t.Run("should return error on error start all dogus", func(t *testing.T) {
@@ -272,6 +348,10 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 		debugModeRegistryMock.EXPECT().Enable(testCtx, int32(15)).Return(nil)
 		debugModeRegistryMock.EXPECT().BackupDoguLogLevels(testCtx).Return(nil)
+		debugModeRegistryMock.EXPECT().Disable(testCtx).Return(nil)
+		debugModeRegistryMock.EXPECT().RestoreDoguLogLevels(testCtx).Return(nil)
+		doguInterActorMock.EXPECT().StartAllDogus(testCtx).Return(nil)
+
 		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock, maintenanceModeSwitch: maintenanceModeSwitchMock, doguInterActor: doguInterActorMock}
 
 		// when
