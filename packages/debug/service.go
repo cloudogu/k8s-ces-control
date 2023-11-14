@@ -50,6 +50,8 @@ func NewDebugModeService(registry cesRegistry, clusterClient clusterClientSet, n
 
 // Enable enables the debug mode, sets dogu log level to debug and restarts all dogus.
 func (s *defaultDebugModeService) Enable(ctx context.Context, req *pbMaintenance.ToggleDebugModeRequest) (*types.BasicResponse, error) {
+	logrus.Info("Starting to enable debug-mode...")
+
 	err := s.maintenanceModeSwitch.ActivateMaintenanceMode(maintenanceTitle, activateMaintenanceText)
 	if err != nil {
 		return nil, createInternalError(fmt.Errorf("failed to activate maintenance mode: %w", err))
@@ -60,6 +62,7 @@ func (s *defaultDebugModeService) Enable(ctx context.Context, req *pbMaintenance
 		if err != nil {
 			logrus.Error(fmt.Errorf("failed to deactivate maintenance mode: %w", err), interErrMsg)
 		}
+		logrus.Info("...Finished enabling debug-mode.")
 	}()
 
 	err = s.debugModeRegistry.Enable(ctx, req.Timer)
@@ -126,6 +129,7 @@ func wrapRollBackErr(err error) error {
 
 // Disable returns an error because the method is unimplemented.
 func (s *defaultDebugModeService) Disable(ctx context.Context, _ *pbMaintenance.ToggleDebugModeRequest) (*types.BasicResponse, error) {
+	logrus.Info("Starting to disable debug-mode...")
 	err := s.maintenanceModeSwitch.ActivateMaintenanceMode(maintenanceTitle, deactivateMaintenanceText)
 	if err != nil {
 		return nil, createInternalError(fmt.Errorf("failed to activate maintenance mode: %w", err))
@@ -136,6 +140,7 @@ func (s *defaultDebugModeService) Disable(ctx context.Context, _ *pbMaintenance.
 		if err != nil {
 			logrus.Error(fmt.Errorf("failed to deactivate maintenance mode: %w", err), interErrMsg)
 		}
+		logrus.Info("...Finished disabling debug-mode.")
 	}()
 
 	err = s.debugModeRegistry.RestoreDoguLogLevels(ctx)
