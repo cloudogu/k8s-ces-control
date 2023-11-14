@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/cloudogu/cesapp-lib/core"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/apps/v1"
 	scalingv1 "k8s.io/api/autoscaling/v1"
@@ -206,8 +207,11 @@ func Test_defaultDoguInterActor_StartDoguWithWait(t *testing.T) {
 
 		deploymentMock.EXPECT().UpdateScale(context.TODO(), "postgresql", getScale("postgresql", 1), metav1.UpdateOptions{}).Return(nil, nil)
 
-		notRolledOutDeploy := getZeroReplicaDeployment()
-		deploymentMock.EXPECT().Get(testCtx, "postgresql", metav1.GetOptions{}).Return(notRolledOutDeploy, nil)
+		notRolledOutDeploy := getDeployment(1, 0, 0, 0, 0)
+		rolledOutDeploy := getDeployment(1, 1, 1, 1, 1)
+		deploymentMock.EXPECT().Get(testCtx, "postgresql", metav1.GetOptions{}).Return(notRolledOutDeploy, nil).Once().Run(func(args mock.Arguments) {
+			deploymentMock.EXPECT().Get(testCtx, "postgresql", metav1.GetOptions{}).Return(rolledOutDeploy, nil)
+		})
 		sut := defaultDoguInterActor{
 			clientSet: clientSetMock,
 			namespace: testNamespace,

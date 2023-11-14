@@ -116,15 +116,14 @@ func (ddi *defaultDoguInterActor) waitForDeploymentRollout(ctx context.Context, 
 		case <-ticker.C:
 			rolledOut, stopWait, err := ddi.doWaitForDeploymentRollout(ctx, doguName)
 			if err != nil {
-				logrus.Error(err)
 				stopWaitChannels(timeoutTimer, ticker)
+				return err
 			}
 
 			if stopWait || rolledOut {
 				stopWaitChannels(timeoutTimer, ticker)
+				return nil
 			}
-
-			return nil
 		case <-timeoutTimer.C:
 			ticker.Stop()
 			return fmt.Errorf("failed to wait for deployment %s rollout: timeout reached", doguName)
