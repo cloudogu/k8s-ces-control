@@ -9,16 +9,12 @@ import (
 
 func TestNewDoguLogLevelRegistry(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		// given
-		registryMock := newMockCesRegistry(t)
-
 		// when
-		debugReg := NewDoguLogLevelRegistryMap(registryMock)
+		debugReg := NewDoguLogLevelRegistryMap()
 
 		// then
 		require.NotNil(t, debugReg)
 		assert.Equal(t, map[string]string{}, debugReg.registry)
-		assert.Equal(t, registryMock, debugReg.cesRegistry)
 	})
 }
 
@@ -33,10 +29,10 @@ func Test_doguLogLevelRegistry_UnMarshalFromStringToCesRegistry(t *testing.T) {
 		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
 		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
 
-		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock}
+		sut := &doguLogLevelYamlRegistryMap{}
 
 		// when
-		err := sut.UnMarshalFromStringToCesRegistry("dogua: ERROR\ndogub: INFO\n")
+		err := sut.UnMarshalFromStringToCesRegistry(cesRegistryMock, "dogua: ERROR\ndogub: INFO\n")
 
 		// then
 		require.NoError(t, err)
@@ -44,11 +40,12 @@ func Test_doguLogLevelRegistry_UnMarshalFromStringToCesRegistry(t *testing.T) {
 
 	t.Run("should return error on invalid registry string", func(t *testing.T) {
 		// given
+		cesRegistryMock := newMockCesRegistry(t)
 		notAMapString := "notayamlMap::;;!"
 		sut := &doguLogLevelYamlRegistryMap{}
 
 		// when
-		err := sut.UnMarshalFromStringToCesRegistry(notAMapString)
+		err := sut.UnMarshalFromStringToCesRegistry(cesRegistryMock, notAMapString)
 
 		// then
 		require.Error(t, err)
@@ -65,10 +62,10 @@ func Test_doguLogLevelRegistry_UnMarshalFromStringToCesRegistry(t *testing.T) {
 		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
 		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
 
-		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock}
+		sut := &doguLogLevelYamlRegistryMap{}
 
 		// when
-		err := sut.UnMarshalFromStringToCesRegistry("dogua: ERROR\ndogub: \"\"\n")
+		err := sut.UnMarshalFromStringToCesRegistry(cesRegistryMock, "dogua: ERROR\ndogub: \"\"\n")
 
 		// then
 		require.NoError(t, err)
@@ -84,10 +81,10 @@ func Test_doguLogLevelRegistry_UnMarshalFromStringToCesRegistry(t *testing.T) {
 		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
 		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
 
-		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock}
+		sut := &doguLogLevelYamlRegistryMap{}
 
 		// when
-		err := sut.UnMarshalFromStringToCesRegistry("dogua: ERROR\ndogub: \"\"\n")
+		err := sut.UnMarshalFromStringToCesRegistry(cesRegistryMock, "dogua: ERROR\ndogub: \"\"\n")
 
 		// then
 		require.Error(t, err)
@@ -105,10 +102,10 @@ func Test_doguLogLevelRegistry_UnMarshalFromStringToCesRegistry(t *testing.T) {
 		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
 		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
 
-		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock}
+		sut := &doguLogLevelYamlRegistryMap{}
 
 		// when
-		err := sut.UnMarshalFromStringToCesRegistry("dogua: ERROR\ndogub: \"\"\n")
+		err := sut.UnMarshalFromStringToCesRegistry(cesRegistryMock, "dogua: ERROR\ndogub: \"\"\n")
 
 		// then
 		require.Error(t, err)
@@ -136,10 +133,10 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 		doguBConfigMock.EXPECT().Exists("logging/root").Return(true, nil)
 		doguBConfigMock.EXPECT().Get("logging/root").Return("INFO", nil)
 
-		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock, registry: map[string]string{}}
+		sut := &doguLogLevelYamlRegistryMap{registry: map[string]string{}}
 
 		// when
-		result, err := sut.MarshalFromCesRegistryToString()
+		result, err := sut.MarshalFromCesRegistryToString(cesRegistryMock)
 
 		// then
 		require.NoError(t, err)
@@ -153,10 +150,10 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 		cesRegistryMock.EXPECT().DoguRegistry().Return(doguRegistryMock)
 		doguRegistryMock.EXPECT().GetAll().Return(nil, assert.AnError)
 
-		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock, registry: map[string]string{}}
+		sut := &doguLogLevelYamlRegistryMap{registry: map[string]string{}}
 
 		// when
-		_, err := sut.MarshalFromCesRegistryToString()
+		_, err := sut.MarshalFromCesRegistryToString(cesRegistryMock)
 
 		// then
 		require.Error(t, err)
@@ -180,10 +177,10 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 		doguBConfigMock.EXPECT().Exists("logging/root").Return(true, nil)
 		doguBConfigMock.EXPECT().Get("logging/root").Return("INFO", nil)
 
-		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock, registry: map[string]string{}}
+		sut := &doguLogLevelYamlRegistryMap{registry: map[string]string{}}
 
 		// when
-		_, err := sut.MarshalFromCesRegistryToString()
+		_, err := sut.MarshalFromCesRegistryToString(cesRegistryMock)
 
 		// then
 		require.Error(t, err)
@@ -208,10 +205,10 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 		doguBConfigMock.EXPECT().Exists("logging/root").Return(true, nil)
 		doguBConfigMock.EXPECT().Get("logging/root").Return("INFO", nil)
 
-		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock, registry: map[string]string{}}
+		sut := &doguLogLevelYamlRegistryMap{registry: map[string]string{}}
 
 		// when
-		result, err := sut.MarshalFromCesRegistryToString()
+		result, err := sut.MarshalFromCesRegistryToString(cesRegistryMock)
 
 		// then
 		require.NoError(t, err)
@@ -234,10 +231,10 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 		doguBConfigMock.EXPECT().Exists("logging/root").Return(true, nil)
 		doguBConfigMock.EXPECT().Get("logging/root").Return("", assert.AnError)
 
-		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock, registry: map[string]string{}}
+		sut := &doguLogLevelYamlRegistryMap{registry: map[string]string{}}
 
 		// when
-		_, err := sut.MarshalFromCesRegistryToString()
+		_, err := sut.MarshalFromCesRegistryToString(cesRegistryMock)
 
 		// then
 		require.Error(t, err)

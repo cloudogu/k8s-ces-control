@@ -42,7 +42,7 @@ func NewConfigMapDebugModeRegistry(cesRegistry cesregistry.Registry, clusterClie
 		cesRegistry:          cesRegistry,
 		configMapInterface:   clusterClientSet.CoreV1().ConfigMaps(namespace),
 		namespace:            namespace,
-		doguLogLevelRegistry: NewDoguLogLevelRegistryMap(cesRegistry),
+		doguLogLevelRegistry: NewDoguLogLevelRegistryMap(),
 	}
 }
 
@@ -223,7 +223,7 @@ func (c *configMapDebugModeRegistry) BackupDoguLogLevels(ctx context.Context) er
 		return registryNotEnabledError()
 	}
 
-	newRegistry, err := c.doguLogLevelRegistry.MarshalFromCesRegistryToString()
+	newRegistry, err := c.doguLogLevelRegistry.MarshalFromCesRegistryToString(c.cesRegistry)
 	if err != nil {
 		return fmt.Errorf("failed to renew dogu log level registry: %w", err)
 	}
@@ -259,7 +259,7 @@ func (c *configMapDebugModeRegistry) RestoreDoguLogLevels(ctx context.Context) e
 		return fmt.Errorf("missing registry key %s", keyDoguLogLevel)
 	}
 
-	err = c.doguLogLevelRegistry.UnMarshalFromStringToCesRegistry(doguLogLevelData)
+	err = c.doguLogLevelRegistry.UnMarshalFromStringToCesRegistry(c.cesRegistry, doguLogLevelData)
 	if err != nil {
 		return fmt.Errorf("failed to restore dogu log level [%s]: %w", doguLogLevelData, err)
 	}

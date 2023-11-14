@@ -67,7 +67,6 @@ func (w *defaultConfigMapRegistryWatcher) checkDisableRegistry(ctx context.Conte
 		return fmt.Errorf("failed parse disableAtTimestamp %s: %w", timestamp, err)
 	}
 
-	logrus.Info("disable debug mode registry")
 	if time.Now().After(disableAtTimestamp) {
 		_, err = w.debugModeService.Disable(ctx, &maintenance.ToggleDebugModeRequest{})
 		if err != nil {

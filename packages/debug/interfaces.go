@@ -57,9 +57,9 @@ type debugModeRegistry interface {
 
 type doguLogLevelRegistry interface {
 	// MarshalFromCesRegistryToString converts the log levels from the ces registry to a string
-	MarshalFromCesRegistryToString() (string, error)
+	MarshalFromCesRegistryToString(registry cesRegistry) (string, error)
 	// UnMarshalFromStringToCesRegistry writes the log level string to the ces registry.
-	UnMarshalFromStringToCesRegistry(unmarshal string) error
+	UnMarshalFromStringToCesRegistry(registry cesRegistry, unmarshal string) error
 }
 
 type maintenanceModeSwitch interface {

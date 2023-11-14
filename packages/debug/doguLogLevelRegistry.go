@@ -9,30 +9,28 @@ import (
 const keyDoguConfigLogLevel = "logging/root"
 
 type doguLogLevelYamlRegistryMap struct {
-	cesRegistry cesRegistry
-	registry    map[string]string
+	registry map[string]string
 }
 
 // NewDoguLogLevelRegistryMap creates an instance of doguLogLevelYamlRegistryMap.
-func NewDoguLogLevelRegistryMap(registry cesRegistry) *doguLogLevelYamlRegistryMap {
+func NewDoguLogLevelRegistryMap() *doguLogLevelYamlRegistryMap {
 	return &doguLogLevelYamlRegistryMap{
-		cesRegistry: registry,
-		registry:    map[string]string{},
+		registry: map[string]string{},
 	}
 }
 
 // MarshalFromCesRegistryToString marshals the registry to yaml string.
-func (d *doguLogLevelYamlRegistryMap) MarshalFromCesRegistryToString() (string, error) {
+func (d *doguLogLevelYamlRegistryMap) MarshalFromCesRegistryToString(cesRegistry cesRegistry) (string, error) {
 	d.registry = map[string]string{}
 
-	allDogus, err := d.cesRegistry.DoguRegistry().GetAll()
+	allDogus, err := cesRegistry.DoguRegistry().GetAll()
 	if err != nil {
 		return "", fmt.Errorf("failed to get all dogus: %w", err)
 	}
 
 	var multiError error
 	for _, dogu := range allDogus {
-		doguConfig := d.cesRegistry.DoguConfig(dogu.GetSimpleName())
+		doguConfig := cesRegistry.DoguConfig(dogu.GetSimpleName())
 		exists, existsErr := doguConfig.Exists(keyDoguConfigLogLevel)
 		if existsErr != nil {
 			multiError = errors.Join(multiError, existsErr)
@@ -61,7 +59,7 @@ func (d *doguLogLevelYamlRegistryMap) MarshalFromCesRegistryToString() (string, 
 }
 
 // UnMarshalFromStringToCesRegistry unmarshal a map as yaml string to ces registry.
-func (d *doguLogLevelYamlRegistryMap) UnMarshalFromStringToCesRegistry(unmarshal string) error {
+func (d *doguLogLevelYamlRegistryMap) UnMarshalFromStringToCesRegistry(cesRegistry cesRegistry, unmarshal string) error {
 	out := map[string]string{}
 	err := yaml.Unmarshal([]byte(unmarshal), out)
 	if err != nil {
@@ -69,14 +67,14 @@ func (d *doguLogLevelYamlRegistryMap) UnMarshalFromStringToCesRegistry(unmarshal
 	}
 	d.registry = out
 
-	return d.restoreToCesRegistry()
+	return d.restoreToCesRegistry(cesRegistry)
 }
 
 // RestoreToCesRegistry writes all log levels to the ces registry.
-func (d *doguLogLevelYamlRegistryMap) restoreToCesRegistry() error {
+func (d *doguLogLevelYamlRegistryMap) restoreToCesRegistry(cesRegistry cesRegistry) error {
 	var multiError error
 	for dogu, level := range d.registry {
-		doguConfig := d.cesRegistry.DoguConfig(dogu)
+		doguConfig := cesRegistry.DoguConfig(dogu)
 		// If the dogu had no log level it is defined as an empty string in the registry.
 		// In this case we have to delete the entry.
 		if level == "" {
