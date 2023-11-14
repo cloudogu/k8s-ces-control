@@ -129,7 +129,7 @@ var deleteRetriable = func(err error) bool {
 	return err != nil
 }
 
-// Disable writes `enabled: false` in the registry.
+// Disable deletes the debug-mode-registry configMap.
 func (c *configMapDebugModeRegistry) Disable(ctx context.Context) error {
 	err := retry.OnError(maxThirtySecondsBackoff, deleteRetriable, func() error {
 		err := c.configMapInterface.Delete(ctx, registryName, metav1.DeleteOptions{})
