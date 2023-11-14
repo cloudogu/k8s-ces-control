@@ -1,6 +1,6 @@
 # Set these to the desired values
 ARTIFACT_ID=k8s-ces-control
-VERSION=0.3.0
+VERSION=0.4.0
 GOTAG=1.20.4
 LINT_VERSION=v1.53.2
 
@@ -12,7 +12,7 @@ SHELL = /usr/bin/env bash -o pipefail
 IMAGE_DEV?=${K3CES_REGISTRY_URL_PREFIX}/${ARTIFACT_ID}:${VERSION}
 IMAGE?=cloudogu/${ARTIFACT_ID}:${VERSION}
 
-MAKEFILES_VERSION=8.0.0
+MAKEFILES_VERSION=8.7.3
 .DEFAULT_GOAL:=default
 GENERATION_TARGET_DIR=generated
 GENERATION_SOURCE_DIR=grpc-protobuf
@@ -36,6 +36,7 @@ include build/make/bats.mk
 include build/make/k8s-component.mk
 MOCKERY_IGNORED=vendor,build,docs,generated
 include build/make/mocks.mk
+include build/make/clean.mk
 include makefiles/grpc.mk
 include makefiles/monitoring.mk
 include makefiles/integration.mk
@@ -43,7 +44,7 @@ include makefiles/integration.mk
 default: build
 
 .PHONY: build
-build: check-env-var-namespace k8s-delete image-import k8s-apply ## Builds a new version of the k8s-ces-control and deploys it into the K8s-EcoSystem.
+build: k8s-delete image-import k8s-apply ## Builds a new version of the k8s-ces-control and deploys it into the K8s-EcoSystem.
 
 .PHONY: kill-pod
 kill-pod:
@@ -78,25 +79,3 @@ LOG_LEVEL?=INFO
 check-env-var-log-level:
 	@echo "Found log level [$(LOG_LEVEL)]!"
 	@$(call check_defined, LOG_LEVEL, LOG_LEVEL is not set. You need to export it before executing this command. Valid Values: [DEBUG,INFO,WARN,ERROR])
-
-NAMESPACE?=ecosystem
-.PHONY: check-env-var-namespace
-check-env-var-namespace:
-	@echo "Found namespace [$(NAMESPACE)]!"
-	@$(call check_defined, NAMESPACE, NAMESPACE is not set. You need to export it before executing this command.)
-
-### Reimplementation to also clean build/deb
-.PHONY: clean
-clean: $(ADDITIONAL_CLEAN) ## Remove target and tmp directories
-	rm -rf ${TARGET_DIR}
-	rm -rf ${TMP_DIR}
-	rm -rf ${UTILITY_BIN_PATH}
-	rm -rf build/deb
-
-.PHONY: dist-clean
-dist-clean: clean ## Remove all generated directories
-	rm -rf node_modules
-	rm -rf public/vendor
-	rm -rf vendor
-	rm -rf npm-cache
-	rm -rf bower

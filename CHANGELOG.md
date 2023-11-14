@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.4.0] - 2023-11-14
+### Added
+- [#15] Add first version of debug mode for dogus without data collection and log rotation.
+
 ## [v0.3.0] - 2023-09-15
 ### Changed
 - [#13] Move component-dependencies to helm-annotations
