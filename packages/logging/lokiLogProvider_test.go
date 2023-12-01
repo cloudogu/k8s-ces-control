@@ -142,3 +142,23 @@ func Test_deduplicateLogLines(t *testing.T) {
 		})
 	}
 }
+
+func Test_calculateQueryLimit(t *testing.T) {
+	tests := []struct {
+		name        string
+		linesCount  int
+		resultCount int
+		want        int
+	}{
+		{"default query limit for 0 lines count", 0, 0, defaultQueryLimit},
+		{"default query limit for remaining count higher than default", defaultQueryLimit + 100, 10, defaultQueryLimit},
+		{"remaining count lower than default", defaultQueryLimit + 100, defaultQueryLimit + 10, 90},
+		{"remaining count is 0", 100, 100, 0},
+		{"remaining count is negative", 100, 200, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, calculateQueryLimit(tt.linesCount, tt.resultCount), "calculateQueryLimit(%v, %v)", tt.linesCount, tt.resultCount)
+		})
+	}
+}

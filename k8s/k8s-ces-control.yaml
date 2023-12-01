@@ -119,6 +119,18 @@ spec:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: metadata.namespace
+            - name: LOKI_GATEWAY_URL
+              value: "{{ .Values.lokiGateway.url }}"
+            - name: LOKI_GATEWAY_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.lokiGateway.secretName }}"
+                  key: "{{ .Values.lokiGateway.usernameKey }}"
+            - name: LOKI_GATEWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.lokiGateway.secretName }}"
+                  key: "{{ .Values.lokiGateway.passwordKey }}"
           startupProbe:
             exec:
               command: ["/bin/bash", "-c", "/grpc_health_probe -addr localhost:50051 || exit 1"]

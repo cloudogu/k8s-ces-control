@@ -15,12 +15,21 @@ import (
 
 const defaultQueryLimit = 1000
 
-type lokiLogProvider struct {
-	username string
-	password string
+type LokiLogProvider struct {
+	gatewayUrl string
+	username   string
+	password   string
 }
 
-func (llp *lokiLogProvider) getLogs(doguName string, linesCount int) ([]logLine, error) {
+func NewLokiLogProvider(gatewayUrl string, username string, password string) *LokiLogProvider {
+	return &LokiLogProvider{
+		gatewayUrl: gatewayUrl,
+		username:   username,
+		password:   password,
+	}
+}
+
+func (llp *LokiLogProvider) getLogs(doguName string, linesCount int) ([]logLine, error) {
 	query := fmt.Sprintf("{pod=~\"%s.*\"}", doguName)
 	endDate := time.Now()
 	startDate := createQueryStartDateFromEndDate(endDate)
@@ -30,7 +39,7 @@ func (llp *lokiLogProvider) getLogs(doguName string, linesCount int) ([]logLine,
 		limit := calculateQueryLimit(linesCount, len(result))
 
 		logrus.Debugf("running loki query for '%s' from %s to %s with limit %d", doguName, startDate.Format(time.RFC3339), endDate.Format(time.RFC3339), limit)
-		lokiQueryUrl, err := buildLokiQueryUrl(query, startDate, endDate, limit)
+		lokiQueryUrl, err := buildLokiQueryUrl(llp.gatewayUrl, query, startDate, endDate, limit)
 		if err != nil {
 			return result, fmt.Errorf("failed to build loki-query: %v", err)
 		}
@@ -83,6 +92,11 @@ func calculateQueryLimit(linesCount int, resultCount int) int {
 	}
 
 	remainingCount := linesCount - resultCount
+
+	if remainingCount < 0 {
+		return 0
+	}
+
 	if (remainingCount) < defaultQueryLimit {
 		return remainingCount
 	}
@@ -98,8 +112,8 @@ func createQueryStartDateFromEndDate(endDate time.Time) time.Time {
 
 // buildLokiQueryUrl returns a Loki query over a range of time using the given query regexp part, a start date, an end date and the maximum number of
 // results being returned.
-func buildLokiQueryUrl(query string, startDate time.Time, endDate time.Time, limit int) (string, error) {
-	baseUrl, err := url.Parse(lokiGatewareServiceURL)
+func buildLokiQueryUrl(lokiBaseUrl string, query string, startDate time.Time, endDate time.Time, limit int) (string, error) {
+	baseUrl, err := url.Parse(lokiBaseUrl)
 	if err != nil {
 		return "", err
 	}
@@ -118,7 +132,7 @@ func buildLokiQueryUrl(query string, startDate time.Time, endDate time.Time, lim
 	return baseUrl.String(), nil
 }
 
-func (llp *lokiLogProvider) doLokiHttpQuery(lokiUrl string) (*lokiResponse, error) {
+func (llp *LokiLogProvider) doLokiHttpQuery(lokiUrl string) (*lokiResponse, error) {
 	logrus.Debugf("running loki query with URL: %s", lokiUrl)
 	req, err := http.NewRequest(http.MethodGet, lokiUrl, nil)
 	if err != nil {

@@ -6,29 +6,16 @@ import (
 	"fmt"
 	"time"
 
+	pb "github.com/cloudogu/k8s-ces-control/generated/logging"
+	"github.com/cloudogu/k8s-ces-control/packages/stream"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"k8s.io/client-go/kubernetes"
-
-	pb "github.com/cloudogu/k8s-ces-control/generated/logging"
-	"github.com/cloudogu/k8s-ces-control/packages/stream"
-	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
 )
 
 const (
 	responseMessageMissingDoguname = "Dogu name should not be empty"
 )
-
-// TODO: URLs should be made configurable in case parts of the URL must be altered (f. i. "monitoring" may be unavailable
-// for organizational reasons)
-const lokiGatewareExecutionNamespace = "ecosystem"
-const lokiGatewareServiceURL = "http://k8s-loki-gateway." + lokiGatewareExecutionNamespace + ".svc.cluster.local"
-
-type clusterClient interface {
-	ecoSystem.EcoSystemV1Alpha1Interface
-	kubernetes.Interface
-}
 
 type nowClock interface {
 	Now() time.Time
@@ -41,15 +28,13 @@ func (r *realClock) Now() time.Time {
 }
 
 // NewLoggingService creates a new logging service.
-func NewLoggingService(client clusterClient) *loggingService {
-	clock := &realClock{}
-	return &loggingService{client: client, clock: clock}
+func NewLoggingService(provider logProvider) *loggingService {
+	return &loggingService{logProvider: provider}
 }
 
 type loggingService struct {
 	pb.UnimplementedDoguLogMessagesServer
-	client clusterClient
-	clock  nowClock
+	logProvider logProvider
 }
 
 // GetForDogu writes dogu log messages into the stream of the given server.
@@ -58,19 +43,14 @@ func (s *loggingService) GetForDogu(request *pb.DoguLogMessageRequest, server pb
 	doguName := request.DoguName
 	// delegate to an orderly named method because GetForDogu is misleading but cannot be renamed due to the
 	// distributed nature of GRPC definitions
-	return writeLogLinesToStream(doguName, linesCount, server)
+	return writeLogLinesToStream(s.logProvider, doguName, linesCount, server)
 }
 
-func writeLogLinesToStream(doguName string, linesCount int, server pb.DoguLogMessages_GetForDoguServer) error {
+func writeLogLinesToStream(logProvider logProvider, doguName string, linesCount int, server pb.DoguLogMessages_GetForDoguServer) error {
 	if doguName == "" {
 		return status.Error(codes.InvalidArgument, responseMessageMissingDoguname)
 	}
 	logrus.Debugf("retrieving %d line(s) of log messages for dogu '%s'", linesCount, doguName)
-
-	logProvider := &lokiLogProvider{
-		username: "loki-gateway-user",
-		password: "zErGCt9mQVcBbcenFPE3KNYm",
-	}
 
 	logLines, err := logProvider.getLogs(doguName, linesCount)
 	if err != nil {
