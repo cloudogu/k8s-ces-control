@@ -15,10 +15,21 @@ import (
 
 const defaultQueryLimit = 1000
 
+type nowClock interface {
+	Now() time.Time
+}
+
+type realClock struct{}
+
+func (r *realClock) Now() time.Time {
+	return time.Now()
+}
+
 type LokiLogProvider struct {
 	gatewayUrl string
 	username   string
 	password   string
+	clock      nowClock
 }
 
 func NewLokiLogProvider(gatewayUrl string, username string, password string) *LokiLogProvider {
@@ -26,12 +37,13 @@ func NewLokiLogProvider(gatewayUrl string, username string, password string) *Lo
 		gatewayUrl: gatewayUrl,
 		username:   username,
 		password:   password,
+		clock:      &realClock{},
 	}
 }
 
 func (llp *LokiLogProvider) getLogs(doguName string, linesCount int) ([]logLine, error) {
 	query := fmt.Sprintf("{pod=~\"%s.*\"}", doguName)
-	endDate := time.Now()
+	endDate := llp.clock.Now()
 	startDate := createQueryStartDateFromEndDate(endDate)
 
 	result := make([]logLine, 0)
@@ -80,6 +92,11 @@ func (llp *LokiLogProvider) getLogs(doguName string, linesCount int) ([]logLine,
 	// because multiple logs can happen at the exact same timestamp and the query is batched over time,
 	// it is possible that consecutive batches contain the same logLines. These need to be removed.
 	result = deduplicateLogLines(result)
+
+	// truncate log-lines if we got more than requested
+	if linesCount > 0 && len(result) > linesCount {
+		result = result[:linesCount]
+	}
 
 	logrus.Debugf("finished loki query; got %d logLines", len(result))
 
@@ -152,7 +169,7 @@ func (llp *LokiLogProvider) doLokiHttpQuery(lokiUrl string) (*lokiResponse, erro
 
 	if resp.StatusCode != http.StatusOK {
 		responseData, err := io.ReadAll(resp.Body)
-		if err != nil {
+		if err != nil || len(responseData) == 0 {
 			responseData = []byte(fmt.Sprintf("faild to read error response: %v", err))
 		}
 

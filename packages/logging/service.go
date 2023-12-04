@@ -17,16 +17,6 @@ const (
 	responseMessageMissingDoguname = "Dogu name should not be empty"
 )
 
-type nowClock interface {
-	Now() time.Time
-}
-
-type realClock struct{}
-
-func (r *realClock) Now() time.Time {
-	return time.Now()
-}
-
 // NewLoggingService creates a new logging service.
 func NewLoggingService(provider logProvider) *loggingService {
 	return &loggingService{logProvider: provider}
