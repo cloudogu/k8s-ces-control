@@ -94,8 +94,8 @@ node('docker') {
                 k3d.waitForDeploymentRollout("postfix", 300, 10)
             }
 
-            def imageName = ""
-            stage('Install k8s-ces-control') {
+            String imageName = ""
+            stage('Build & Push Image') {
                 imageName = k3d.buildAndPushToLocalRegistry("cloudogu/${repositoryName}", makefile.getVersion())
             }
 
@@ -117,7 +117,7 @@ node('docker') {
             }
 
             stage('Test Grpc') {
-                testK8sCesControl(k3d)
+                testK8sCesControl()
             }
 
             stageAutomaticRelease(makefile)
@@ -136,13 +136,13 @@ String getCurrentCommit() {
     return sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
 }
 
-private void testK8sCesControl(K3d k3d) {
+private void testK8sCesControl() {
     sh "KUBECONFIG=${WORKSPACE}/k3d/.k3d/.kube/config make integration-test-bash"
     junit allowEmptyResults: true, testResults: 'target/bash-integration-test/*.xml'
 }
 
 void stageStaticAnalysisReviewDog() {
-    def commitSha = getCurrentCommit()
+    String commitSha = getCurrentCommit()
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'sonarqube-gh', usernameVariable: 'USERNAME', passwordVariable: 'REVIEWDOG_GITHUB_API_TOKEN']]) {
         withEnv(["CI_PULL_REQUEST=${env.CHANGE_ID}", "CI_COMMIT=${commitSha}", "CI_REPO_OWNER=${repositoryOwner}", "CI_REPO_NAME=${repositoryName}"]) {
             make 'static-analysis'
