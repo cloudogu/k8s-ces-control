@@ -17,6 +17,10 @@ const (
 	responseMessageMissingDoguname = "Dogu name should not be empty"
 )
 
+type doguLogMessagesServer interface {
+	pb.DoguLogMessages_GetForDoguServer
+}
+
 // NewLoggingService creates a new logging service.
 func NewLoggingService(provider logProvider) *loggingService {
 	return &loggingService{logProvider: provider}
@@ -36,7 +40,7 @@ func (s *loggingService) GetForDogu(request *pb.DoguLogMessageRequest, server pb
 	return writeLogLinesToStream(s.logProvider, doguName, linesCount, server)
 }
 
-func writeLogLinesToStream(logProvider logProvider, doguName string, linesCount int, server pb.DoguLogMessages_GetForDoguServer) error {
+func writeLogLinesToStream(logProvider logProvider, doguName string, linesCount int, server doguLogMessagesServer) error {
 	if doguName == "" {
 		return status.Error(codes.InvalidArgument, responseMessageMissingDoguname)
 	}
@@ -50,11 +54,13 @@ func writeLogLinesToStream(logProvider logProvider, doguName string, linesCount 
 
 	compressedMessagesBytes, err := compressMessages(doguName, logLines)
 	if err != nil {
-		return err
+		logrus.Errorf("error compressing message: %v", err)
+		return createInternalErr(err, codes.Internal)
 	}
 
 	err = stream.WriteToStream(compressedMessagesBytes, server)
 	if err != nil {
+		logrus.Errorf("error writing logs to stream: %v", err)
 		return createInternalErr(err, codes.Internal)
 	}
 
