@@ -3,6 +3,8 @@ ARTIFACT_ID=k8s-ces-control
 VERSION=0.4.0
 GOTAG=1.20.4
 LINT_VERSION=v1.53.2
+STAGE?=production
+LOG_LEVEL?=info
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 SHELL = /usr/bin/env bash -o pipefail
@@ -83,13 +85,11 @@ template-image-pull-policy: $(BINARY_YQ)
           $(BINARY_YQ) -i e ".manager.imagePullPolicy=\"Always\"" "${K8S_COMPONENT_TARGET_VALUES}" ; \
     fi
 
-STAGE?=production
 .PHONY: check-env-var-stage
 check-env-var-stage:
 	@echo "Found stage [$(STAGE)]!"
 	@$(call check_defined, STAGE, STAGE is not set. You need to export it before executing this command. Valid Values: [development, prodution])
 
-LOG_LEVEL?=INFO
 .PHONY: check-env-var-log-level
 check-env-var-log-level:
 	@echo "Found log level [$(LOG_LEVEL)]!"
