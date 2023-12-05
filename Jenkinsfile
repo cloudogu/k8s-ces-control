@@ -132,6 +132,10 @@ node('docker') {
     }
 }
 
+String getCurrentCommit() {
+    return sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+}
+
 private void testK8sCesControl(K3d k3d) {
     sh "KUBECONFIG=${WORKSPACE}/k3d/.k3d/.kube/config make integration-test-bash"
     junit allowEmptyResults: true, testResults: 'target/bash-integration-test/*.xml'
