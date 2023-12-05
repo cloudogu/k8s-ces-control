@@ -21,7 +21,6 @@ INTEGRATION_TEST_NAME_PATTERN=.*_inttest$$
 GO_BUILD_FLAGS=-mod=vendor -a -tags netgo,osusergo $(LDFLAGS) -o $(BINARY)
 
 K8S_RESOURCE_DIR=${WORKDIR}/k8s
-K8S_CES_CONTROL_RESOURCE_YAML=${K8S_RESOURCE_DIR}/k8s-ces-control.yaml
 
 include build/make/variables.mk
 include build/make/dependencies-gomod.mk
@@ -44,29 +43,45 @@ include makefiles/integration.mk
 default: build
 
 .PHONY: build
-build: k8s-delete image-import k8s-apply ## Builds a new version of the k8s-ces-control and deploys it into the K8s-EcoSystem.
+build: helm-delete image-import helm-apply ## Builds a new version of the k8s-ces-control and deploys it into the K8s-EcoSystem.
 
 .PHONY: kill-pod
 kill-pod:
 	@echo "Restarting k8s-ces-control!"
 	@kubectl -n ${NAMESPACE} delete pods -l 'app.kubernetes.io/name=k8s-ces-control'
 
-.PHONY: k8s-create-temporary-resource
-k8s-create-temporary-resource: create-temporary-release-resource template-dev-only-image-pull-policy
+.PHONY: helm-values-update-image-version
+helm-values-update-image-version: $(BINARY_YQ)
+	@echo "Updating the image version in source values.yaml to ${VERSION}..."
+	@$(BINARY_YQ) -i e ".manager.image.tag = \"${VERSION}\"" ${K8S_COMPONENT_SOURCE_VALUES}
 
-.PHONY: create-temporary-release-resource
-create-temporary-release-resource: ${BINARY_YQ} $(K8S_RESOURCE_TEMP_FOLDER) check-env-var-stage check-env-var-log-level
-	@echo "---" > $(K8S_RESOURCE_TEMP_YAML)
-	@cat $(K8S_CES_CONTROL_RESOURCE_YAML) >> $(K8S_RESOURCE_TEMP_YAML)
-	@sed -i "s/'{{\.LOG\_LEVEL}}'/$(LOG_LEVEL)/" $(K8S_RESOURCE_TEMP_YAML)
-	@sed -i "s/'{{\.STAGE}}'/$(STAGE)/" $(K8S_RESOURCE_TEMP_YAML)
-	@$(BINARY_YQ) -i e "(select(.kind == \"Deployment\").spec.template.spec.containers[]|select(.image == \"*$(ARTIFACT_ID)*\").image)=\"$(IMAGE)\"" $(K8S_RESOURCE_TEMP_YAML);
+.PHONY: helm-values-replace-image-repo
+helm-values-replace-image-repo: $(BINARY_YQ)
+	@if [[ ${STAGE} == "development" ]]; then \
+      		echo "Setting dev image repo in target values.yaml!" ;\
+    		$(BINARY_YQ) -i e ".manager.image.repository=\"${IMAGE_DEV}\"" "${K8S_COMPONENT_TARGET_VALUES}" ;\
+    	fi
 
-.PHONY: template-dev-only-image-pull-policy
-template-dev-only-image-pull-policy: $(BINARY_YQ)
-	@if [[ "${STAGE}""X" == "development""X" ]]; \
-		then echo "Setting pull policy to always for development stage!" && $(BINARY_YQ) -i e "(select(.kind == \"Deployment\").spec.template.spec.containers[]|select(.image == \"*$(ARTIFACT_ID)*\").imagePullPolicy)=\"Always\"" $(K8S_RESOURCE_TEMP_YAML); \
+.PHONY: template-stage
+template-stage: $(BINARY_YQ)
+	@if [[ ${STAGE} == "development" ]]; then \
+  		echo "Setting STAGE env in deployment to ${STAGE}!" ;\
+		$(BINARY_YQ) -i e ".manager.env.stage=\"${STAGE}\"" ${K8S_COMPONENT_TARGET_VALUES} ;\
 	fi
+
+.PHONY: template-log-level
+template-log-level: ${BINARY_YQ}
+	@if [[ "${STAGE}" == "development" ]]; then \
+      echo "Setting LOG_LEVEL env in deployment to ${LOG_LEVEL}!" ; \
+      $(BINARY_YQ) -i e ".manager.env.logLevel=\"${LOG_LEVEL}\"" "${K8S_COMPONENT_TARGET_VALUES}" ; \
+    fi
+
+.PHONY: template-image-pull-policy
+template-image-pull-policy: $(BINARY_YQ)
+	@if [[ "${STAGE}" == "development" ]]; then \
+          echo "Setting pull policy to always!" ; \
+          $(BINARY_YQ) -i e ".manager.imagePullPolicy=\"Always\"" "${K8S_COMPONENT_TARGET_VALUES}" ; \
+    fi
 
 STAGE?=production
 .PHONY: check-env-var-stage
