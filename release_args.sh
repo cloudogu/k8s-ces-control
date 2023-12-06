@@ -9,6 +9,7 @@ update_versions_modify_files() {
   valuesYAML=k8s/helm/values.yaml
   componentPatchTplYAML=k8s/helm/component-patch-tpl.yaml
 
+echo "Set image in values.yaml and component patch template"
   yq -i ".manager.image.tag = \"${newReleaseVersion}\"" "${valuesYAML}"
   yq -i ".values.images.ces-control |= sub(\":(([0-9]+)\.([0-9]+)\.([0-9]+)((?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))|(?:\+[0-9A-Za-z-]+))?)\", \":${newReleaseVersion}\")" "${componentPatchTplYAML}"
 }
