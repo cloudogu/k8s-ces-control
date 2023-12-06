@@ -1,5 +1,5 @@
 #!groovy
-@Library('github.com/cloudogu/ces-build-lib@1.65.0')
+@Library('github.com/cloudogu/ces-build-lib@1.68.0')
 import com.cloudogu.ces.cesbuildlib.*
 
 // Creating necessary git objects, object cannot be named 'git' as this conflicts with the method named 'git' from the library
@@ -10,6 +10,8 @@ gitflow = new GitFlow(this, gitWrapper)
 github = new GitHub(this, gitWrapper)
 changelog = new Changelog(this)
 Docker docker = new Docker(this)
+gpg = new Gpg(this, docker)
+Makefile makefile = new Makefile(this)
 goVersion = "1.20.4"
 
 // Configuration of repository
@@ -18,6 +20,8 @@ repositoryName = "k8s-ces-control"
 project = "github.com/${repositoryOwner}/${repositoryName}"
 registry = "registry.cloudogu.com"
 registry_namespace = "k8s"
+helmTargetDir = "target/k8s"
+helmChartDir = "${helmTargetDir}/helm"
 
 // Configuration of branches
 productionReleaseBranch = "main"
@@ -42,28 +46,32 @@ node('docker') {
              lintDockerfile()
          }
 
-         stage("Lint - k8s Resources") {
-             stageLintK8SResources()
-         }
-
          docker
-                 .image("golang:${goVersion}")
-                 .mountJenkinsUser()
-                 .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}")
-                         {
-                             stage('Build') {
-                                 make 'compile'
-                             }
+             .image("golang:${goVersion}")
+             .mountJenkinsUser()
+             .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}") {
+                 stage('Build') {
+                     make 'compile'
+                 }
 
-                             stage('Unit Tests') {
-                                 make 'unit-test'
-                                 junit allowEmptyResults: true, testResults: 'target/unit-tests/*-tests.xml'
-                             }
+                 stage('Unit Tests') {
+                     make 'unit-test'
+                     junit allowEmptyResults: true, testResults: 'target/unit-tests/*-tests.xml'
+                 }
 
-                             stage("Review dog analysis") {
-                                 stageStaticAnalysisReviewDog()
-                             }
-                         }
+                 stage("Review dog analysis") {
+                     stageStaticAnalysisReviewDog()
+                 }
+
+                 stage('Generate k8s Resources') {
+                     make 'helm-generate'
+                     archiveArtifacts "${helmTargetDir}/**/*"
+                 }
+
+                 stage("Lint helm") {
+                     make 'helm-lint'
+                 }
+             }
 
          stage('SonarQube') {
              stageStaticAnalysisSonarQube()
@@ -86,12 +94,22 @@ node('docker') {
                 k3d.waitForDeploymentRollout("postfix", 300, 10)
             }
 
-            stage('Install k8s-ces-control') {
-                Makefile makefile = new Makefile(this)
-                def localImageName = k3d.buildAndPushToLocalRegistry("cloudogu/${repositoryName}", makefile.getVersion())
-                String pathToGeneratedFile = generateResources("IMAGE_DEV=${localImageName} STAGE=development LOG_LEVEL=DEBUG make k8s-generate")
-                k3d.kubectl("apply -f ${pathToGeneratedFile}")
-                make("clean")
+            String imageName = ""
+            stage('Build & Push Image') {
+                imageName = k3d.buildAndPushToLocalRegistry("cloudogu/${repositoryName}", makefile.getVersion())
+            }
+
+            stage('Update development resources') {
+                def repository = imageName.substring(0, imageName.lastIndexOf(":"))
+                docker.image("golang:${goVersion}")
+                        .mountJenkinsUser()
+                        .inside("--volume ${WORKSPACE}:/workdir -w /workdir") {
+                            sh "STAGE=development IMAGE_DEV=${repository} make helm-values-replace-image-repo template-stage"
+                        }
+            }
+
+            stage('Deploy k8s-ces-control') {
+                k3d.helm("install ${repositoryName} ${helmChartDir}")
             }
 
             stage("Wait for k8s-ces-control") {
@@ -99,13 +117,13 @@ node('docker') {
             }
 
             stage('Test Grpc') {
-                testK8sCesControl(k3d)
+                testK8sCesControl()
             }
 
-            stageAutomaticRelease()
+            stageAutomaticRelease(makefile)
         } catch (Exception e) {
             k3d.collectAndArchiveLogs()
-            throw e
+            throw e as Throwable
         } finally {
             stage('Remove k3d cluster') {
                 k3d.deleteK3d()
@@ -114,27 +132,17 @@ node('docker') {
     }
 }
 
-private void testK8sCesControl(K3d k3d) {
-    sh "KUBECONFIG=${WORKSPACE}/k3d/.k3d/.kube/config make integration-test-bash"
-    junit allowEmptyResults: true, testResults: 'target/bash-integration-test/*.xml'
-}
-
-void stageLintK8SResources() {
-    String kubevalImage = "cytopia/kubeval:0.13"
-    docker
-            .image(kubevalImage)
-            .inside("-v ${WORKSPACE}/k8s:/data -t --entrypoint=")
-                    {
-                        sh "kubeval /data/${repositoryName}.yaml --ignore-missing-schemas"
-                    }
-}
-
 String getCurrentCommit() {
     return sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
 }
 
+private void testK8sCesControl() {
+    sh "KUBECONFIG=${WORKSPACE}/k3d/.k3d/.kube/config make integration-test-bash"
+    junit allowEmptyResults: true, testResults: 'target/bash-integration-test/*.xml'
+}
+
 void stageStaticAnalysisReviewDog() {
-    def commitSha = getCurrentCommit()
+    String commitSha = getCurrentCommit()
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'sonarqube-gh', usernameVariable: 'USERNAME', passwordVariable: 'REVIEWDOG_GITHUB_API_TOKEN']]) {
         withEnv(["CI_PULL_REQUEST=${env.CHANGE_ID}", "CI_COMMIT=${commitSha}", "CI_REPO_OWNER=${repositoryOwner}", "CI_REPO_NAME=${repositoryName}"]) {
             make 'static-analysis'
@@ -172,10 +180,9 @@ void stageStaticAnalysisSonarQube() {
     }
 }
 
-void stageAutomaticRelease() {
+void stageAutomaticRelease(Makefile makefile) {
     if (gitflow.isReleaseBranch()) {
         String releaseVersion = gitWrapper.getSimpleBranchName()
-        Makefile makefile = new Makefile(this)
         String version = makefile.getVersion()
 
         stage('Build & Push Image') {
@@ -186,6 +193,28 @@ void stageAutomaticRelease() {
             }
         }
 
+        stage('Sign after Release') {
+            gpg.createSignature()
+        }
+
+        stage('Push Helm chart to Harbor') {
+            docker
+                .image("golang:${goVersion}")
+                .mountJenkinsUser()
+                .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}") {
+                    // Package chart
+                    make 'helm-package'
+                    archiveArtifacts "${helmTargetDir}/**/*"
+
+                    // Push chart
+                    withCredentials([usernamePassword(credentialsId: 'harborhelmchartpush', usernameVariable: 'HARBOR_USERNAME', passwordVariable: 'HARBOR_PASSWORD')]) {
+                        sh ".bin/helm registry login ${registry} --username '${HARBOR_USERNAME}' --password '${HARBOR_PASSWORD}'"
+
+                        sh ".bin/helm push ${helmChartDir}/${repositoryName}-${releaseVersion}.tgz oci://${registry}/${registry_namespace}/"
+                    }
+                }
+        }
+
         stage('Finish Release') {
             gitflow.finishRelease(releaseVersion, productionReleaseBranch)
         }
@@ -193,47 +222,7 @@ void stageAutomaticRelease() {
         stage('Add Github-Release') {
             releaseId = github.createReleaseWithChangelog(releaseVersion, changelog, productionReleaseBranch)
         }
-
-        stage('Regenerate resources for release') {
-            generateResources("make k8s-create-temporary-resource")
-        }
-
-        stage('Push to Registry') {
-            GString targetSetupResourceYaml = "target/make/k8s/${repositoryName}_${version}.yaml"
-
-            DoguRegistry registry = new DoguRegistry(this)
-            registry.pushK8sYaml(targetSetupResourceYaml, repositoryName, "k8s", "${version}")
-        }
-
-        stage('Push Helm chart to Harbor') {
-            new Docker(this)
-                .image("golang:${goVersion}")
-                .mountJenkinsUser()
-                .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}")
-                        {
-                            make 'helm-package-release'
-
-                            withCredentials([usernamePassword(credentialsId: 'harborhelmchartpush', usernameVariable: 'HARBOR_USERNAME', passwordVariable: 'HARBOR_PASSWORD')]) {
-                                sh ".bin/helm registry login ${registry} --username '${HARBOR_USERNAME}' --password '${HARBOR_PASSWORD}'"
-                                sh ".bin/helm push target/make/k8s/helm/${repositoryName}-${version}.tgz oci://${registry}/${registry_namespace}/"
-                            }
-                        }
-        }
     }
-}
-
-String generateResources(String makefileCommand = "") {
-    Makefile makefile = new Makefile(this)
-    String version = makefile.getVersion()
-    String generatedFile = "target/make/k8s/k8s-ces-control_${version}.yaml".toString()
-    new Docker(this).image("golang:${goVersion}")
-            .mountJenkinsUser()
-            .inside("--volume ${WORKSPACE}:/workdir -w /workdir") {
-                sh "${makefileCommand}"
-                archiveArtifacts "${generatedFile}"
-            }
-
-    return generatedFile
 }
 
 void make(String makeArgs) {

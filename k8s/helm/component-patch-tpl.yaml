@@ -1,0 +1,11 @@
+apiVersion: v1
+
+values:
+  images:
+    cesControl: cloudogu/k8s-ces-control:0.4.0
+patches:
+  values.yaml:
+    manager:
+      image:
+        repository: "{{ registryFrom .images.cesControl }}/{{ repositoryFrom .images.cesControl }}"
+        tag: "{{ tagFrom .images.cesControl }}"
