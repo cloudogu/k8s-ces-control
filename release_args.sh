@@ -11,7 +11,7 @@ update_versions_modify_files() {
 
 echo "Set image in values.yaml and component patch template"
   yq -i ".manager.image.tag = \"${newReleaseVersion}\"" "${valuesYAML}"
-  yq -i ".values.images.ces-control |= sub(\":(([0-9]+)\.([0-9]+)\.([0-9]+)((?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))|(?:\+[0-9A-Za-z-]+))?)\", \":${newReleaseVersion}\")" "${componentPatchTplYAML}"
+  yq -i ".values.images.cesControl |= sub(\":(([0-9]+)\.([0-9]+)\.([0-9]+)((?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))|(?:\+[0-9A-Za-z-]+))?)\", \":${newReleaseVersion}\")" "${componentPatchTplYAML}"
 }
 
 update_versions_stage_modified_files() {
