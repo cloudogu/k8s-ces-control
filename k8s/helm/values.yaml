@@ -7,7 +7,6 @@ manager:
   env:
     stage: production
     logLevel: info
-
 lokiGateway:
   url: "http://k8s-loki-gateway.ecosystem.svc.cluster.local"
   secretName: "k8s-loki-gateway-secret"

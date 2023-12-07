@@ -94,6 +94,15 @@ node('docker') {
                 k3d.waitForDeploymentRollout("postfix", 300, 10)
             }
 
+            stage('Deploy k8s-ces-control dependencies') {
+                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'harborhelmchartpush', usernameVariable: 'HARBOR_USERNAME', passwordVariable: 'HARBOR_PASSWORD']]) {
+                    k3d.helm("registry login ${registry} --username '${HARBOR_USERNAME}' --password '${HARBOR_PASSWORD}'")
+                    k3d.helm("install k8s-minio oci://${registry}/${registry_namespace}/k8s-minio --version 2023.9.23-3")
+                    k3d.helm("install k8s-loki oci://${registry}/${registry_namespace}/k8s-loki --version 2.9.1-3")
+                    k3d.helm("install k8s-promtail oci://${registry}/${registry_namespace}/k8s-promtail --version 2.9.1-2")
+                }
+            }
+
             String imageName = ""
             stage('Build & Push Image') {
                 imageName = k3d.buildAndPushToLocalRegistry("cloudogu/${repositoryName}", makefile.getVersion())
