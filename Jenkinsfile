@@ -84,6 +84,10 @@ node('docker') {
             }
 
             stage('Setup') {
+                k3d.configureComponents(["k8s-minio":    ["version": "latest", "helmRepositoryNamespace": "k8s"],
+                                         "k8s-loki":     ["version": "latest", "helmRepositoryNamespace": "k8s"],
+                                         "k8s-promtail": ["version": "latest", "helmRepositoryNamespace": "k8s"],
+                ])
                 k3d.setup("v0.16.0", [
                         dependencies: ["official/postfix", "official/ldap", "k8s/nginx-static", "k8s/nginx-ingress"],
                         defaultDogu : ""
@@ -92,15 +96,6 @@ node('docker') {
 
             stage("Wait for Setup") {
                 k3d.waitForDeploymentRollout("postfix", 300, 10)
-            }
-
-            stage('Deploy k8s-ces-control dependencies') {
-                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'harborhelmchartpush', usernameVariable: 'HARBOR_USERNAME', passwordVariable: 'HARBOR_PASSWORD']]) {
-                    k3d.helm("registry login ${registry} --username '${HARBOR_USERNAME}' --password '${HARBOR_PASSWORD}'")
-                    k3d.helm("install k8s-minio oci://${registry}/${registry_namespace}/k8s-minio --version 2023.9.23-3")
-                    k3d.helm("install k8s-loki oci://${registry}/${registry_namespace}/k8s-loki --version 2.9.1-3")
-                    k3d.helm("install k8s-promtail oci://${registry}/${registry_namespace}/k8s-promtail --version 2.9.1-2")
-                }
             }
 
             String imageName = ""
