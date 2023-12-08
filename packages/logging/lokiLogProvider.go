@@ -114,7 +114,7 @@ func calculateQueryLimit(linesCount int, resultCount int) int {
 		return 0
 	}
 
-	if (remainingCount) < defaultQueryLimit {
+	if remainingCount < defaultQueryLimit {
 		return remainingCount
 	}
 	return defaultQueryLimit
