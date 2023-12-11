@@ -211,7 +211,7 @@ void stageAutomaticRelease(Makefile makefile, Docker docker) {
                         withCredentials([usernamePassword(credentialsId: 'harborhelmchartpush', usernameVariable: 'HARBOR_USERNAME', passwordVariable: 'HARBOR_PASSWORD')]) {
                             sh ".bin/helm registry login ${registry} --username '${HARBOR_USERNAME}' --password '${HARBOR_PASSWORD}'"
 
-                            sh ".bin/helm push ${helmChartDir}/${repositoryName}-${releaseVersion}.tgz oci://${registry}/${registry_namespace}/"
+                            sh ".bin/helm push ${helmChartDir}/${repositoryName}-${version}.tgz oci://${registry}/${registry_namespace}/"
                         }
                     }
         }
