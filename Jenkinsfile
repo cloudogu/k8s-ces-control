@@ -1,5 +1,5 @@
 #!groovy
-@Library('github.com/cloudogu/ces-build-lib@1.68.0')
+@Library('github.com/cloudogu/ces-build-lib@2.0.1')
 import com.cloudogu.ces.cesbuildlib.*
 
 // Creating necessary git objects, object cannot be named 'git' as this conflicts with the method named 'git' from the library
@@ -12,7 +12,7 @@ changelog = new Changelog(this)
 Docker docker = new Docker(this)
 gpg = new Gpg(this, docker)
 Makefile makefile = new Makefile(this)
-goVersion = "1.20.4"
+goVersion = "1.21.4"
 
 // Configuration of repository
 repositoryOwner = "cloudogu"
@@ -77,17 +77,18 @@ node('docker') {
              stageStaticAnalysisSonarQube()
          }
 
-        K3d k3d = new K3d(this, "${WORKSPACE}", "${WORKSPACE}/k3d", env.PATH)
+        def k3d = new K3d(this, "${WORKSPACE}", "${WORKSPACE}/k3d", env.PATH)
         try {
             stage('Set up k3d cluster') {
                 k3d.startK3d()
             }
 
             stage('Setup') {
-                k3d.setup("v0.16.0", [
-                        dependencies: ["official/postfix", "official/ldap", "k8s/nginx-static", "k8s/nginx-ingress"],
-                        defaultDogu : ""
+                k3d.configureComponents(["k8s-minio":    ["version": "latest", "helmRepositoryNamespace": "k8s"],
+                                         "k8s-loki":     ["version": "latest", "helmRepositoryNamespace": "k8s"],
+                                         "k8s-promtail": ["version": "latest", "helmRepositoryNamespace": "k8s"],
                 ])
+                k3d.setup("0.20.0")
             }
 
             stage("Wait for Setup") {

@@ -23,7 +23,10 @@ const (
 	stageProduction            = "production"
 	stageDevelopment           = "development"
 
-	namespaceEnvironmentVariable = "NAMESPACE"
+	namespaceEnvironmentVariable           = "NAMESPACE"
+	lokiGatewayUrlEnvironmentVariable      = "LOKI_GATEWAY_URL"
+	lokiGatewayUsernameEnvironmentVariable = "LOKI_GATEWAY_USERNAME"
+	lokiGatewayPasswordEnvironmentVariable = "LOKI_GATEWAY_PASSWORD"
 )
 
 type clusterClient struct {
@@ -67,6 +70,11 @@ func ConfigureApplication() error {
 	}
 
 	err = configureCurrentStage()
+	if err != nil {
+		return err
+	}
+
+	err = configureLokiGateway()
 	if err != nil {
 		return err
 	}
@@ -141,6 +149,39 @@ func configureLogLevel() error {
 	// convert logrus logger to logr logger
 	logrusLogrLogger := logrusr.New(logrusLog)
 	log.SetLogger(logrusLogrLogger)
+
+	return nil
+}
+
+type LokiGatewayConfig struct {
+	Url      string
+	Username string
+	Password string
+}
+
+var CurrentLokiGatewayConfig *LokiGatewayConfig
+
+func configureLokiGateway() error {
+	url, ok := os.LookupEnv(lokiGatewayUrlEnvironmentVariable)
+	if !ok || url == "" {
+		logrus.Errorf("No loki gateway url was set via the environment variable [%s]. A loki gateway url is required.", lokiGatewayUrlEnvironmentVariable)
+	}
+
+	username, ok := os.LookupEnv(lokiGatewayUsernameEnvironmentVariable)
+	if !ok || username == "" {
+		logrus.Errorf("No loki gateway username was set via the environment variable [%s]. A loki gateway username is required.", lokiGatewayUsernameEnvironmentVariable)
+	}
+
+	password, ok := os.LookupEnv(lokiGatewayPasswordEnvironmentVariable)
+	if !ok || password == "" {
+		logrus.Errorf("No loki gateway password was set via the environment variable [%s]. A loki gateway password is required.", lokiGatewayPasswordEnvironmentVariable)
+	}
+
+	CurrentLokiGatewayConfig = &LokiGatewayConfig{
+		Url:      url,
+		Username: username,
+		Password: password,
+	}
 
 	return nil
 }

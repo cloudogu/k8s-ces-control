@@ -3,130 +3,114 @@ package logging
 import (
 	"archive/zip"
 	"bytes"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-	"time"
-
+	pb "github.com/cloudogu/k8s-ces-control/generated/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	v1 "k8s.io/api/core/v1"
+	"io"
+	"testing"
+	"time"
 )
-
-func Test_buildLokiQueryUrl(t *testing.T) {
-	t.Run("should return Loki LogQL query", func(t *testing.T) {
-		// fix the time to the value 6795969378871345152, see below
-		mockClock := newMockNowClock(t)
-		parsedTime, _ := time.Parse(time.RFC3339, "2022-02-22T22:22:22Z0000")
-		mockClock.EXPECT().Now().Return(parsedTime)
-
-		// when
-		actual, err := buildLokiQueryUrl("le-pod", 1, mockClock)
-
-		// then
-		require.NoError(t, err)
-		assert.Equal(t, "http://loki-gateway.monitoring.svc.cluster.local:80/loki/api/v1/query_range?direction=backward&query=%7Bpod%3D~%22le-pod.%2A%22%7D&limit=1&start=-6795969378871345152", actual)
-	})
-}
-
-func Test_doLokiHttpQuery(t *testing.T) {
-	t.Run("should successfully call loki server with correct credentials", func(t *testing.T) {
-		// given
-		secret := map[string][]byte{"username": []byte("admin"), "password": []byte("admin123")}
-		mockK8sSecretGet := NewMockSecretInterface(t)
-		mockK8sSecretGet.EXPECT().Get(mock.Anything, "loki-credentials", mock.Anything).Return(&v1.Secret{Data: secret}, nil)
-		mockCoreV1 := NewMockCoreV1Interface(t)
-		mockCoreV1.EXPECT().Secrets("monitoring").Return(mockK8sSecretGet)
-		mockClient := newMockClusterClient(t)
-		mockClient.EXPECT().CoreV1().Return(mockCoreV1)
-		mockLokiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			username, password, ok := r.BasicAuth()
-			assert.Equal(t, "admin", username)
-			assert.Equal(t, "admin123", password)
-			assert.True(t, ok)
-		}))
-		defer mockLokiServer.Close()
-
-		// when
-		actual, err := doLokiHttpQuery(mockClient, mockLokiServer.URL)
-
-		// then
-		require.NoError(t, err)
-		assert.Equal(t, "200 OK", actual.Status)
-	})
-	t.Run("should error on missing secret", func(t *testing.T) {
-		// given
-		mockK8sSecretGet := NewMockSecretInterface(t)
-		mockK8sSecretGet.EXPECT().Get(mock.Anything, "loki-credentials", mock.Anything).Return(nil, assert.AnError)
-		mockCoreV1 := NewMockCoreV1Interface(t)
-		mockCoreV1.EXPECT().Secrets("monitoring").Return(mockK8sSecretGet)
-		mockClient := newMockClusterClient(t)
-		mockClient.EXPECT().CoreV1().Return(mockCoreV1)
-		mockLokiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			username, password, ok := r.BasicAuth()
-			assert.Equal(t, "admin", username)
-			assert.Equal(t, "admin123", password)
-			assert.True(t, ok)
-		}))
-		defer mockLokiServer.Close()
-
-		// when
-		_, err := doLokiHttpQuery(mockClient, mockLokiServer.URL)
-
-		// then
-		require.Error(t, err)
-		assert.ErrorContains(t, err, assert.AnError.Error())
-	})
-	t.Run("should succeed on loki HTTP error", func(t *testing.T) {
-		// given
-		mockK8sSecretGet := NewMockSecretInterface(t)
-		mockK8sSecretGet.EXPECT().Get(mock.Anything, "loki-credentials", mock.Anything).Return(&v1.Secret{}, nil)
-		mockCoreV1 := NewMockCoreV1Interface(t)
-		mockCoreV1.EXPECT().Secrets("monitoring").Return(mockK8sSecretGet)
-		mockClient := newMockClusterClient(t)
-		mockClient.EXPECT().CoreV1().Return(mockCoreV1)
-		mockLokiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusBadRequest)
-		}))
-		defer mockLokiServer.Close()
-
-		// when
-		actual, err := doLokiHttpQuery(mockClient, mockLokiServer.URL)
-
-		// then
-		require.NoError(t, err)
-		assert.Equal(t, "400 Bad Request", actual.Status)
-	})
-}
 
 func TestNewLoggingService(t *testing.T) {
 	t.Run("should create query clock", func(t *testing.T) {
 		// given
+		llp := &LokiLogProvider{}
 
 		// when
-		sut := NewLoggingService(nil)
+		sut := NewLoggingService(llp)
 
 		// then
 		require.NotNil(t, sut)
-		assert.NotNil(t, sut.clock)
+		assert.NotNil(t, sut.logProvider)
+		assert.Equal(t, llp, sut.logProvider)
 	})
 }
 
-func Test_realClock_Now(t *testing.T) {
-	sut := new(realClock)
-	actual := sut.Now()
-	assert.IsType(t, actual, time.Now())
+func Test_writeLogLinesToStream(t *testing.T) {
+	t.Run("should write logs to stream", func(t *testing.T) {
+		// given
+		mockedLogProvider := newMockLogProvider(t)
+		mockedDoguLogServer := newMockDoguLogMessagesServer(t)
+
+		logLines := []logLine{
+			{timestamp: time.Unix(0, 1655722130600667903), value: `{"log":"Mon Jun 20 10:48:50 UTC 2022 -- Logging1\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+			{timestamp: time.Unix(0, 1655722130600667919), value: `{"log":"Mon Jun 20 10:48:51 UTC 2022 -- Logging2\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+			{timestamp: time.Unix(0, 1655722130600667934), value: `{"log":"Mon Jun 20 10:48:52 UTC 2022 -- Logging3\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+		}
+		mockedLogProvider.EXPECT().getLogs("my-dogu", 222).Return(logLines, nil)
+
+		mockedDoguLogServer.EXPECT().Send(mock.Anything).Return(nil)
+
+		// when
+		err := writeLogLinesToStream(mockedLogProvider, "my-dogu", 222, mockedDoguLogServer)
+
+		// then
+		require.NoError(t, err)
+	})
+
+	t.Run("should fail for empty dogu-name", func(t *testing.T) {
+		// given
+		mockedLogProvider := newMockLogProvider(t)
+		mockedDoguLogServer := newMockDoguLogMessagesServer(t)
+
+		// when
+		err := writeLogLinesToStream(mockedLogProvider, "", 222, mockedDoguLogServer)
+
+		// then
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "rpc error: code = InvalidArgument desc = Dogu name should not be empty")
+	})
+
+	t.Run("should fail for error in log provider", func(t *testing.T) {
+		// given
+		mockedLogProvider := newMockLogProvider(t)
+		mockedDoguLogServer := newMockDoguLogMessagesServer(t)
+
+		mockedLogProvider.EXPECT().getLogs("my-dogu", 222).Return(nil, assert.AnError)
+
+		// when
+		err := writeLogLinesToStream(mockedLogProvider, "my-dogu", 222, mockedDoguLogServer)
+
+		// then
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "rpc error: code = InvalidArgument desc = assert.AnError general error for testing")
+	})
+
+	t.Run("should fail for error in grpc-send", func(t *testing.T) {
+		// given
+		mockedLogProvider := newMockLogProvider(t)
+		mockedDoguLogServer := newMockDoguLogMessagesServer(t)
+
+		logLines := []logLine{
+			{timestamp: time.Unix(0, 1655722130600667903), value: `{"log":"Mon Jun 20 10:48:50 UTC 2022 -- Logging1\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+			{timestamp: time.Unix(0, 1655722130600667919), value: `{"log":"Mon Jun 20 10:48:51 UTC 2022 -- Logging2\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+			{timestamp: time.Unix(0, 1655722130600667934), value: `{"log":"Mon Jun 20 10:48:52 UTC 2022 -- Logging3\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+		}
+		mockedLogProvider.EXPECT().getLogs("my-dogu", 222).Return(logLines, nil)
+
+		mockedDoguLogServer.EXPECT().Send(mock.Anything).Return(assert.AnError)
+
+		// when
+		err := writeLogLinesToStream(mockedLogProvider, "my-dogu", 222, mockedDoguLogServer)
+
+		// then
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "rpc error: code = Internal desc = assert.AnError general error for testing")
+	})
 }
 
 func Test_compressMessages(t *testing.T) {
-	t.Run("decompressed message should be equal to the input message", func(t *testing.T) {
+	t.Run("should compress log lines", func(t *testing.T) {
 		// given
-		input := []byte(createUnicodeText())
+		logLines := []logLine{
+			{timestamp: time.Unix(0, 1655722130600667903), value: `{"log":"Mon Jun 20 10:48:50 UTC 2022 -- Logging1\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+			{timestamp: time.Unix(0, 1655722130600667919), value: `{"log":"Mon Jun 20 10:48:51 UTC 2022 -- Logging2\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+			{timestamp: time.Unix(0, 1655722130600667934), value: `{"log":"Mon Jun 20 10:48:52 UTC 2022 -- Logging3\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+		}
 
 		// when
-		actualMyDoguLogZip, err := compressMessages("my-dogu", input)
+		actualMyDoguLogZip, err := compressMessages("my-dogu", logLines)
 
 		// then
 		require.NoError(t, err)
@@ -146,56 +130,48 @@ func Test_compressMessages(t *testing.T) {
 			actualFileContent, err := io.ReadAll(fc)
 			require.NoError(t, err)
 
-			assert.Equal(t, []byte(createUnicodeText()), actualFileContent)
+			assert.Len(t, actualFileContent, 333)
 		}
+	})
+
+	t.Run("should not compress for empty log lines", func(t *testing.T) {
+		// given
+
+		// when
+		actualMyDoguLogZip, err := compressMessages("my-dogu", []logLine{})
+
+		// then
+		require.NoError(t, err)
+		assert.NotNil(t, actualMyDoguLogZip)
+		assert.Empty(t, actualMyDoguLogZip)
 	})
 }
 
-func createUnicodeText() string {
-	return `
-The ASCII compatible UTF-8 encoding of ISO 10646 and Unicode
-plain-text files is defined in RFC 2279 and in ISO 10646-1 Annex R.
-
-Using Unicode/UTF-8, you can write in emails and source code things such as
-
-Mathematics and Sciences:
-  ∮ E⋅da = Q,  n → ∞, ∑ f(i) = ∏ g(i), ∀x∈ℝ: ⌈x⌉ = −⌊−x⌋, α ∧ ¬β = ¬(¬α ∨ β),
-  ℕ ⊆ ℕ₀ ⊂ ℤ ⊂ ℚ ⊂ ℝ ⊂ ℂ, ⊥ < a ≠ b ≡ c ≤ d ≪ ⊤ ⇒ (A ⇔ B),
-  2H₂ + O₂ ⇌ 2H₂O, R = 4.7 kΩ, ⌀ 200 mm
-
-Linguistics and dictionaries:
-  ði ıntəˈnæʃənəl fəˈnɛtık əsoʊsiˈeıʃn
-  Y [ˈʏpsilɔn], Yen [jɛn], Yoga [ˈjoːgɑ]
-
-APL:
-  ((V⍳V)=⍳⍴V)/V←,V    ⌷←⍳→⍴∆∇⊃‾⍎⍕⌈
-`
-}
-
-func Test_extractRawLogsFromLokiResponseData(t *testing.T) {
-	t.Run("should return the response as list of log lines", func(t *testing.T) {
+func Test_GetForDogu(t *testing.T) {
+	t.Run("should get logs for Dogu", func(t *testing.T) {
 		// given
-		lokiResponseData := LokiResponseData{
-			ResultType: "streams",
-			Result: []LokiStreamResult{
-				{Values: [][]string{
-					// unsorted map!
-					{"1655722130600667934", `{"log":"Mon Jun 20 10:48:52 UTC 2022 -- Logging3\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
-					{"1655722130600667903", `{"log":"Mon Jun 20 10:48:50 UTC 2022 -- Logging1\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
-					{"1655722130600667919", `{"log":"Mon Jun 20 10:48:51 UTC 2022 -- Logging2\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
-				}},
-			},
+		mockedLogProvider := newMockLogProvider(t)
+		mockedDoguLogServer := newMockDoguLogMessagesServer(t)
+
+		logLines := []logLine{
+			{timestamp: time.Unix(0, 1655722130600667903), value: `{"log":"Mon Jun 20 10:48:50 UTC 2022 -- Logging1\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+			{timestamp: time.Unix(0, 1655722130600667919), value: `{"log":"Mon Jun 20 10:48:51 UTC 2022 -- Logging2\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+			{timestamp: time.Unix(0, 1655722130600667934), value: `{"log":"Mon Jun 20 10:48:52 UTC 2022 -- Logging3\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
 		}
+		mockedLogProvider.EXPECT().getLogs("my-dogu", 333).Return(logLines, nil)
+
+		mockedDoguLogServer.EXPECT().Send(mock.Anything).Return(nil)
+
+		sut := NewLoggingService(mockedLogProvider)
 
 		// when
-		actual := extractRawLogsFromLokiResponseData(lokiResponseData)
+		request := &pb.DoguLogMessageRequest{
+			DoguName:  "my-dogu",
+			LineCount: 333,
+		}
+		err := sut.GetForDogu(request, mockedDoguLogServer)
 
 		// then
-		expectedLogLines := []string{
-			`{"log":"Mon Jun 20 10:48:50 UTC 2022 -- Logging1\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`,
-			`{"log":"Mon Jun 20 10:48:51 UTC 2022 -- Logging2\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`,
-			`{"log":"Mon Jun 20 10:48:52 UTC 2022 -- Logging3\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`,
-		}
-		assert.Equal(t, expectedLogLines, actual)
+		require.NoError(t, err)
 	})
 }
