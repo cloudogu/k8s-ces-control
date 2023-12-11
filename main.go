@@ -103,7 +103,13 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 		return fmt.Errorf("failed to create CES registry: %w", err)
 	}
 
-	pbLogging.RegisterDoguLogMessagesServer(grpcServer, logging.NewLoggingService(client))
+	lokiLogProvider := logging.NewLokiLogProvider(
+		config.CurrentLokiGatewayConfig.Url,
+		config.CurrentLokiGatewayConfig.Username,
+		config.CurrentLokiGatewayConfig.Password,
+	)
+
+	pbLogging.RegisterDoguLogMessagesServer(grpcServer, logging.NewLoggingService(lokiLogProvider))
 	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministration.NewDoguAdministrationServer(client, cesReg))
 	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService(client))
 	debugModeService := debug.NewDebugModeService(cesReg, client, config.CurrentNamespace)

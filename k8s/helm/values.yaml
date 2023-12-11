@@ -1,0 +1,14 @@
+manager:
+  image:
+    repository: cloudogu/k8s-ces-control
+    tag: 0.5.0
+  imagePullPolicy: IfNotPresent
+  replicas: 1
+  env:
+    stage: production
+    logLevel: info
+lokiGateway:
+  url: "http://k8s-loki-gateway.ecosystem.svc.cluster.local"
+  secretName: "k8s-loki-gateway-secret"
+  usernameKey: "username"
+  passwordKey: "password"
