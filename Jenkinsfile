@@ -42,40 +42,40 @@ node('docker') {
             make 'clean'
         }
 
-         stage('Lint - Dockerfile') {
-             lintDockerfile()
-         }
+        stage('Lint - Dockerfile') {
+            lintDockerfile()
+        }
 
-         docker
-             .image("golang:${goVersion}")
-             .mountJenkinsUser()
-             .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}") {
-                 stage('Build') {
-                     make 'compile'
-                 }
+        docker
+                .image("golang:${goVersion}")
+                .mountJenkinsUser()
+                .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}") {
+                    stage('Build') {
+                        make 'compile'
+                    }
 
-                 stage('Unit Tests') {
-                     make 'unit-test'
-                     junit allowEmptyResults: true, testResults: 'target/unit-tests/*-tests.xml'
-                 }
+                    stage('Unit Tests') {
+                        make 'unit-test'
+                        junit allowEmptyResults: true, testResults: 'target/unit-tests/*-tests.xml'
+                    }
 
-                 stage("Review dog analysis") {
-                     stageStaticAnalysisReviewDog()
-                 }
+                    stage("Review dog analysis") {
+                        stageStaticAnalysisReviewDog()
+                    }
 
-                 stage('Generate k8s Resources') {
-                     make 'helm-generate'
-                     archiveArtifacts "${helmTargetDir}/**/*"
-                 }
+                    stage('Generate k8s Resources') {
+                        make 'helm-generate'
+                        archiveArtifacts "${helmTargetDir}/**/*"
+                    }
 
-                 stage("Lint helm") {
-                     make 'helm-lint'
-                 }
-             }
+                    stage("Lint helm") {
+                        make 'helm-lint'
+                    }
+                }
 
-         stage('SonarQube') {
-             stageStaticAnalysisSonarQube()
-         }
+        stage('SonarQube') {
+            stageStaticAnalysisSonarQube()
+        }
 
         def k3d = new K3d(this, "${WORKSPACE}", "${WORKSPACE}/k3d", env.PATH)
         try {
@@ -121,7 +121,7 @@ node('docker') {
                 testK8sCesControl()
             }
 
-            stageAutomaticRelease(makefile)
+            stageAutomaticRelease(makefile, docker)
         } catch (Exception e) {
             k3d.collectAndArchiveLogs()
             throw e as Throwable
@@ -181,7 +181,7 @@ void stageStaticAnalysisSonarQube() {
     }
 }
 
-void stageAutomaticRelease(Makefile makefile) {
+void stageAutomaticRelease(Makefile makefile, Docker docker) {
     if (gitflow.isReleaseBranch()) {
         String releaseVersion = gitWrapper.getSimpleBranchName()
         String version = makefile.getVersion()
@@ -200,20 +200,20 @@ void stageAutomaticRelease(Makefile makefile) {
 
         stage('Push Helm chart to Harbor') {
             docker
-                .image("golang:${goVersion}")
-                .mountJenkinsUser()
-                .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}") {
-                    // Package chart
-                    make 'helm-package'
-                    archiveArtifacts "${helmTargetDir}/**/*"
+                    .image("golang:${goVersion}")
+                    .mountJenkinsUser()
+                    .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}") {
+                        // Package chart
+                        make 'helm-package'
+                        archiveArtifacts "${helmTargetDir}/**/*"
 
-                    // Push chart
-                    withCredentials([usernamePassword(credentialsId: 'harborhelmchartpush', usernameVariable: 'HARBOR_USERNAME', passwordVariable: 'HARBOR_PASSWORD')]) {
-                        sh ".bin/helm registry login ${registry} --username '${HARBOR_USERNAME}' --password '${HARBOR_PASSWORD}'"
+                        // Push chart
+                        withCredentials([usernamePassword(credentialsId: 'harborhelmchartpush', usernameVariable: 'HARBOR_USERNAME', passwordVariable: 'HARBOR_PASSWORD')]) {
+                            sh ".bin/helm registry login ${registry} --username '${HARBOR_USERNAME}' --password '${HARBOR_PASSWORD}'"
 
-                        sh ".bin/helm push ${helmChartDir}/${repositoryName}-${releaseVersion}.tgz oci://${registry}/${registry_namespace}/"
+                            sh ".bin/helm push ${helmChartDir}/${repositoryName}-${version}.tgz oci://${registry}/${registry_namespace}/"
+                        }
                     }
-                }
         }
 
         stage('Finish Release') {
