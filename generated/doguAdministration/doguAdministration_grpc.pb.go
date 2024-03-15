@@ -25,6 +25,8 @@ const _ = grpc.SupportPackageIsVersion7
 type DoguAdministrationClient interface {
 	// getDogusToAdminList returns the list of dogus to administrate
 	GetDoguList(ctx context.Context, in *DoguListRequest, opts ...grpc.CallOption) (*DoguListResponse, error)
+	// getBlueprintId returns the currently installed blueprint id
+	GetBlueprintId(ctx context.Context, in *DoguBlueprinitIdRequest, opts ...grpc.CallOption) (*DoguBlueprintIdResponse, error)
 	// StartDogu starts a dogu
 	StartDogu(ctx context.Context, in *DoguAdministrationRequest, opts ...grpc.CallOption) (*types.BasicResponse, error)
 	// StopDogu stops a dogu
@@ -44,6 +46,15 @@ func NewDoguAdministrationClient(cc grpc.ClientConnInterface) DoguAdministration
 func (c *doguAdministrationClient) GetDoguList(ctx context.Context, in *DoguListRequest, opts ...grpc.CallOption) (*DoguListResponse, error) {
 	out := new(DoguListResponse)
 	err := c.cc.Invoke(ctx, "/doguAdministration.DoguAdministration/GetDoguList", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *doguAdministrationClient) GetBlueprintId(ctx context.Context, in *DoguBlueprinitIdRequest, opts ...grpc.CallOption) (*DoguBlueprintIdResponse, error) {
+	out := new(DoguBlueprintIdResponse)
+	err := c.cc.Invoke(ctx, "/doguAdministration.DoguAdministration/GetBlueprintId", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -83,6 +94,8 @@ func (c *doguAdministrationClient) RestartDogu(ctx context.Context, in *DoguAdmi
 type DoguAdministrationServer interface {
 	// getDogusToAdminList returns the list of dogus to administrate
 	GetDoguList(context.Context, *DoguListRequest) (*DoguListResponse, error)
+	// getBlueprintId returns the currently installed blueprint id
+	GetBlueprintId(context.Context, *DoguBlueprinitIdRequest) (*DoguBlueprintIdResponse, error)
 	// StartDogu starts a dogu
 	StartDogu(context.Context, *DoguAdministrationRequest) (*types.BasicResponse, error)
 	// StopDogu stops a dogu
@@ -98,6 +111,9 @@ type UnimplementedDoguAdministrationServer struct {
 
 func (UnimplementedDoguAdministrationServer) GetDoguList(context.Context, *DoguListRequest) (*DoguListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDoguList not implemented")
+}
+func (UnimplementedDoguAdministrationServer) GetBlueprintId(context.Context, *DoguBlueprinitIdRequest) (*DoguBlueprintIdResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBlueprintId not implemented")
 }
 func (UnimplementedDoguAdministrationServer) StartDogu(context.Context, *DoguAdministrationRequest) (*types.BasicResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartDogu not implemented")
@@ -135,6 +151,24 @@ func _DoguAdministration_GetDoguList_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DoguAdministrationServer).GetDoguList(ctx, req.(*DoguListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DoguAdministration_GetBlueprintId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DoguBlueprinitIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DoguAdministrationServer).GetBlueprintId(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/doguAdministration.DoguAdministration/GetBlueprintId",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DoguAdministrationServer).GetBlueprintId(ctx, req.(*DoguBlueprinitIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -203,6 +237,10 @@ var DoguAdministration_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetDoguList",
 			Handler:    _DoguAdministration_GetDoguList_Handler,
+		},
+		{
+			MethodName: "GetBlueprintId",
+			Handler:    _DoguAdministration_GetBlueprintId_Handler,
 		},
 		{
 			MethodName: "StartDogu",
