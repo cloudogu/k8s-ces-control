@@ -7,7 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-### Added
 - GetBlueprintId endpoint added (#21)
     - retrieves the blueprint id of the currently installed blueprint, if applicable.
 
