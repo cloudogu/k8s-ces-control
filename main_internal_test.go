@@ -52,7 +52,7 @@ func Test_registerServices(tt *testing.T) {
 		// given
 		mockGrpcServerRegistrar := &mockServiceRegistrar{registeredServices: []string{}}
 		config.CurrentNamespace = "ecosystem"
-		clientSetMock := newMockClusterClientSet(t)
+		clientSetMock := newMockClusterClient(t)
 		coreV1Mock := newMockCoreV1Interface(t)
 		clientSetMock.EXPECT().CoreV1().Return(coreV1Mock)
 		configMapInterfaceMock := newMockConfigMapInterface(t)

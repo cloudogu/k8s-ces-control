@@ -2,15 +2,19 @@ package doguAdministration
 
 import (
 	"context"
+	"errors"
 	"github.com/cloudogu/cesapp-lib/core"
+	blueprintcrv1 "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
 	"github.com/cloudogu/k8s-ces-control/generated/doguAdministration"
 	"github.com/cloudogu/k8s-ces-control/generated/types"
-	"github.com/cloudogu/k8s-ces-control/packages/config"
 	v1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
+	"time"
 )
 
 var testCtx = context.TODO()
@@ -24,7 +28,7 @@ func TestNewDoguAdministrationServer(t *testing.T) {
 		regMock.EXPECT().DoguRegistry().Return(doguRegMock)
 
 		// when
-		actual := NewDoguAdministrationServer(clientMock, regMock)
+		actual := NewDoguAdministrationServer(clientMock, regMock, "testNamespace")
 
 		// then
 		assert.NotEmpty(t, actual)
@@ -36,10 +40,6 @@ func TestNewDoguAdministrationServer(t *testing.T) {
 func Test_server_GetDoguList(t *testing.T) {
 	t.Run("should fail to list dogus", func(t *testing.T) {
 		// given
-		previousNamespaceVar := config.CurrentNamespace
-		defer func() { config.CurrentNamespace = previousNamespaceVar }()
-		config.CurrentNamespace = "ecosystem"
-
 		doguClientMock := newMockDoguClient(t)
 		doguClientMock.EXPECT().List(context.TODO(), metav1.ListOptions{}).Return(nil, assert.AnError)
 		clientMock := newMockClusterClient(t)
@@ -48,6 +48,7 @@ func Test_server_GetDoguList(t *testing.T) {
 		sut := &server{
 			doguRegistry: doguRegMock,
 			client:       clientMock,
+			ns:           "ecosystem",
 		}
 
 		// when
@@ -60,10 +61,6 @@ func Test_server_GetDoguList(t *testing.T) {
 	})
 	t.Run("should return empty response for empty dogu list", func(t *testing.T) {
 		// given
-		previousNamespaceVar := config.CurrentNamespace
-		defer func() { config.CurrentNamespace = previousNamespaceVar }()
-		config.CurrentNamespace = "ecosystem"
-
 		doguClientMock := newMockDoguClient(t)
 		doguClientMock.EXPECT().List(context.TODO(), metav1.ListOptions{}).Return(&v1.DoguList{}, nil)
 		clientMock := newMockClusterClient(t)
@@ -72,6 +69,7 @@ func Test_server_GetDoguList(t *testing.T) {
 		sut := &server{
 			doguRegistry: doguRegMock,
 			client:       clientMock,
+			ns:           "ecosystem",
 		}
 
 		// when
@@ -83,10 +81,6 @@ func Test_server_GetDoguList(t *testing.T) {
 	})
 	t.Run("should fail to get one dogu.json from registry", func(t *testing.T) {
 		// given
-		previousNamespaceVar := config.CurrentNamespace
-		defer func() { config.CurrentNamespace = previousNamespaceVar }()
-		config.CurrentNamespace = "ecosystem"
-
 		doguList := &v1.DoguList{Items: []v1.Dogu{
 			{ObjectMeta: metav1.ObjectMeta{Name: "will-succeed"}},
 			{ObjectMeta: metav1.ObjectMeta{Name: "will-fail"}},
@@ -101,6 +95,7 @@ func Test_server_GetDoguList(t *testing.T) {
 		sut := &server{
 			doguRegistry: doguRegMock,
 			client:       clientMock,
+			ns:           "ecosystem",
 		}
 
 		// when
@@ -114,10 +109,6 @@ func Test_server_GetDoguList(t *testing.T) {
 	})
 	t.Run("should fail to get two dogu.jsons from registry", func(t *testing.T) {
 		// given
-		previousNamespaceVar := config.CurrentNamespace
-		defer func() { config.CurrentNamespace = previousNamespaceVar }()
-		config.CurrentNamespace = "ecosystem"
-
 		doguList := &v1.DoguList{Items: []v1.Dogu{
 			{ObjectMeta: metav1.ObjectMeta{Name: "will-fail"}},
 			{ObjectMeta: metav1.ObjectMeta{Name: "will-fail-too"}},
@@ -132,6 +123,7 @@ func Test_server_GetDoguList(t *testing.T) {
 		sut := &server{
 			doguRegistry: doguRegMock,
 			client:       clientMock,
+			ns:           "ecosystem",
 		}
 
 		// when
@@ -145,10 +137,6 @@ func Test_server_GetDoguList(t *testing.T) {
 	})
 	t.Run("should succeed", func(t *testing.T) {
 		// given
-		previousNamespaceVar := config.CurrentNamespace
-		defer func() { config.CurrentNamespace = previousNamespaceVar }()
-		config.CurrentNamespace = "ecosystem"
-
 		doguList := &v1.DoguList{Items: []v1.Dogu{
 			{ObjectMeta: metav1.ObjectMeta{Name: "will-succeed"}},
 			{ObjectMeta: metav1.ObjectMeta{Name: "will-succeed-too"}},
@@ -175,6 +163,7 @@ func Test_server_GetDoguList(t *testing.T) {
 		sut := &server{
 			doguRegistry: doguRegMock,
 			client:       clientMock,
+			ns:           "ecosystem",
 		}
 
 		// when
@@ -211,6 +200,7 @@ func Test_server_StartDogu(t *testing.T) {
 		sut := &server{
 			doguRegistry: doguRegMock,
 			client:       clientMock,
+			ns:           "ecosystem",
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: ""}
 
@@ -230,6 +220,7 @@ func Test_server_StartDogu(t *testing.T) {
 
 		sut := &server{
 			doguInterActor: doguInterActorMock,
+			ns:             "ecosystem",
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
 
@@ -249,6 +240,7 @@ func Test_server_StartDogu(t *testing.T) {
 
 		sut := &server{
 			doguInterActor: doguInterActorMock,
+			ns:             "ecosystem",
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
 
@@ -269,6 +261,7 @@ func Test_server_StopDogu(t *testing.T) {
 		sut := &server{
 			doguRegistry: doguRegMock,
 			client:       clientMock,
+			ns:           "ecosystem",
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: ""}
 
@@ -288,6 +281,7 @@ func Test_server_StopDogu(t *testing.T) {
 
 		sut := &server{
 			doguInterActor: doguInterActorMock,
+			ns:             "ecosystem",
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
 
@@ -307,6 +301,7 @@ func Test_server_StopDogu(t *testing.T) {
 
 		sut := &server{
 			doguInterActor: doguInterActorMock,
+			ns:             "ecosystem",
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
 
@@ -327,6 +322,7 @@ func Test_server_RestartDogu(t *testing.T) {
 		sut := &server{
 			doguRegistry: doguRegMock,
 			client:       clientMock,
+			ns:           "ecosystem",
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: ""}
 
@@ -346,6 +342,7 @@ func Test_server_RestartDogu(t *testing.T) {
 
 		sut := &server{
 			doguInterActor: doguInterActorMock,
+			ns:             "ecosystem",
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
 
@@ -365,6 +362,7 @@ func Test_server_RestartDogu(t *testing.T) {
 
 		sut := &server{
 			doguInterActor: doguInterActorMock,
+			ns:             "ecosystem",
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
 
@@ -375,4 +373,138 @@ func Test_server_RestartDogu(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, &types.BasicResponse{}, actual)
 	})
+}
+
+func Test_server_GetBlueprintId(t *testing.T) {
+	ctx := context.TODO()
+
+	t.Run("client List returns error", func(t *testing.T) {
+		clusterClientMock := newMockClusterClient(t)
+		clusterClientMock.EXPECT().List(ctx, metav1.ListOptions{}).Return(nil, errors.New("testError"))
+
+		sut := &server{
+			doguRegistry:   newMockDoguRegistry(t),
+			client:         clusterClientMock,
+			doguInterActor: newMockDoguInterActor(t),
+			ns:             "ecosystem",
+		}
+
+		request := &doguAdministration.DoguBlueprinitIdRequest{}
+
+		// when
+		actual, err := sut.GetBlueprintId(testCtx, request)
+		require.Error(t, err)
+		assert.Equal(t, codes.Internal, status.Code(err))
+
+		require.Nil(t, actual)
+	})
+
+	t.Run("client List returns empty list", func(t *testing.T) {
+		clusterClientMock := newMockClusterClient(t)
+		clusterClientMock.EXPECT().List(ctx, metav1.ListOptions{}).
+			Return(&blueprintcrv1.BlueprintList{Items: make([]blueprintcrv1.Blueprint, 0)}, nil)
+
+		sut := &server{
+			doguRegistry:   newMockDoguRegistry(t),
+			client:         clusterClientMock,
+			doguInterActor: newMockDoguInterActor(t),
+			ns:             "ecosystem",
+		}
+
+		request := &doguAdministration.DoguBlueprinitIdRequest{}
+
+		// when
+		actual, err := sut.GetBlueprintId(testCtx, request)
+		require.Error(t, err)
+		assert.Equal(t, codes.NotFound, status.Code(err))
+
+		require.Nil(t, actual)
+	})
+
+	t.Run("client List returns list with one element", func(t *testing.T) {
+		clusterClientMock := newMockClusterClient(t)
+		clusterClientMock.EXPECT().List(ctx, metav1.ListOptions{}).
+			Return(&blueprintcrv1.BlueprintList{Items: []blueprintcrv1.Blueprint{
+				{ObjectMeta: metav1.ObjectMeta{
+					Name:              "SIV1",
+					CreationTimestamp: metav1.Now(),
+				}},
+			}}, nil)
+
+		sut := &server{
+			doguRegistry:   newMockDoguRegistry(t),
+			client:         clusterClientMock,
+			doguInterActor: newMockDoguInterActor(t),
+			ns:             "ecosystem",
+		}
+
+		request := &doguAdministration.DoguBlueprinitIdRequest{}
+
+		// when
+		actual, err := sut.GetBlueprintId(testCtx, request)
+		assert.NoError(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, "SIV1", actual.GetBlueprintId())
+	})
+
+	t.Run("client List returns list with two elements", func(t *testing.T) {
+		clusterClientMock := newMockClusterClient(t)
+		clusterClientMock.EXPECT().List(ctx, metav1.ListOptions{}).
+			Return(&blueprintcrv1.BlueprintList{Items: []blueprintcrv1.Blueprint{
+				{ObjectMeta: metav1.ObjectMeta{
+					Name:              "SIV1",
+					CreationTimestamp: metav1.Now(),
+				}},
+				{ObjectMeta: metav1.ObjectMeta{
+					Name:              "SIV2",
+					CreationTimestamp: metav1.Now(),
+				}},
+			}}, nil)
+
+		sut := &server{
+			doguRegistry:   newMockDoguRegistry(t),
+			client:         clusterClientMock,
+			doguInterActor: newMockDoguInterActor(t),
+			ns:             "ecosystem",
+		}
+
+		request := &doguAdministration.DoguBlueprinitIdRequest{}
+
+		// when
+		actual, err := sut.GetBlueprintId(testCtx, request)
+		assert.NoError(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, "SIV2", actual.GetBlueprintId())
+	})
+
+	t.Run("client List returns list with two elements (replace order)", func(t *testing.T) {
+		clusterClientMock := newMockClusterClient(t)
+		clusterClientMock.EXPECT().List(ctx, metav1.ListOptions{}).
+			Return(&blueprintcrv1.BlueprintList{Items: []blueprintcrv1.Blueprint{
+				{ObjectMeta: metav1.ObjectMeta{
+					Name:              "SIV1",
+					CreationTimestamp: metav1.Time{Time: time.Now().Add(1 * time.Hour)},
+				}},
+				{ObjectMeta: metav1.ObjectMeta{
+					Name:              "SIV2",
+					CreationTimestamp: metav1.Now(),
+				}},
+			}}, nil)
+
+		sut := &server{
+			doguRegistry:   newMockDoguRegistry(t),
+			client:         clusterClientMock,
+			doguInterActor: newMockDoguInterActor(t),
+			ns:             "ecosystem",
+		}
+
+		request := &doguAdministration.DoguBlueprinitIdRequest{}
+
+		// when
+		actual, err := sut.GetBlueprintId(testCtx, request)
+		assert.NoError(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, "SIV1", actual.GetBlueprintId())
+	})
+
 }

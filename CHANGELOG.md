@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.6.0] - 2024-03-27
+### Added
+- GetBlueprintId endpoint added (#21)
+    - retrieves the blueprint id of the currently installed blueprint, if applicable.
+
 ## [v0.5.0] - 2023-12-11
 ### Added
 - [#17] Provide logs from loki

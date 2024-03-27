@@ -394,5 +394,6 @@ func TestCreateClusterClient(t *testing.T) {
 		assert.NotNil(t, actual)
 		assert.NotNil(t, actual.EcoSystemV1Alpha1Interface)
 		assert.NotNil(t, actual.Interface)
+		assert.NotNil(t, actual.BlueprintLister)
 	})
 }
