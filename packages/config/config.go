@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"github.com/bombsimon/logrusr/v2"
+	bpo_kubernetes "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes"
+	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -31,6 +33,7 @@ const (
 
 type clusterClient struct {
 	ecoSystem.EcoSystemV1Alpha1Interface
+	doguAdministration.BlueprintLister
 	kubernetes.Interface
 }
 
@@ -48,12 +51,19 @@ func CreateClusterClient() (*clusterClient, error) {
 		return nil, fmt.Errorf("failed to create kubernetes client: %w", err)
 	}
 
+	bpoClientSet, err := bpo_kubernetes.NewClientSet(clusterConfig, k8sClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create client set for blueprints: %w", err)
+	}
+
+	bluePrintLister := bpoClientSet.EcosystemV1Alpha1().Blueprints(CurrentNamespace)
+
 	doguClient, err := ecoSystem.NewForConfig(clusterConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create dogu client: %w", err)
 	}
 
-	return &clusterClient{EcoSystemV1Alpha1Interface: doguClient, Interface: k8sClient}, nil
+	return &clusterClient{EcoSystemV1Alpha1Interface: doguClient, BlueprintLister: bluePrintLister, Interface: k8sClient}, nil
 }
 
 // ConfigureApplication performs the default configuration for the control app including configuring the logging and

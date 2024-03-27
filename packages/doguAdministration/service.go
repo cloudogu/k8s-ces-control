@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/cloudogu/cesapp-lib/core"
+	v1bp "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
 	pb "github.com/cloudogu/k8s-ces-control/generated/doguAdministration"
 	"github.com/cloudogu/k8s-ces-control/generated/types"
-	"github.com/cloudogu/k8s-ces-control/packages/config"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
 	v1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
 	"github.com/hashicorp/go-multierror"
@@ -19,10 +19,11 @@ import (
 const responseMessageMissingDoguName = "dogu name is empty"
 
 // NewDoguAdministrationServer returns a new administration server instance to start/stop.. etc. Dogus.
-func NewDoguAdministrationServer(client clusterClient, reg cesRegistry) *server {
+func NewDoguAdministrationServer(client clusterClient, reg cesRegistry, namespace string) *server {
 	return &server{client: client,
 		doguRegistry:   reg.DoguRegistry(),
-		doguInterActor: doguinteraction.NewDefaultDoguInterActor(client, config.CurrentNamespace, reg),
+		doguInterActor: doguinteraction.NewDefaultDoguInterActor(client, namespace, reg),
+		ns:             namespace,
 	}
 }
 
@@ -31,6 +32,7 @@ type server struct {
 	pb.UnimplementedDoguAdministrationServer
 	client         clusterClient
 	doguInterActor doguInterActor
+	ns             string
 }
 
 // StartDogu starts the specified dogu
@@ -84,7 +86,7 @@ func getGRPCInternalDoguActionError(verb string, err error) error {
 
 // GetDoguList returns the list of dogus to administrate (all)
 func (s *server) GetDoguList(ctx context.Context, _ *pb.DoguListRequest) (*pb.DoguListResponse, error) {
-	list, err := s.client.Dogus(config.CurrentNamespace).List(ctx, metav1.ListOptions{})
+	list, err := s.client.Dogus(s.ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
@@ -131,4 +133,31 @@ func createDoguListResponse(dogus []*core.Dogu) *pb.DoguListResponse {
 	return &pb.DoguListResponse{
 		Dogus: result,
 	}
+}
+
+func (s *server) GetBlueprintId(ctx context.Context, _ *pb.DoguBlueprinitIdRequest) (*pb.DoguBlueprintIdResponse, error) {
+	bpList, err := s.client.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "could not get blueprint list")
+	}
+
+	if len(bpList.Items) == 0 {
+		return nil, status.Errorf(codes.NotFound, "could not found blueprintID")
+	}
+
+	currentBlueprintID := getCurrentBlueprintID(bpList.Items)
+
+	return &pb.DoguBlueprintIdResponse{BlueprintId: currentBlueprintID}, nil
+}
+
+func getCurrentBlueprintID(blueprintList []v1bp.Blueprint) string {
+	var latestBluePrint = blueprintList[0]
+
+	for _, bp := range blueprintList {
+		if bp.CreationTimestamp.Time.After(latestBluePrint.CreationTimestamp.Time) {
+			latestBluePrint = bp
+		}
+	}
+
+	return latestBluePrint.Name
 }

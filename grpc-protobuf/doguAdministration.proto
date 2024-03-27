@@ -7,6 +7,8 @@ import "response.proto";
 service DoguAdministration {
   // getDogusToAdminList returns the list of dogus to administrate
   rpc GetDoguList(DoguListRequest) returns (DoguListResponse);
+  // getBlueprintId returns the currently installed blueprint id
+  rpc GetBlueprintId(DoguBlueprinitIdRequest) returns (DoguBlueprintIdResponse);
   // StartDogu starts a dogu
   rpc StartDogu(DoguAdministrationRequest) returns (types.BasicResponse);
   // StopDogu stops a dogu
@@ -33,4 +35,11 @@ message Dogu {
   string version = 3;
   string description = 4;
   repeated string tags = 5;
+}
+
+// DoguBlueprintId request is empty and is used instead of google.protobuf.Empty because of backward compability
+message DoguBlueprinitIdRequest {}
+
+message DoguBlueprintIdResponse {
+  string blueprint_id = 1;
 }
