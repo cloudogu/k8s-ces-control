@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -103,6 +104,55 @@ func (llp *LokiLogProvider) getLogs(doguName string, linesCount int) ([]logLine,
 	return result, nil
 }
 
+func (llp *LokiLogProvider) getLogsInRange(doguName string, startDate string, endDate string, filter string) ([]logLine, error) {
+	query := fmt.Sprintf("{pod=~\"%s.*\"}", doguName)
+
+	if len(strings.TrimSpace(filter)) != 0 {
+		query += " " + filter
+	}
+
+	result := make([]logLine, 0)
+	for {
+		endDateTime := llp.clock.Now()
+		startDateTime := createQueryStartDateFromEndDate(endDateTime)
+
+		if len(strings.TrimSpace(startDate)) != 0 && len(strings.TrimSpace(endDate)) != 0 {
+			startDateTime, _ = time.Parse(time.RFC3339, startDate)
+			endDateTime, _ = time.Parse(time.RFC3339, endDate)
+		}
+
+		logrus.Debugf("running loki query for '%s' from %s to %s with limit %d", doguName)
+		lokiQueryUrl, err := buildLokiQueryUrl(llp.gatewayUrl, query, startDateTime, endDateTime, 0)
+		if err != nil {
+			return result, fmt.Errorf("failed to build loki-query: %v", err)
+		}
+
+		lokiResponse, err := llp.doLokiHttpQuery(lokiQueryUrl)
+		if err != nil {
+			return result, fmt.Errorf("faild to execute loki-query: %v", err)
+		}
+
+		logLines, err := extractLogLinesFromLokiResponse(lokiResponse)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract logs from loki response: %v", err)
+		}
+
+		if len(logLines) == 0 {
+			break
+		}
+
+		// prepend logs
+		result = append(logLines, result...)
+	}
+
+	// because multiple logs can happen at the exact same timestamp and the query is batched over time,
+	// it is possible that consecutive batches contain the same logLines. These need to be removed.
+	result = deduplicateLogLines(result)
+
+	logrus.Debugf("finished loki query; got %d logLines", len(result))
+
+	return result, nil
+}
 func calculateQueryLimit(linesCount int, resultCount int) int {
 	if linesCount <= 0 {
 		return defaultQueryLimit
@@ -125,6 +175,11 @@ func calculateQueryLimit(linesCount int, resultCount int) int {
 // The start date is set 30 days before the given end date, because that is the maximum range that loki allows.
 func createQueryStartDateFromEndDate(endDate time.Time) time.Time {
 	return endDate.Add(-24 * 30 * time.Hour)
+}
+
+// startAndEndDateDifferenceIsValid verifies that the time difference between start and end date is less than or equal to 30
+func startAndEndDateDifferenceIsValid(startDate time.Time, endDate time.Time) bool {
+	return (endDate.Sub(startDate).Hours() / 24) <= 30
 }
 
 // buildLokiQueryUrl returns a Loki query over a range of time using the given query regexp part, a start date, an end date and the maximum number of

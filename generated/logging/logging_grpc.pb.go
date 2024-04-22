@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DoguLogMessagesClient interface {
 	GetForDogu(ctx context.Context, in *DoguLogMessageRequest, opts ...grpc.CallOption) (DoguLogMessages_GetForDoguClient, error)
+	GetForDoguWithDate(ctx context.Context, in *DoguLogMessageWithDateRequest, opts ...grpc.CallOption) (DoguLogMessages_GetForDoguWithDateClient, error)
 }
 
 type doguLogMessagesClient struct {
@@ -66,11 +67,44 @@ func (x *doguLogMessagesGetForDoguClient) Recv() (*types.ChunkedDataResponse, er
 	return m, nil
 }
 
+func (c *doguLogMessagesClient) GetForDoguWithDate(ctx context.Context, in *DoguLogMessageWithDateRequest, opts ...grpc.CallOption) (DoguLogMessages_GetForDoguWithDateClient, error) {
+	stream, err := c.cc.NewStream(ctx, &DoguLogMessages_ServiceDesc.Streams[1], "/logging.DoguLogMessages/GetForDoguWithDate", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &doguLogMessagesGetForDoguWithDateClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type DoguLogMessages_GetForDoguWithDateClient interface {
+	Recv() (*types.ChunkedDataResponse, error)
+	grpc.ClientStream
+}
+
+type doguLogMessagesGetForDoguWithDateClient struct {
+	grpc.ClientStream
+}
+
+func (x *doguLogMessagesGetForDoguWithDateClient) Recv() (*types.ChunkedDataResponse, error) {
+	m := new(types.ChunkedDataResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // DoguLogMessagesServer is the server API for DoguLogMessages service.
 // All implementations must embed UnimplementedDoguLogMessagesServer
 // for forward compatibility
 type DoguLogMessagesServer interface {
 	GetForDogu(*DoguLogMessageRequest, DoguLogMessages_GetForDoguServer) error
+	GetForDoguWithDate(*DoguLogMessageWithDateRequest, DoguLogMessages_GetForDoguWithDateServer) error
 	mustEmbedUnimplementedDoguLogMessagesServer()
 }
 
@@ -80,6 +114,9 @@ type UnimplementedDoguLogMessagesServer struct {
 
 func (UnimplementedDoguLogMessagesServer) GetForDogu(*DoguLogMessageRequest, DoguLogMessages_GetForDoguServer) error {
 	return status.Errorf(codes.Unimplemented, "method GetForDogu not implemented")
+}
+func (UnimplementedDoguLogMessagesServer) GetForDoguWithDate(*DoguLogMessageWithDateRequest, DoguLogMessages_GetForDoguWithDateServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetForDoguWithDate not implemented")
 }
 func (UnimplementedDoguLogMessagesServer) mustEmbedUnimplementedDoguLogMessagesServer() {}
 
@@ -115,6 +152,27 @@ func (x *doguLogMessagesGetForDoguServer) Send(m *types.ChunkedDataResponse) err
 	return x.ServerStream.SendMsg(m)
 }
 
+func _DoguLogMessages_GetForDoguWithDate_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(DoguLogMessageWithDateRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(DoguLogMessagesServer).GetForDoguWithDate(m, &doguLogMessagesGetForDoguWithDateServer{stream})
+}
+
+type DoguLogMessages_GetForDoguWithDateServer interface {
+	Send(*types.ChunkedDataResponse) error
+	grpc.ServerStream
+}
+
+type doguLogMessagesGetForDoguWithDateServer struct {
+	grpc.ServerStream
+}
+
+func (x *doguLogMessagesGetForDoguWithDateServer) Send(m *types.ChunkedDataResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // DoguLogMessages_ServiceDesc is the grpc.ServiceDesc for DoguLogMessages service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -126,6 +184,11 @@ var DoguLogMessages_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "GetForDogu",
 			Handler:       _DoguLogMessages_GetForDogu_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "GetForDoguWithDate",
+			Handler:       _DoguLogMessages_GetForDoguWithDate_Handler,
 			ServerStreams: true,
 		},
 	},
