@@ -1,7 +1,7 @@
 package stream
 
 import (
-	pbTypes "github.com/cloudogu/k8s-ces-control/generated/types"
+	pbTypes "github.com/cloudogu/ces-control-api/generated/types"
 )
 
 const (

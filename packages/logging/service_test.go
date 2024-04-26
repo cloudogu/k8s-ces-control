@@ -3,7 +3,7 @@ package logging
 import (
 	"archive/zip"
 	"bytes"
-	pb "github.com/cloudogu/k8s-ces-control/generated/logging"
+	pb "github.com/cloudogu/ces-control-api/generated/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"

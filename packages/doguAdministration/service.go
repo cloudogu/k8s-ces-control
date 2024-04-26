@@ -3,10 +3,10 @@ package doguAdministration
 import (
 	"context"
 	"fmt"
+	pb "github.com/cloudogu/ces-control-api/generated/doguAdministration"
+	"github.com/cloudogu/ces-control-api/generated/types"
 	"github.com/cloudogu/cesapp-lib/core"
 	v1bp "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
-	pb "github.com/cloudogu/k8s-ces-control/generated/doguAdministration"
-	"github.com/cloudogu/k8s-ces-control/generated/types"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
 	v1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
 	"github.com/hashicorp/go-multierror"

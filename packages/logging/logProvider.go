@@ -9,4 +9,5 @@ type logLine struct {
 
 type logProvider interface {
 	getLogs(doguName string, linesCount int) ([]logLine, error)
+	getLogsInRange(doguName string, startDate string, endDate string, filter string) ([]logLine, error)
 }

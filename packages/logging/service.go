@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	pb "github.com/cloudogu/k8s-ces-control/generated/logging"
+	pb "github.com/cloudogu/ces-control-api/generated/logging"
 	"github.com/cloudogu/k8s-ces-control/packages/stream"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -40,6 +40,17 @@ func (s *loggingService) GetForDogu(request *pb.DoguLogMessageRequest, server pb
 	return writeLogLinesToStream(s.logProvider, doguName, linesCount, server)
 }
 
+// GetForDoguWithDate writes dogu log messages into the stream of the given server.
+func (s *loggingService) GetForDoguWithDate(request *pb.DoguLogMessageWithDateRequest, server pb.DoguLogMessages_GetForDoguWithDateServer) error {
+	doguName := request.DoguName
+	startDate := request.StartDate
+	endDate := request.EndDate
+	filter := request.Filter
+	// delegate to an orderly named method because GetForDoguWithDate is misleading but cannot be renamed due to the
+	// distributed nature of GRPC definitions
+	return writeLogLinesToStreamWithDate(s.logProvider, doguName, startDate, endDate, filter, server)
+}
+
 func writeLogLinesToStream(logProvider logProvider, doguName string, linesCount int, server doguLogMessagesServer) error {
 	if doguName == "" {
 		return status.Error(codes.InvalidArgument, responseMessageMissingDoguname)
@@ -47,6 +58,33 @@ func writeLogLinesToStream(logProvider logProvider, doguName string, linesCount 
 	logrus.Debugf("retrieving %d line(s) of log messages for dogu '%s'", linesCount, doguName)
 
 	logLines, err := logProvider.getLogs(doguName, linesCount)
+	if err != nil {
+		logrus.Errorf("error reading logs: %v", err)
+		return createInternalErr(err, codes.InvalidArgument)
+	}
+
+	compressedMessagesBytes, err := compressMessages(doguName, logLines)
+	if err != nil {
+		logrus.Errorf("error compressing message: %v", err)
+		return createInternalErr(err, codes.Internal)
+	}
+
+	err = stream.WriteToStream(compressedMessagesBytes, server)
+	if err != nil {
+		logrus.Errorf("error writing logs to stream: %v", err)
+		return createInternalErr(err, codes.Internal)
+	}
+
+	return nil
+}
+
+func writeLogLinesToStreamWithDate(logProvider logProvider, doguName string, startDate string, endDate string, filter string, server doguLogMessagesServer) error {
+	if doguName == "" {
+		return status.Error(codes.InvalidArgument, responseMessageMissingDoguname)
+	}
+	logrus.Debugf("retrieving log messages from %s to %s for dogu '%s' with filter %s", startDate, endDate, doguName, filter)
+
+	logLines, err := logProvider.getLogsInRange(doguName, startDate, endDate, filter)
 	if err != nil {
 		logrus.Errorf("error reading logs: %v", err)
 		return createInternalErr(err, codes.InvalidArgument)

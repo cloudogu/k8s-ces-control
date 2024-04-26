@@ -1,11 +1,12 @@
 module github.com/cloudogu/k8s-ces-control
 
-go 1.21
+go 1.22
 
-toolchain go1.21.4
+toolchain go1.22.2
 
 require (
 	github.com/bombsimon/logrusr/v2 v2.0.1
+	github.com/cloudogu/ces-control-api v0.0.0-20240425130935-02e6e7ad9b12
 	github.com/cloudogu/cesapp-lib v0.12.2
 	github.com/cloudogu/k8s-blueprint-operator v0.0.0-20240301133756-6b9a1a81230f
 	github.com/cloudogu/k8s-dogu-operator v0.41.0
@@ -14,7 +15,6 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.23.7
 	google.golang.org/grpc v1.61.1
-	google.golang.org/protobuf v1.32.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.29.2
 	k8s.io/apimachinery v0.29.2
@@ -75,6 +75,7 @@ require (
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240213162025-012b6fc9bca9 // indirect
+	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/apiextensions-apiserver v0.29.2 // indirect

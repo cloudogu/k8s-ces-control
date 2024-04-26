@@ -3,7 +3,7 @@
 package stream
 
 import (
-	types "github.com/cloudogu/k8s-ces-control/generated/types"
+	types "github.com/cloudogu/ces-control-api/generated/types"
 	mock "github.com/stretchr/testify/mock"
 )
 

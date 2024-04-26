@@ -2,7 +2,7 @@ package doguHealth
 
 import (
 	"context"
-	"github.com/cloudogu/k8s-ces-control/generated/health"
+	"github.com/cloudogu/ces-control-api/generated/health"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
 	doguv1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
 	"github.com/stretchr/testify/assert"
