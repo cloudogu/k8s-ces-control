@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"io"
 	"testing"
 	"time"
@@ -173,5 +174,156 @@ func Test_GetForDogu(t *testing.T) {
 
 		// then
 		require.NoError(t, err)
+	})
+}
+
+func Test_GetForDoguWithDate(t *testing.T) {
+	t.Run("should get logs for Dogu", func(t *testing.T) {
+		// given
+		mockedLogProvider := newMockLogProvider(t)
+		mockedDoguLogServer := newMockDoguLogMessagesQueryServer(t)
+
+		start := time.Unix(1711616504, 0).UTC()
+		end := time.Unix(1712131304, 0).UTC()
+		filter := "foo=bar"
+
+		logLines := []logLine{
+			{timestamp: time.Unix(0, 1655722130600667903), value: `{"log":"Mon Jun 20 10:48:50 UTC 2022 -- Logging1\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+			{timestamp: time.Unix(0, 1655722130600667919), value: `{"log":"Mon Jun 20 10:48:51 UTC 2022 -- Logging2\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+			{timestamp: time.Unix(0, 1655722130600667934), value: `{"log":"Mon Jun 20 10:48:52 UTC 2022 -- Logging3\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+		}
+		mockedLogProvider.EXPECT().queryLogs("my-dogu", &start, &end, filter).Return(logLines, nil)
+
+		mockedDoguLogServer.EXPECT().Send(&pb.DoguLogMessage{Timestamp: timestamppb.New(logLines[0].timestamp), Message: logLines[0].value}).Return(nil)
+		mockedDoguLogServer.EXPECT().Send(&pb.DoguLogMessage{Timestamp: timestamppb.New(logLines[1].timestamp), Message: logLines[1].value}).Return(nil)
+		mockedDoguLogServer.EXPECT().Send(&pb.DoguLogMessage{Timestamp: timestamppb.New(logLines[2].timestamp), Message: logLines[2].value}).Return(nil)
+
+		sut := NewLoggingService(mockedLogProvider)
+
+		// when
+		request := &pb.DoguLogMessageQueryRequest{
+			DoguName:  "my-dogu",
+			StartDate: timestamppb.New(start),
+			EndDate:   timestamppb.New(end),
+			Filter:    &filter,
+		}
+		err := sut.QueryForDogu(request, mockedDoguLogServer)
+
+		// then
+		require.NoError(t, err)
+	})
+
+	t.Run("should get logs for Dogu without optional parameters", func(t *testing.T) {
+		// given
+		mockedLogProvider := newMockLogProvider(t)
+		mockedDoguLogServer := newMockDoguLogMessagesQueryServer(t)
+
+		var start *time.Time = nil
+		var end *time.Time = nil
+
+		logLines := []logLine{
+			{timestamp: time.Unix(0, 1655722130600667903), value: `{"log":"Mon Jun 20 10:48:50 UTC 2022 -- Logging1\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+			{timestamp: time.Unix(0, 1655722130600667919), value: `{"log":"Mon Jun 20 10:48:51 UTC 2022 -- Logging2\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+			{timestamp: time.Unix(0, 1655722130600667934), value: `{"log":"Mon Jun 20 10:48:52 UTC 2022 -- Logging3\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+		}
+		mockedLogProvider.EXPECT().queryLogs("my-dogu", start, end, "").Return(logLines, nil)
+
+		mockedDoguLogServer.EXPECT().Send(&pb.DoguLogMessage{Timestamp: timestamppb.New(logLines[0].timestamp), Message: logLines[0].value}).Return(nil)
+		mockedDoguLogServer.EXPECT().Send(&pb.DoguLogMessage{Timestamp: timestamppb.New(logLines[1].timestamp), Message: logLines[1].value}).Return(nil)
+		mockedDoguLogServer.EXPECT().Send(&pb.DoguLogMessage{Timestamp: timestamppb.New(logLines[2].timestamp), Message: logLines[2].value}).Return(nil)
+
+		sut := NewLoggingService(mockedLogProvider)
+
+		// when
+		request := &pb.DoguLogMessageQueryRequest{
+			DoguName:  "my-dogu",
+			StartDate: nil,
+			EndDate:   nil,
+			Filter:    nil,
+		}
+		err := sut.QueryForDogu(request, mockedDoguLogServer)
+
+		// then
+		require.NoError(t, err)
+	})
+
+	t.Run("should fail to get logs for empty doguname", func(t *testing.T) {
+		// given
+		mockedLogProvider := newMockLogProvider(t)
+		mockedDoguLogServer := newMockDoguLogMessagesQueryServer(t)
+
+		sut := NewLoggingService(mockedLogProvider)
+
+		// when
+		request := &pb.DoguLogMessageQueryRequest{
+			DoguName: "",
+		}
+		err := sut.QueryForDogu(request, mockedDoguLogServer)
+
+		// then
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "rpc error: code = InvalidArgument desc = Dogu name should not be empty")
+	})
+
+	t.Run("should fail to get logs for error querying the log provider", func(t *testing.T) {
+		// given
+		mockedLogProvider := newMockLogProvider(t)
+		mockedDoguLogServer := newMockDoguLogMessagesQueryServer(t)
+
+		start := time.Unix(1711616504, 0).UTC()
+		end := time.Unix(1712131304, 0).UTC()
+		filter := "foo=bar"
+
+		mockedLogProvider.EXPECT().queryLogs("my-dogu", &start, &end, filter).Return(nil, assert.AnError)
+
+		sut := NewLoggingService(mockedLogProvider)
+
+		// when
+		request := &pb.DoguLogMessageQueryRequest{
+			DoguName:  "my-dogu",
+			StartDate: timestamppb.New(start),
+			EndDate:   timestamppb.New(end),
+			Filter:    &filter,
+		}
+		err := sut.QueryForDogu(request, mockedDoguLogServer)
+
+		// then
+		require.Error(t, err)
+		assert.ErrorContains(t, err, assert.AnError.Error())
+	})
+
+	t.Run("should fail to get logs for error while sending", func(t *testing.T) {
+		// given
+		mockedLogProvider := newMockLogProvider(t)
+		mockedDoguLogServer := newMockDoguLogMessagesQueryServer(t)
+
+		start := time.Unix(1711616504, 0).UTC()
+		end := time.Unix(1712131304, 0).UTC()
+		filter := "foo=bar"
+
+		logLines := []logLine{
+			{timestamp: time.Unix(0, 1655722130600667903), value: `{"log":"Mon Jun 20 10:48:50 UTC 2022 -- Logging1\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+			{timestamp: time.Unix(0, 1655722130600667919), value: `{"log":"Mon Jun 20 10:48:51 UTC 2022 -- Logging2\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+			{timestamp: time.Unix(0, 1655722130600667934), value: `{"log":"Mon Jun 20 10:48:52 UTC 2022 -- Logging3\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
+		}
+		mockedLogProvider.EXPECT().queryLogs("my-dogu", &start, &end, filter).Return(logLines, nil)
+
+		mockedDoguLogServer.EXPECT().Send(&pb.DoguLogMessage{Timestamp: timestamppb.New(logLines[0].timestamp), Message: logLines[0].value}).Return(nil)
+		mockedDoguLogServer.EXPECT().Send(&pb.DoguLogMessage{Timestamp: timestamppb.New(logLines[1].timestamp), Message: logLines[1].value}).Return(assert.AnError)
+
+		sut := NewLoggingService(mockedLogProvider)
+
+		// when
+		request := &pb.DoguLogMessageQueryRequest{
+			DoguName:  "my-dogu",
+			StartDate: timestamppb.New(start),
+			EndDate:   timestamppb.New(end),
+			Filter:    &filter,
+		}
+		err := sut.QueryForDogu(request, mockedDoguLogServer)
+
+		// then
+		require.Error(t, err)
+		assert.ErrorContains(t, err, assert.AnError.Error())
 	})
 }

@@ -388,7 +388,7 @@ func TestLokiLogProvider_getLogs(t *testing.T) {
 
 		// then
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "faild to execute loki-query: failed to unmarshal response")
+		assert.ErrorContains(t, err, "failed to execute loki-query: failed to unmarshal response")
 	})
 
 	t.Run("should fail to do extract log lines", func(t *testing.T) {
@@ -419,6 +419,241 @@ func TestLokiLogProvider_getLogs(t *testing.T) {
 		assert.ErrorContains(t, err, "failed to extract logs from loki response: failed to parse log timestamp")
 	})
 
+}
+
+func TestLokiLogProvider_queryLogs(t *testing.T) {
+	t.Run("should query logs", func(t *testing.T) {
+		// given
+		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "/loki/api/v1/query_range?direction=backward&end=1655722130600667903&limit=1000&query=%7Bpod%3D~%22test.%2A%22%7D&start=1653130130600667903", r.URL.String())
+			username, password, ok := r.BasicAuth()
+			assert.True(t, ok)
+			assert.Equal(t, "admin", username)
+			assert.Equal(t, "admin123", password)
+			_, err := w.Write(lokiResponseTestData)
+			require.NoError(t, err)
+		}))
+		defer svr.Close()
+
+		sut := &LokiLogProvider{
+			gatewayUrl: svr.URL,
+			username:   "admin",
+			password:   "admin123",
+			clock:      &testClock{time.Unix(0, 1655722130600667903)},
+		}
+
+		// when
+		actual, err := sut.queryLogs("test", nil, nil, "")
+
+		// then
+		require.NoError(t, err)
+		expectedLogLines := []logLine{
+			{timestamp: time.Unix(0, 1569266492548155000), value: "bar"},
+			{timestamp: time.Unix(0, 1569266497240578000), value: "foo"},
+		}
+		assert.Equal(t, expectedLogLines, actual)
+	})
+
+	t.Run("should query logs with dates and filter", func(t *testing.T) {
+		// given
+		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "/loki/api/v1/query_range?direction=backward&end=1712131304000000000&limit=1000&query=%7Bpod%3D~%22test.%2A%22%7D+%7C%3D+%22foo%3Dbar%22+&start=1711616504000000000", r.URL.String())
+			username, password, ok := r.BasicAuth()
+			assert.True(t, ok)
+			assert.Equal(t, "admin", username)
+			assert.Equal(t, "admin123", password)
+			_, err := w.Write(lokiResponseTestData)
+			require.NoError(t, err)
+		}))
+		defer svr.Close()
+
+		start := time.Unix(1711616504, 0)
+		end := time.Unix(1712131304, 0)
+
+		sut := &LokiLogProvider{
+			gatewayUrl: svr.URL,
+			username:   "admin",
+			password:   "admin123",
+			clock:      &testClock{time.Unix(0, 1655722130600667903)},
+		}
+
+		// when
+		actual, err := sut.queryLogs("test", &start, &end, "foo=bar")
+
+		// then
+		require.NoError(t, err)
+		expectedLogLines := []logLine{
+			{timestamp: time.Unix(0, 1569266492548155000), value: "bar"},
+			{timestamp: time.Unix(0, 1569266497240578000), value: "foo"},
+		}
+		assert.Equal(t, expectedLogLines, actual)
+	})
+
+	t.Run("should query logs with empty response", func(t *testing.T) {
+		// given
+		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "/loki/api/v1/query_range?direction=backward&end=1712131304000000000&limit=1000&query=%7Bpod%3D~%22test.%2A%22%7D+%7C%3D+%22foo%3Dbar%22+&start=1711616504000000000", r.URL.String())
+			username, password, ok := r.BasicAuth()
+			assert.True(t, ok)
+			assert.Equal(t, "admin", username)
+			assert.Equal(t, "admin123", password)
+			_, err := w.Write(lokiResponseTestDataEmpty)
+			require.NoError(t, err)
+		}))
+		defer svr.Close()
+
+		start := time.Unix(1711616504, 0)
+		end := time.Unix(1712131304, 0)
+
+		sut := &LokiLogProvider{
+			gatewayUrl: svr.URL,
+			username:   "admin",
+			password:   "admin123",
+			clock:      &testClock{time.Unix(0, 1655722130600667903)},
+		}
+
+		// when
+		actual, err := sut.queryLogs("test", &start, &end, "foo=bar")
+
+		// then
+		require.NoError(t, err)
+		assert.Len(t, actual, 0)
+	})
+
+	t.Run("should fail to query logs for error in loki", func(t *testing.T) {
+		// given
+		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "/loki/api/v1/query_range?direction=backward&end=1712131304000000000&limit=1000&query=%7Bpod%3D~%22test.%2A%22%7D+%7C%3D+%22foo%3Dbar%22+&start=1711616504000000000", r.URL.String())
+			username, password, ok := r.BasicAuth()
+			assert.True(t, ok)
+			assert.Equal(t, "admin", username)
+			assert.Equal(t, "admin123", password)
+			w.WriteHeader(http.StatusInternalServerError)
+			_, err := w.Write([]byte("internal error"))
+			require.NoError(t, err)
+		}))
+		defer svr.Close()
+
+		start := time.Unix(1711616504, 0)
+		end := time.Unix(1712131304, 0)
+
+		sut := &LokiLogProvider{
+			gatewayUrl: svr.URL,
+			username:   "admin",
+			password:   "admin123",
+			clock:      &testClock{time.Unix(0, 1655722130600667903)},
+		}
+
+		// when
+		_, err := sut.queryLogs("test", &start, &end, "foo=bar")
+
+		// then
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "failed to query logs from loki: failed to execute loki-query: loki http error: status: 500 Internal Server Error, code: 500; response-body: internal error")
+	})
+}
+
+func TestLokiLogProvider_queryLogsFromLoki(t *testing.T) {
+	t.Run("should query logs", func(t *testing.T) {
+		// given
+		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "/loki/api/v1/query_range?direction=backward&end=1712131304000000000&limit=1000&query=%7Bpod%3D~%22test.%2A%22%7D&start=1711616504000000000", r.URL.String())
+			username, password, ok := r.BasicAuth()
+			assert.True(t, ok)
+			assert.Equal(t, "admin", username)
+			assert.Equal(t, "admin123", password)
+			_, err := w.Write(lokiResponseTestData)
+			require.NoError(t, err)
+		}))
+		defer svr.Close()
+
+		start := time.Unix(1711616504, 0)
+		end := time.Unix(1712131304, 0)
+
+		sut := &LokiLogProvider{
+			gatewayUrl: svr.URL,
+			username:   "admin",
+			password:   "admin123",
+			clock:      &testClock{time.Unix(0, 1655722130600667903)},
+		}
+
+		// when
+		actual, err := sut.queryLogsFromLoki("test", start, end, "", 0)
+
+		// then
+		require.NoError(t, err)
+		expectedLogLines := []logLine{
+			{timestamp: time.Unix(0, 1569266492548155000), value: "bar"},
+			{timestamp: time.Unix(0, 1569266497240578000), value: "foo"},
+		}
+		assert.Equal(t, expectedLogLines, actual)
+	})
+
+	t.Run("should query logs with filter", func(t *testing.T) {
+		// given
+		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "/loki/api/v1/query_range?direction=backward&end=1712131304000000000&limit=200&query=%7Bpod%3D~%22test.%2A%22%7D+%7C%3D+%22level%3Derror%22+&start=1711616504000000000", r.URL.String())
+			username, password, ok := r.BasicAuth()
+			assert.True(t, ok)
+			assert.Equal(t, "admin", username)
+			assert.Equal(t, "admin123", password)
+			_, err := w.Write(lokiResponseTestData)
+			require.NoError(t, err)
+		}))
+		defer svr.Close()
+
+		sut := &LokiLogProvider{
+			gatewayUrl: svr.URL,
+			username:   "admin",
+			password:   "admin123",
+			clock:      &testClock{time.Unix(0, 1655722130600667903)},
+		}
+
+		start := time.Unix(1711616504, 0)
+		end := time.Unix(1712131304, 0)
+
+		// when
+		actual, err := sut.queryLogsFromLoki("test", start, end, "level=error", 200)
+
+		// then
+		require.NoError(t, err)
+		expectedLogLines := []logLine{
+			{timestamp: time.Unix(0, 1569266492548155000), value: "bar"},
+			{timestamp: time.Unix(0, 1569266497240578000), value: "foo"},
+		}
+		assert.Equal(t, expectedLogLines, actual)
+	})
+
+	t.Run("should fail to query logs with a limit exceeding the maximum limit", func(t *testing.T) {
+		// given
+		//svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		//	assert.Equal(t, "/loki/api/v1/query_range?direction=backward&end=1712131304000000000&limit=200&query=%7Bpod%3D~%22test.%2A%22%7D+%7C%3D+%22level%3Derror%22+&start=1711616504000000000", r.URL.String())
+		//	username, password, ok := r.BasicAuth()
+		//	assert.True(t, ok)
+		//	assert.Equal(t, "admin", username)
+		//	assert.Equal(t, "admin123", password)
+		//	_, err := w.Write(lokiResponseTestData)
+		//	require.NoError(t, err)
+		//}))
+		//defer svr.Close()
+
+		sut := &LokiLogProvider{
+			//gatewayUrl: svr.URL,
+			//username:   "admin",
+			//password:   "admin123",
+			clock: &testClock{time.Unix(0, 1655722130600667903)},
+		}
+
+		start := time.Unix(1711616504, 0)
+		end := time.Unix(1712131304, 0)
+
+		// when
+		_, err := sut.queryLogsFromLoki("test", start, end, "level=error", 8000)
+
+		// then
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "the given limit of 8000 exceeds the maximum limit of 5000")
+	})
 }
 
 func TestLokiLogProvider_doLokiHttpQuery(t *testing.T) {

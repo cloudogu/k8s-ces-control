@@ -15,6 +15,7 @@ import (
 )
 
 const defaultQueryLimit = 1000
+const maxQueryLimit = 5000 // the max query limit for Loki
 
 type nowClock interface {
 	Now() time.Time
@@ -42,8 +43,11 @@ func NewLokiLogProvider(gatewayUrl string, username string, password string) *Lo
 	}
 }
 
+// getLogs queries logs from loki until the given lineCount is reached, or no more logs are available.
+// Since loki requires a max time-window of 30 days and has a limit of max 5000 log-lines per request,
+// a query can result in multiple request for the loki backend.
+// The time-window is adjusted accordingly to get all logs even if they are older than 30 days.
 func (llp *LokiLogProvider) getLogs(doguName string, linesCount int) ([]logLine, error) {
-	query := fmt.Sprintf("{pod=~\"%s.*\"}", doguName)
 	endDate := llp.clock.Now()
 	startDate := createQueryStartDateFromEndDate(endDate)
 
@@ -51,20 +55,9 @@ func (llp *LokiLogProvider) getLogs(doguName string, linesCount int) ([]logLine,
 	for {
 		limit := calculateQueryLimit(linesCount, len(result))
 
-		logrus.Debugf("running loki query for '%s' from %s to %s with limit %d", doguName, startDate.Format(time.RFC3339), endDate.Format(time.RFC3339), limit)
-		lokiQueryUrl, err := buildLokiQueryUrl(llp.gatewayUrl, query, startDate, endDate, limit)
+		logLines, err := llp.queryLogsFromLoki(doguName, startDate, endDate, "", limit)
 		if err != nil {
-			return result, fmt.Errorf("failed to build loki-query: %v", err)
-		}
-
-		lokiResponse, err := llp.doLokiHttpQuery(lokiQueryUrl)
-		if err != nil {
-			return result, fmt.Errorf("faild to execute loki-query: %v", err)
-		}
-
-		logLines, err := extractLogLinesFromLokiResponse(lokiResponse)
-		if err != nil {
-			return nil, fmt.Errorf("failed to extract logs from loki response: %v", err)
+			return nil, fmt.Errorf("failed to query logs from loki: %w", err)
 		}
 
 		if len(logLines) <= 0 {
@@ -99,60 +92,94 @@ func (llp *LokiLogProvider) getLogs(doguName string, linesCount int) ([]logLine,
 		result = result[:linesCount]
 	}
 
-	logrus.Debugf("finished loki query; got %d logLines", len(result))
+	logrus.Debugf("finished loading logs for linecount; got %d logLines", len(result))
 
 	return result, nil
 }
 
-func (llp *LokiLogProvider) getLogsInRange(doguName string, startDate string, endDate string, filter string) ([]logLine, error) {
-	query := fmt.Sprintf("{pod=~\"%s.*\"}", doguName)
+// queryLogs queries logs from loki for the given time-window (startDate and endDate).
+// The allowed time-window is max 30 days (limited by loki).
+// Since loki also has a limit of max 5000 log-lines per request, a query can result in multiple request for the loki backend.
+func (llp *LokiLogProvider) queryLogs(doguName string, startDate *time.Time, endDate *time.Time, filter string) ([]logLine, error) {
+	queryEndDate := llp.clock.Now()
+	if endDate != nil {
+		queryEndDate = *endDate
+	}
 
-	if len(strings.TrimSpace(filter)) != 0 {
-		query += " " + filter
+	queryStartDate := createQueryStartDateFromEndDate(queryEndDate)
+	if startDate != nil {
+		queryStartDate = *startDate
 	}
 
 	result := make([]logLine, 0)
+	limit := defaultQueryLimit
 	for {
-		endDateTime := llp.clock.Now()
-		startDateTime := createQueryStartDateFromEndDate(endDateTime)
 
-		if len(strings.TrimSpace(startDate)) != 0 && len(strings.TrimSpace(endDate)) != 0 {
-			startDateTime, _ = time.Parse(time.RFC3339, startDate)
-			endDateTime, _ = time.Parse(time.RFC3339, endDate)
-		}
-
-		logrus.Debugf("running loki query for '%s' from %s to %s with limit %d", doguName)
-		lokiQueryUrl, err := buildLokiQueryUrl(llp.gatewayUrl, query, startDateTime, endDateTime, 0)
+		logLines, err := llp.queryLogsFromLoki(doguName, queryStartDate, queryEndDate, filter, limit)
 		if err != nil {
-			return result, fmt.Errorf("failed to build loki-query: %v", err)
+			return nil, fmt.Errorf("failed to query logs from loki: %w", err)
 		}
 
-		lokiResponse, err := llp.doLokiHttpQuery(lokiQueryUrl)
-		if err != nil {
-			return result, fmt.Errorf("faild to execute loki-query: %v", err)
-		}
-
-		logLines, err := extractLogLinesFromLokiResponse(lokiResponse)
-		if err != nil {
-			return nil, fmt.Errorf("failed to extract logs from loki response: %v", err)
-		}
-
-		if len(logLines) == 0 {
+		if len(logLines) <= 0 {
+			// no new lines to read => nothing is left
 			break
 		}
 
 		// prepend logs
 		result = append(logLines, result...)
+
+		if len(logLines) < limit {
+			// the query returned fewer lines than requested => nothing is left
+			break
+		}
+
+		// there are still logs to read -> start with the newest log timestamp from the last response
+		queryEndDate = logLines[0].timestamp
 	}
 
 	// because multiple logs can happen at the exact same timestamp and the query is batched over time,
 	// it is possible that consecutive batches contain the same logLines. These need to be removed.
 	result = deduplicateLogLines(result)
 
-	logrus.Debugf("finished loki query; got %d logLines", len(result))
+	logrus.Debugf("finished querying logs; got %d logLines", len(result))
 
 	return result, nil
 }
+
+func (llp *LokiLogProvider) queryLogsFromLoki(doguName string, startDate time.Time, endDate time.Time, filter string, limit int) ([]logLine, error) {
+	if limit <= 0 {
+		limit = defaultQueryLimit
+	}
+
+	if limit > maxQueryLimit {
+		return nil, fmt.Errorf("the given limit of %d exceeds the maximum limit of %d", limit, maxQueryLimit)
+	}
+
+	query := fmt.Sprintf("{pod=~\"%s.*\"}", doguName)
+
+	if len(strings.TrimSpace(filter)) != 0 {
+		query = fmt.Sprintf("%s |= \"%s\" ", query, filter)
+	}
+
+	logrus.Debugf("running loki query for '%s' from %s to %s with limit %d", doguName, startDate.Format(time.RFC3339), endDate.Format(time.RFC3339), limit)
+	lokiQueryUrl, err := buildLokiQueryUrl(llp.gatewayUrl, query, startDate, endDate, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build loki-query: %v", err)
+	}
+
+	lokiResponse, err := llp.doLokiHttpQuery(lokiQueryUrl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute loki-query: %v", err)
+	}
+
+	logLines, err := extractLogLinesFromLokiResponse(lokiResponse)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract logs from loki response: %v", err)
+	}
+
+	return logLines, nil
+}
+
 func calculateQueryLimit(linesCount int, resultCount int) int {
 	if linesCount <= 0 {
 		return defaultQueryLimit
@@ -175,11 +202,6 @@ func calculateQueryLimit(linesCount int, resultCount int) int {
 // The start date is set 30 days before the given end date, because that is the maximum range that loki allows.
 func createQueryStartDateFromEndDate(endDate time.Time) time.Time {
 	return endDate.Add(-24 * 30 * time.Hour)
-}
-
-// startAndEndDateDifferenceIsValid verifies that the time difference between start and end date is less than or equal to 30
-func startAndEndDateDifferenceIsValid(startDate time.Time, endDate time.Time) bool {
-	return (endDate.Sub(startDate).Hours() / 24) <= 30
 }
 
 // buildLokiQueryUrl returns a Loki query over a range of time using the given query regexp part, a start date, an end date and the maximum number of
