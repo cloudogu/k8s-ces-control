@@ -167,12 +167,12 @@ func (llp *LokiLogProvider) queryLogsFromLoki(doguName string, startDate time.Ti
 		return nil, fmt.Errorf("failed to build loki-query: %v", err)
 	}
 
-	lokiResponse, err := llp.doLokiHttpQuery(lokiQueryUrl)
+	lokiResp, err := llp.doLokiHttpQuery(lokiQueryUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute loki-query: %v", err)
 	}
 
-	logLines, err := extractLogLinesFromLokiResponse(lokiResponse)
+	logLines, err := extractLogLinesFromLokiResponse(lokiResp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract logs from loki response: %v", err)
 	}
@@ -253,17 +253,12 @@ func (llp *LokiLogProvider) doLokiHttpQuery(lokiUrl string) (*lokiResponse, erro
 		return nil, fmt.Errorf("loki http error: status: %s, code: %d; response-body: %s", resp.Status, resp.StatusCode, responseData)
 	}
 
-	responseData, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read reponse-body: %v", err)
-	}
-
-	return parseLokiResponse(responseData)
+	return parseLokiResponse(resp.Body)
 }
 
-func parseLokiResponse(lokiResult []byte) (*lokiResponse, error) {
+func parseLokiResponse(lokiResult io.Reader) (*lokiResponse, error) {
 	lokiResp := &lokiResponse{}
-	err := json.Unmarshal(lokiResult, lokiResp)
+	err := json.NewDecoder(lokiResult).Decode(lokiResp)
 	if err != nil {
 		return lokiResp, fmt.Errorf("failed to unmarshal response: %w", err)
 	}

@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"bytes"
 	_ "embed"
 	"fmt"
 	"github.com/stretchr/testify/assert"
@@ -785,7 +786,7 @@ func TestLokiLogProvider_parseLokiResponse(t *testing.T) {
 		// given
 
 		// when
-		actual, err := parseLokiResponse(lokiResponseTestData)
+		actual, err := parseLokiResponse(bytes.NewReader(lokiResponseTestData))
 
 		// then
 		require.NoError(t, err)
@@ -814,7 +815,7 @@ func TestLokiLogProvider_parseLokiResponse(t *testing.T) {
 		// given
 
 		// when
-		_, err := parseLokiResponse(lokiResponseTestDataError)
+		_, err := parseLokiResponse(bytes.NewReader(lokiResponseTestDataError))
 
 		// then
 		require.Error(t, err)
@@ -825,7 +826,7 @@ func TestLokiLogProvider_parseLokiResponse(t *testing.T) {
 		// given
 
 		// when
-		_, err := parseLokiResponse(lokiResponseTestDataNoStream)
+		_, err := parseLokiResponse(bytes.NewReader(lokiResponseTestDataNoStream))
 
 		// then
 		require.Error(t, err)
