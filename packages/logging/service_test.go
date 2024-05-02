@@ -177,7 +177,7 @@ func Test_GetForDogu(t *testing.T) {
 	})
 }
 
-func Test_GetForDoguWithDate(t *testing.T) {
+func Test_QueryForDogu(t *testing.T) {
 	t.Run("should get logs for Dogu", func(t *testing.T) {
 		// given
 		mockedLogProvider := newMockLogProvider(t)
@@ -192,7 +192,7 @@ func Test_GetForDoguWithDate(t *testing.T) {
 			{timestamp: time.Unix(0, 1655722130600667919), value: `{"log":"Mon Jun 20 10:48:51 UTC 2022 -- Logging2\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
 			{timestamp: time.Unix(0, 1655722130600667934), value: `{"log":"Mon Jun 20 10:48:52 UTC 2022 -- Logging3\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
 		}
-		mockedLogProvider.EXPECT().queryLogs("my-dogu", &start, &end, filter).Return(logLines, nil)
+		mockedLogProvider.EXPECT().queryLogs("my-dogu", start, end, filter).Return(logLines, nil)
 
 		mockedDoguLogServer.EXPECT().Send(&pb.DoguLogMessage{Timestamp: timestamppb.New(logLines[0].timestamp), Message: logLines[0].value}).Return(nil)
 		mockedDoguLogServer.EXPECT().Send(&pb.DoguLogMessage{Timestamp: timestamppb.New(logLines[1].timestamp), Message: logLines[1].value}).Return(nil)
@@ -218,15 +218,12 @@ func Test_GetForDoguWithDate(t *testing.T) {
 		mockedLogProvider := newMockLogProvider(t)
 		mockedDoguLogServer := newMockDoguLogMessagesQueryServer(t)
 
-		var start *time.Time = nil
-		var end *time.Time = nil
-
 		logLines := []logLine{
 			{timestamp: time.Unix(0, 1655722130600667903), value: `{"log":"Mon Jun 20 10:48:50 UTC 2022 -- Logging1\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
 			{timestamp: time.Unix(0, 1655722130600667919), value: `{"log":"Mon Jun 20 10:48:51 UTC 2022 -- Logging2\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
 			{timestamp: time.Unix(0, 1655722130600667934), value: `{"log":"Mon Jun 20 10:48:52 UTC 2022 -- Logging3\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
 		}
-		mockedLogProvider.EXPECT().queryLogs("my-dogu", start, end, "").Return(logLines, nil)
+		mockedLogProvider.EXPECT().queryLogs("my-dogu", time.Time{}, time.Time{}, "").Return(logLines, nil)
 
 		mockedDoguLogServer.EXPECT().Send(&pb.DoguLogMessage{Timestamp: timestamppb.New(logLines[0].timestamp), Message: logLines[0].value}).Return(nil)
 		mockedDoguLogServer.EXPECT().Send(&pb.DoguLogMessage{Timestamp: timestamppb.New(logLines[1].timestamp), Message: logLines[1].value}).Return(nil)
@@ -274,7 +271,7 @@ func Test_GetForDoguWithDate(t *testing.T) {
 		end := time.Unix(1712131304, 0).UTC()
 		filter := "foo=bar"
 
-		mockedLogProvider.EXPECT().queryLogs("my-dogu", &start, &end, filter).Return(nil, assert.AnError)
+		mockedLogProvider.EXPECT().queryLogs("my-dogu", start, end, filter).Return(nil, assert.AnError)
 
 		sut := NewLoggingService(mockedLogProvider)
 
@@ -306,7 +303,7 @@ func Test_GetForDoguWithDate(t *testing.T) {
 			{timestamp: time.Unix(0, 1655722130600667919), value: `{"log":"Mon Jun 20 10:48:51 UTC 2022 -- Logging2\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
 			{timestamp: time.Unix(0, 1655722130600667934), value: `{"log":"Mon Jun 20 10:48:52 UTC 2022 -- Logging3\n","stream":"stdout","time":"2022-06-20T10:48:50.432098057Z"}`},
 		}
-		mockedLogProvider.EXPECT().queryLogs("my-dogu", &start, &end, filter).Return(logLines, nil)
+		mockedLogProvider.EXPECT().queryLogs("my-dogu", start, end, filter).Return(logLines, nil)
 
 		mockedDoguLogServer.EXPECT().Send(&pb.DoguLogMessage{Timestamp: timestamppb.New(logLines[0].timestamp), Message: logLines[0].value}).Return(nil)
 		mockedDoguLogServer.EXPECT().Send(&pb.DoguLogMessage{Timestamp: timestamppb.New(logLines[1].timestamp), Message: logLines[1].value}).Return(assert.AnError)

@@ -81,7 +81,7 @@ func (_c *mockLogProvider_getLogs_Call) RunAndReturn(run func(string, int) ([]lo
 }
 
 // queryLogs provides a mock function with given fields: doguName, startDate, endDate, filter
-func (_m *mockLogProvider) queryLogs(doguName string, startDate *time.Time, endDate *time.Time, filter string) ([]logLine, error) {
+func (_m *mockLogProvider) queryLogs(doguName string, startDate time.Time, endDate time.Time, filter string) ([]logLine, error) {
 	ret := _m.Called(doguName, startDate, endDate, filter)
 
 	if len(ret) == 0 {
@@ -90,10 +90,10 @@ func (_m *mockLogProvider) queryLogs(doguName string, startDate *time.Time, endD
 
 	var r0 []logLine
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, *time.Time, *time.Time, string) ([]logLine, error)); ok {
+	if rf, ok := ret.Get(0).(func(string, time.Time, time.Time, string) ([]logLine, error)); ok {
 		return rf(doguName, startDate, endDate, filter)
 	}
-	if rf, ok := ret.Get(0).(func(string, *time.Time, *time.Time, string) []logLine); ok {
+	if rf, ok := ret.Get(0).(func(string, time.Time, time.Time, string) []logLine); ok {
 		r0 = rf(doguName, startDate, endDate, filter)
 	} else {
 		if ret.Get(0) != nil {
@@ -101,7 +101,7 @@ func (_m *mockLogProvider) queryLogs(doguName string, startDate *time.Time, endD
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string, *time.Time, *time.Time, string) error); ok {
+	if rf, ok := ret.Get(1).(func(string, time.Time, time.Time, string) error); ok {
 		r1 = rf(doguName, startDate, endDate, filter)
 	} else {
 		r1 = ret.Error(1)
@@ -117,16 +117,16 @@ type mockLogProvider_queryLogs_Call struct {
 
 // queryLogs is a helper method to define mock.On call
 //   - doguName string
-//   - startDate *time.Time
-//   - endDate *time.Time
+//   - startDate time.Time
+//   - endDate time.Time
 //   - filter string
 func (_e *mockLogProvider_Expecter) queryLogs(doguName interface{}, startDate interface{}, endDate interface{}, filter interface{}) *mockLogProvider_queryLogs_Call {
 	return &mockLogProvider_queryLogs_Call{Call: _e.mock.On("queryLogs", doguName, startDate, endDate, filter)}
 }
 
-func (_c *mockLogProvider_queryLogs_Call) Run(run func(doguName string, startDate *time.Time, endDate *time.Time, filter string)) *mockLogProvider_queryLogs_Call {
+func (_c *mockLogProvider_queryLogs_Call) Run(run func(doguName string, startDate time.Time, endDate time.Time, filter string)) *mockLogProvider_queryLogs_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string), args[1].(*time.Time), args[2].(*time.Time), args[3].(string))
+		run(args[0].(string), args[1].(time.Time), args[2].(time.Time), args[3].(string))
 	})
 	return _c
 }
@@ -136,7 +136,7 @@ func (_c *mockLogProvider_queryLogs_Call) Return(_a0 []logLine, _a1 error) *mock
 	return _c
 }
 
-func (_c *mockLogProvider_queryLogs_Call) RunAndReturn(run func(string, *time.Time, *time.Time, string) ([]logLine, error)) *mockLogProvider_queryLogs_Call {
+func (_c *mockLogProvider_queryLogs_Call) RunAndReturn(run func(string, time.Time, time.Time, string) ([]logLine, error)) *mockLogProvider_queryLogs_Call {
 	_c.Call.Return(run)
 	return _c
 }

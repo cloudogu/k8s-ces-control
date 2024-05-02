@@ -48,16 +48,14 @@ func (s *loggingService) QueryForDogu(request *pb.DoguLogMessageQueryRequest, se
 		filter = request.GetFilter()
 	}
 
-	var startDate *time.Time = nil
+	var startDate time.Time
 	if request.GetStartDate() != nil {
-		date := request.GetStartDate().AsTime()
-		startDate = &date
+		startDate = request.GetStartDate().AsTime()
 	}
 
-	var endDate *time.Time = nil
+	var endDate time.Time
 	if request.GetEndDate() != nil {
-		date := request.GetEndDate().AsTime()
-		endDate = &date
+		endDate = request.GetEndDate().AsTime()
 	}
 
 	logrus.Debugf("retrieving log messages from %s to %s for dogu '%s' with filter %s", startDate, endDate, doguName, filter)

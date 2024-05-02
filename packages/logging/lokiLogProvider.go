@@ -32,6 +32,7 @@ type LokiLogProvider struct {
 	username   string
 	password   string
 	clock      nowClock
+	httpClient *http.Client
 }
 
 func NewLokiLogProvider(gatewayUrl string, username string, password string) *LokiLogProvider {
@@ -40,6 +41,9 @@ func NewLokiLogProvider(gatewayUrl string, username string, password string) *Lo
 		username:   username,
 		password:   password,
 		clock:      &realClock{},
+		httpClient: &http.Client{
+			Timeout: time.Second * 30,
+		},
 	}
 }
 
@@ -100,22 +104,20 @@ func (llp *LokiLogProvider) getLogs(doguName string, linesCount int) ([]logLine,
 // queryLogs queries logs from loki for the given time-window (startDate and endDate).
 // The allowed time-window is max 30 days (limited by loki).
 // Since loki also has a limit of max 5000 log-lines per request, a query can result in multiple request for the loki backend.
-func (llp *LokiLogProvider) queryLogs(doguName string, startDate *time.Time, endDate *time.Time, filter string) ([]logLine, error) {
-	queryEndDate := llp.clock.Now()
-	if endDate != nil {
-		queryEndDate = *endDate
+func (llp *LokiLogProvider) queryLogs(doguName string, startDate time.Time, endDate time.Time, filter string) ([]logLine, error) {
+	if endDate.IsZero() {
+		endDate = llp.clock.Now()
 	}
 
-	queryStartDate := createQueryStartDateFromEndDate(queryEndDate)
-	if startDate != nil {
-		queryStartDate = *startDate
+	if startDate.IsZero() {
+		startDate = createQueryStartDateFromEndDate(endDate)
 	}
 
 	result := make([]logLine, 0)
 	limit := defaultQueryLimit
 	for {
 
-		logLines, err := llp.queryLogsFromLoki(doguName, queryStartDate, queryEndDate, filter, limit)
+		logLines, err := llp.queryLogsFromLoki(doguName, startDate, endDate, filter, limit)
 		if err != nil {
 			return nil, fmt.Errorf("failed to query logs from loki: %w", err)
 		}
@@ -134,7 +136,7 @@ func (llp *LokiLogProvider) queryLogs(doguName string, startDate *time.Time, end
 		}
 
 		// there are still logs to read -> start with the newest log timestamp from the last response
-		queryEndDate = logLines[0].timestamp
+		endDate = logLines[0].timestamp
 	}
 
 	// because multiple logs can happen at the exact same timestamp and the query is batched over time,
@@ -164,17 +166,17 @@ func (llp *LokiLogProvider) queryLogsFromLoki(doguName string, startDate time.Ti
 	logrus.Debugf("running loki query for '%s' from %s to %s with limit %d", doguName, startDate.Format(time.RFC3339), endDate.Format(time.RFC3339), limit)
 	lokiQueryUrl, err := buildLokiQueryUrl(llp.gatewayUrl, query, startDate, endDate, limit)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build loki-query: %v", err)
+		return nil, fmt.Errorf("failed to build loki-query: %w", err)
 	}
 
 	lokiResp, err := llp.doLokiHttpQuery(lokiQueryUrl)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute loki-query: %v", err)
+		return nil, fmt.Errorf("failed to execute loki-query: %w", err)
 	}
 
 	logLines, err := extractLogLinesFromLokiResponse(lokiResp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to extract logs from loki response: %v", err)
+		return nil, fmt.Errorf("failed to extract logs from loki response: %w", err)
 	}
 
 	return logLines, nil
@@ -233,7 +235,7 @@ func (llp *LokiLogProvider) doLokiHttpQuery(lokiUrl string) (*lokiResponse, erro
 		return nil, fmt.Errorf("failed to create request with url [%s]: %w", lokiUrl, err)
 	}
 	req.SetBasicAuth(llp.username, llp.password)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := llp.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request with url [%s]: %w", lokiUrl, err)
 	}
@@ -280,7 +282,7 @@ func extractLogLinesFromLokiResponse(lokiResponse *lokiResponse) ([]logLine, err
 		for _, value := range lokiStream.Values {
 			nanos, err := strconv.ParseInt(value[0], 10, 64)
 			if err != nil {
-				return nil, fmt.Errorf("failed to parse log timestamp: %v", err)
+				return nil, fmt.Errorf("failed to parse log timestamp: %w", err)
 			}
 			logLines = append(logLines, logLine{
 				timestamp: time.Unix(0, nanos),
