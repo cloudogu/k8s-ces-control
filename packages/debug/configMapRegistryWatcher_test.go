@@ -1,7 +1,7 @@
 package debug
 
 import (
-	"github.com/cloudogu/k8s-ces-control/generated/maintenance"
+	"github.com/cloudogu/ces-control-api/generated/maintenance"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"

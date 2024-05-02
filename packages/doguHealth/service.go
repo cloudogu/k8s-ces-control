@@ -2,7 +2,7 @@ package doguHealth
 
 import (
 	"context"
-	pbHealth "github.com/cloudogu/k8s-ces-control/generated/health"
+	pbHealth "github.com/cloudogu/ces-control-api/generated/health"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"

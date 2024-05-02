@@ -4,9 +4,10 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"time"
 
-	pb "github.com/cloudogu/k8s-ces-control/generated/logging"
+	pb "github.com/cloudogu/ces-control-api/generated/logging"
 	"github.com/cloudogu/k8s-ces-control/packages/stream"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -21,6 +22,10 @@ type doguLogMessagesServer interface {
 	pb.DoguLogMessages_GetForDoguServer
 }
 
+type doguLogMessagesQueryServer interface {
+	pb.DoguLogMessages_QueryForDoguServer
+}
+
 // NewLoggingService creates a new logging service.
 func NewLoggingService(provider logProvider) *loggingService {
 	return &loggingService{logProvider: provider}
@@ -29,6 +34,50 @@ func NewLoggingService(provider logProvider) *loggingService {
 type loggingService struct {
 	pb.UnimplementedDoguLogMessagesServer
 	logProvider logProvider
+}
+
+// QueryForDogu writes dogu log messages into the stream of the given server.
+func (s *loggingService) QueryForDogu(request *pb.DoguLogMessageQueryRequest, server pb.DoguLogMessages_QueryForDoguServer) error {
+	doguName := request.DoguName
+	if doguName == "" {
+		return status.Error(codes.InvalidArgument, responseMessageMissingDoguname)
+	}
+
+	var filter = ""
+	if request.Filter != nil {
+		filter = request.GetFilter()
+	}
+
+	var startDate time.Time
+	if request.GetStartDate() != nil {
+		startDate = request.GetStartDate().AsTime()
+	}
+
+	var endDate time.Time
+	if request.GetEndDate() != nil {
+		endDate = request.GetEndDate().AsTime()
+	}
+
+	logrus.Debugf("retrieving log messages from %s to %s for dogu '%s' with filter %s", startDate, endDate, doguName, filter)
+
+	logLines, err := s.logProvider.queryLogs(doguName, startDate, endDate, filter)
+	if err != nil {
+		logrus.Errorf("error reading logs: %v", err)
+		return createInternalErr(err, codes.InvalidArgument)
+	}
+
+	for _, line := range logLines {
+		err := server.Send(&pb.DoguLogMessage{
+			Timestamp: timestamppb.New(line.timestamp),
+			Message:   line.value,
+		})
+		if err != nil {
+			logrus.Errorf("error writing log-lines to stream: %v", err)
+			return createInternalErr(err, codes.InvalidArgument)
+		}
+	}
+
+	return nil
 }
 
 // GetForDogu writes dogu log messages into the stream of the given server.
