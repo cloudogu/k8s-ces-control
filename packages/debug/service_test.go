@@ -2,7 +2,7 @@ package debug
 
 import (
 	"context"
-	"github.com/cloudogu/k8s-ces-control/generated/maintenance"
+	"github.com/cloudogu/ces-control-api/generated/maintenance"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"

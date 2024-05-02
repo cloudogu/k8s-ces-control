@@ -12,7 +12,7 @@ changelog = new Changelog(this)
 Docker docker = new Docker(this)
 gpg = new Gpg(this, docker)
 Makefile makefile = new Makefile(this)
-goVersion = "1.21.4"
+goVersion = "1.22.2"
 
 // Configuration of repository
 repositoryOwner = "cloudogu"

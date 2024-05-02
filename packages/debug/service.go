@@ -10,8 +10,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pbMaintenance "github.com/cloudogu/k8s-ces-control/generated/maintenance"
-	"github.com/cloudogu/k8s-ces-control/generated/types"
+	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
+	"github.com/cloudogu/ces-control-api/generated/types"
 )
 
 const (

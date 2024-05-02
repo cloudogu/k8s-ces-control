@@ -1,4 +1,4 @@
-FROM golang:1.21.4-alpine AS backendBuilder
+FROM golang:1.22.2-alpine AS backendBuilder
 RUN apk add --no-cache build-base git bash
 
 ENV WORKDIR=/k8s-ces-control
@@ -11,7 +11,6 @@ RUN go mod download
 ## Copy golang source code
 COPY main.go ${WORKDIR}/
 COPY packages ${WORKDIR}/packages
-COPY generated ${WORKDIR}/generated
 COPY .git ${WORKDIR}/.git
 
 ## Copy makefiles
@@ -31,7 +30,7 @@ WORKDIR ${WORKDIR}
 
 LABEL maintainer="hello@cloudogu.com" \
     NAME="k8s-ces-control" \
-    VERSION="0.6.0"
+    VERSION="0.7.0"
 
 COPY --from=backendBuilder /k8s-ces-control/target/k8s-ces-control ${WORKDIR}/k8s-ces-control
 

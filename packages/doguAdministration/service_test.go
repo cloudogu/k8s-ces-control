@@ -3,10 +3,10 @@ package doguAdministration
 import (
 	"context"
 	"errors"
+	"github.com/cloudogu/ces-control-api/generated/doguAdministration"
+	"github.com/cloudogu/ces-control-api/generated/types"
 	"github.com/cloudogu/cesapp-lib/core"
 	blueprintcrv1 "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
-	"github.com/cloudogu/k8s-ces-control/generated/doguAdministration"
-	"github.com/cloudogu/k8s-ces-control/generated/types"
 	v1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
