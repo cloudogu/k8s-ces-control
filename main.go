@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
 	"net"
 	"os"
 
@@ -110,7 +111,7 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 		config.CurrentLokiGatewayConfig.Password,
 	)
 
-	pbLogging.RegisterDoguLogMessagesServer(grpcServer, logging.NewLoggingService(lokiLogProvider))
+	pbLogging.RegisterDoguLogMessagesServer(grpcServer, logging.NewLoggingService(lokiLogProvider, cesReg, doguinteraction.NewDefaultDoguInterActor(client, config.CurrentNamespace, cesReg)))
 	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministration.NewDoguAdministrationServer(client, cesReg, config.CurrentNamespace))
 	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService(client))
 	debugModeService := debug.NewDebugModeService(cesReg, client, config.CurrentNamespace)

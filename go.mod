@@ -6,7 +6,7 @@ toolchain go1.22.2
 
 require (
 	github.com/bombsimon/logrusr/v2 v2.0.1
-	github.com/cloudogu/ces-control-api v1.1.0
+	github.com/cloudogu/ces-control-api v1.2.0
 	github.com/cloudogu/cesapp-lib v0.12.2
 	github.com/cloudogu/k8s-blueprint-operator v0.0.0-20240301133756-6b9a1a81230f
 	github.com/cloudogu/k8s-dogu-operator v0.41.0
@@ -87,3 +87,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace github.com/cloudogu/ces-control-api => github.com/cloudogu/ces-control-api v0.0.0-20240507191025-cc86dd859a84
