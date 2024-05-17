@@ -64,7 +64,7 @@ func Test_writeLogLinesToStream(t *testing.T) {
 
 		// then
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "rpc error: code = InvalidArgument desc = Dogu name should not be empty")
+		assert.ErrorContains(t, err, "rpc error: code = InvalidArgument desc = dogu name should not be empty")
 	})
 
 	t.Run("should fail for error in log provider", func(t *testing.T) {
@@ -271,7 +271,7 @@ func Test_QueryForDogu(t *testing.T) {
 
 		// then
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "rpc error: code = InvalidArgument desc = Dogu name should not be empty")
+		assert.ErrorContains(t, err, "rpc error: code = InvalidArgument desc = dogu name should not be empty")
 	})
 
 	t.Run("should fail to get logs for error querying the log provider", func(t *testing.T) {
