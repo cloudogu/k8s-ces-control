@@ -182,5 +182,5 @@ func findDefaultLogLevel(dogu *core.Dogu) (string, error) {
 			return dogu.Configuration[i].Default, nil
 		}
 	}
-	return "", fmt.Errorf("could not find default log level for Dogu %s", dogu.Name)
+	return "UNKNOWN", fmt.Errorf("could not find default log level for Dogu %s", dogu.Name)
 }
