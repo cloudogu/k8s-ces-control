@@ -21,6 +21,7 @@ import (
 
 const (
 	responseMessageMissingDoguname = "dogu name should not be empty"
+	loggingKey                     = "logging/root"
 )
 
 type doguLogMessagesServer interface {
@@ -60,15 +61,15 @@ func (l logLevel) String() string {
 }
 
 // NewLoggingService creates a new logging service.
-func NewLoggingService(provider logProvider, cp configProvider, restarter doguRestarter) *loggingService {
-	return &loggingService{
+func NewLoggingService(provider logProvider, cp configProvider, restarter doguRestarter) *LoggingService {
+	return &LoggingService{
 		logProvider:    provider,
 		configProvider: cp,
 		doguRestarter:  restarter,
 	}
 }
 
-type loggingService struct {
+type LoggingService struct {
 	pb.UnimplementedDoguLogMessagesServer
 	logProvider    logProvider
 	configProvider configProvider
@@ -76,7 +77,7 @@ type loggingService struct {
 }
 
 // QueryForDogu writes dogu log messages into the stream of the given server.
-func (s *loggingService) QueryForDogu(request *pb.DoguLogMessageQueryRequest, server pb.DoguLogMessages_QueryForDoguServer) error {
+func (s *LoggingService) QueryForDogu(request *pb.DoguLogMessageQueryRequest, server pb.DoguLogMessages_QueryForDoguServer) error {
 	doguName := request.DoguName
 	if doguName == "" {
 		return status.Error(codes.InvalidArgument, responseMessageMissingDoguname)
@@ -120,7 +121,7 @@ func (s *loggingService) QueryForDogu(request *pb.DoguLogMessageQueryRequest, se
 }
 
 // GetForDogu writes dogu log messages into the stream of the given server.
-func (s *loggingService) GetForDogu(request *pb.DoguLogMessageRequest, server pb.DoguLogMessages_GetForDoguServer) error {
+func (s *LoggingService) GetForDogu(request *pb.DoguLogMessageRequest, server pb.DoguLogMessages_GetForDoguServer) error {
 	linesCount := int(request.LineCount)
 	doguName := request.DoguName
 	// delegate to an orderly named method because GetForDogu is misleading but cannot be renamed due to the
@@ -128,7 +129,7 @@ func (s *loggingService) GetForDogu(request *pb.DoguLogMessageRequest, server pb
 	return writeLogLinesToStream(s.logProvider, doguName, linesCount, server)
 }
 
-func (s *loggingService) SetLogLevel(ctx context.Context, req *pb.LogLevelRequest) (*emptypb.Empty, error) {
+func (s *LoggingService) SetLogLevel(ctx context.Context, req *pb.LogLevelRequest) (*emptypb.Empty, error) {
 	doguName := req.DoguName
 
 	if strings.TrimSpace(doguName) == "" {
@@ -156,14 +157,23 @@ func (s *loggingService) SetLogLevel(ctx context.Context, req *pb.LogLevelReques
 	return &emptypb.Empty{}, nil
 }
 
-func (s *loggingService) setLogLevel(_ context.Context, doguName string, l logLevel) (bool, error) {
-	const loggingKey = "logging/root"
-
+func (s *LoggingService) GetLogLevel(doguName string) (string, error) {
 	dConfig := s.configProvider.DoguConfig(doguName)
 
 	currentLevel, err := dConfig.Get(loggingKey)
 	if err != nil {
-		return false, fmt.Errorf("could not get current log level: %w", err)
+		return "", fmt.Errorf("could not get current log level: %w", err)
+	}
+
+	return currentLevel, nil
+}
+
+func (s *LoggingService) setLogLevel(_ context.Context, doguName string, l logLevel) (bool, error) {
+	dConfig := s.configProvider.DoguConfig(doguName)
+
+	currentLevel, err := s.GetLogLevel(doguName)
+	if err != nil {
+		return false, err
 	}
 
 	if strings.EqualFold(currentLevel, l.String()) {

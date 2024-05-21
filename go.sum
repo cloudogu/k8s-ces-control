@@ -6,8 +6,8 @@ github.com/bombsimon/logrusr/v2 v2.0.1 h1:1VgxVNQMCvjirZIYaT9JYn6sAVGVEcNtRE0y4m
 github.com/bombsimon/logrusr/v2 v2.0.1/go.mod h1:ByVAX+vHdLGAfdroiMg6q0zgq2FODY2lc5YJvzmOJio=
 github.com/cespare/xxhash/v2 v2.2.0 h1:DC2CZ1Ep5Y4k3ZQ899DldepgrayRUGE6BBZ/cd9Cj44=
 github.com/cespare/xxhash/v2 v2.2.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
-github.com/cloudogu/ces-control-api v0.0.0-20240507191025-cc86dd859a84 h1:iv++tmDelOY0AD1Cao2TI+ff3GxTU6IinWzhx8GZONk=
-github.com/cloudogu/ces-control-api v0.0.0-20240507191025-cc86dd859a84/go.mod h1:C1vDvnvzH6cLU3dczqZ7gXoc4SKTMKwBFKHOeFdYg3k=
+github.com/cloudogu/ces-control-api v0.0.0-20240517042130-3ad5b3391a18 h1:Nzm0nCSAZGhCT4XQFDrCmmTXdYKvKr1rXcyMfPPoTUQ=
+github.com/cloudogu/ces-control-api v0.0.0-20240517042130-3ad5b3391a18/go.mod h1:C1vDvnvzH6cLU3dczqZ7gXoc4SKTMKwBFKHOeFdYg3k=
 github.com/cloudogu/cesapp-lib v0.12.2 h1:++yK7s69DMCtpIt1nQ2x05cGAe6UH4KnsgEscV7wdq0=
 github.com/cloudogu/cesapp-lib v0.12.2/go.mod h1:PTQqI3xs1ReJMXYE6BGTF33yAfmS4J7P8UiE4AwDMDY=
 github.com/cloudogu/k8s-blueprint-operator v0.0.0-20240301133756-6b9a1a81230f h1:tGDcJAbL1yhL7tdvnwn0fBGqgRYQIyka9mOQ2ZAfZq8=
