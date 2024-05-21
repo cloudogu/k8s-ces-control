@@ -128,7 +128,10 @@ func (s *server) createDoguListResponse(dogus []*core.Dogu) *pb.DoguListResponse
 
 		var logLevel, err = s.loggingService.GetLogLevel(dogu.GetSimpleName())
 		if err != nil {
-			logLevel = findDefaultLogLevel(dogu)
+			logLevel, err = findDefaultLogLevel(dogu)
+			if err != nil {
+				logrus.Warn(err)
+			}
 		}
 
 		result = append(result, &pb.Dogu{
@@ -173,11 +176,11 @@ func getCurrentBlueprintID(blueprintList []v1bp.Blueprint) string {
 	return latestBluePrint.Name
 }
 
-func findDefaultLogLevel(dogu *core.Dogu) string {
+func findDefaultLogLevel(dogu *core.Dogu) (string, error) {
 	for i := range dogu.Configuration {
-		if dogu.Configuration[i].Name == "" {
-			return dogu.Configuration[i].Default
+		if dogu.Configuration[i].Name == "logging/root" {
+			return dogu.Configuration[i].Default, nil
 		}
 	}
-	return ""
+	return "", fmt.Errorf("could not find default log level for Dogu %s", dogu.Name)
 }
