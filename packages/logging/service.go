@@ -140,7 +140,8 @@ func (s *loggingService) GetForDogu(request *pb.DoguLogMessageRequest, server pb
 	return writeLogLinesToStream(s.logProvider, doguName, linesCount, server)
 }
 
-func (s *loggingService) SetLogLevel(ctx context.Context, req *pb.LogLevelRequest) (*emptypb.Empty, error) {
+// ApplyLogLevelWithRestart sets the log level for a specific dogu and restarts the dogu if the log level was changed.
+func (s *loggingService) ApplyLogLevelWithRestart(ctx context.Context, req *pb.LogLevelRequest) (*emptypb.Empty, error) {
 	doguName := req.DoguName
 
 	if strings.TrimSpace(doguName) == "" {

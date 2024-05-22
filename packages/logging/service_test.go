@@ -430,7 +430,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 			sut := NewLoggingService(mockedLogProvider, mockedConfigProvider, mockedDoguRestarter, mockedDescriptionGetter)
 
-			resp, err := sut.SetLogLevel(context.TODO(), tc.req)
+			resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), tc.req)
 
 			assert.Equal(t, tc.xResponse, resp != nil)
 			assert.Equal(t, tc.xResponseCode, status.Code(err))
@@ -473,7 +473,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		sut := NewLoggingService(mockedLogProvider, mockedConfigProvider, mockedDoguRestarter, mockedDescriptionGetter)
 
-		resp, err := sut.SetLogLevel(context.TODO(), &pb.LogLevelRequest{
+		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
 			LogLevel: pb.LogLevel_DEBUG,
 		})
@@ -505,7 +505,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		sut := NewLoggingService(mockedLogProvider, mockedConfigProvider, mockedDoguRestarter, mockedDescriptionGetter)
 
-		resp, err := sut.SetLogLevel(context.TODO(), &pb.LogLevelRequest{
+		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
 			LogLevel: pb.LogLevel_DEBUG,
 		})
@@ -527,7 +527,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		sut := NewLoggingService(mockedLogProvider, mockedConfigProvider, mockedDoguRestarter, mockedDescriptionGetter)
 
-		resp, err := sut.SetLogLevel(context.TODO(), &pb.LogLevelRequest{
+		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
 			LogLevel: pb.LogLevel_DEBUG,
 		})
@@ -552,7 +552,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		sut := NewLoggingService(mockedLogProvider, mockedConfigProvider, mockedDoguRestarter, mockedDescriptionGetter)
 
-		resp, err := sut.SetLogLevel(context.TODO(), &pb.LogLevelRequest{
+		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
 			LogLevel: pb.LogLevel_DEBUG,
 		})
@@ -577,7 +577,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		sut := NewLoggingService(mockedLogProvider, mockedConfigProvider, mockedDoguRestarter, mockedDescriptionGetter)
 
-		resp, err := sut.SetLogLevel(context.TODO(), &pb.LogLevelRequest{
+		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
 			LogLevel: pb.LogLevel_DEBUG,
 		})
@@ -610,7 +610,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		sut := NewLoggingService(mockedLogProvider, mockedConfigProvider, mockedDoguRestarter, mockedDescriptionGetter)
 
-		resp, err := sut.SetLogLevel(context.TODO(), &pb.LogLevelRequest{
+		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
 			LogLevel: pb.LogLevel_DEBUG,
 		})
@@ -646,7 +646,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		sut := NewLoggingService(mockedLogProvider, mockedConfigProvider, mockedDoguRestarter, mockedDescriptionGetter)
 
-		resp, err := sut.SetLogLevel(context.TODO(), &pb.LogLevelRequest{
+		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
 			LogLevel: pb.LogLevel_DEBUG,
 		})
