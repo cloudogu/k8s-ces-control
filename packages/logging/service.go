@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/cloudogu/cesapp-lib/core"
 	"github.com/cloudogu/cesapp-lib/registry"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -19,9 +20,11 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const (
-	responseMessageMissingDoguname = "dogu name should not be empty"
+var (
+	errMissingDoguName = errors.New("dogu name should not be empty")
 )
+
+const loggingKey = "logging/root"
 
 type doguLogMessagesServer interface {
 	pb.DoguLogMessages_GetForDoguServer
@@ -35,13 +38,18 @@ type doguRestarter interface {
 	RestartDogu(ctx context.Context, doguName string) error
 }
 
+type doguDescriptionGetter interface {
+	GetCurrent(ctx context.Context, simpleDoguName string) (*core.Dogu, error)
+}
+
 type logLevel int
 
 const (
-	levelDebug logLevel = iota
-	levelInfo
-	levelWarn
+	levelUnknown logLevel = iota
 	levelError
+	levelWarn
+	levelInfo
+	levelDebug
 )
 
 func (l logLevel) String() string {
@@ -60,26 +68,28 @@ func (l logLevel) String() string {
 }
 
 // NewLoggingService creates a new logging service.
-func NewLoggingService(provider logProvider, cp configProvider, restarter doguRestarter) *loggingService {
+func NewLoggingService(provider logProvider, cp configProvider, restarter doguRestarter, descriptionGetter doguDescriptionGetter) *loggingService {
 	return &loggingService{
-		logProvider:    provider,
-		configProvider: cp,
-		doguRestarter:  restarter,
+		logProvider:          provider,
+		configProvider:       cp,
+		doguRestarter:        restarter,
+		doguDescriptorGetter: descriptionGetter,
 	}
 }
 
 type loggingService struct {
 	pb.UnimplementedDoguLogMessagesServer
-	logProvider    logProvider
-	configProvider configProvider
-	doguRestarter  doguRestarter
+	logProvider          logProvider
+	configProvider       configProvider
+	doguRestarter        doguRestarter
+	doguDescriptorGetter doguDescriptionGetter
 }
 
 // QueryForDogu writes dogu log messages into the stream of the given server.
 func (s *loggingService) QueryForDogu(request *pb.DoguLogMessageQueryRequest, server pb.DoguLogMessages_QueryForDoguServer) error {
 	doguName := request.DoguName
 	if doguName == "" {
-		return status.Error(codes.InvalidArgument, responseMessageMissingDoguname)
+		return createInternalErr(errMissingDoguName, codes.InvalidArgument)
 	}
 
 	var filter = ""
@@ -132,10 +142,10 @@ func (s *loggingService) SetLogLevel(ctx context.Context, req *pb.LogLevelReques
 	doguName := req.DoguName
 
 	if strings.TrimSpace(doguName) == "" {
-		return nil, createInternalErr(errors.New(responseMessageMissingDoguname), codes.InvalidArgument)
+		return nil, createInternalErr(errMissingDoguName, codes.InvalidArgument)
 	}
 
-	lLevel, err := mapLogLevel(req.GetLogLevel())
+	lLevel, err := mapLogLevelFromProto(req.GetLogLevel())
 	if err != nil {
 		return nil, createInternalErr(fmt.Errorf("unable to map log level from proto message: %w", err), codes.InvalidArgument)
 	}
@@ -156,29 +166,87 @@ func (s *loggingService) SetLogLevel(ctx context.Context, req *pb.LogLevelReques
 	return &emptypb.Empty{}, nil
 }
 
-func (s *loggingService) setLogLevel(_ context.Context, doguName string, l logLevel) (bool, error) {
-	const loggingKey = "logging/root"
+func (s *loggingService) setLogLevel(ctx context.Context, doguName string, l logLevel) (bool, error) {
+	doguConfig := s.configProvider.DoguConfig(doguName)
 
-	dConfig := s.configProvider.DoguConfig(doguName)
-
-	currentLevel, err := dConfig.Get(loggingKey)
+	currentLogLevel, err := s.getLogLevel(ctx, doguName, doguConfig)
 	if err != nil {
 		return false, fmt.Errorf("could not get current log level: %w", err)
 	}
 
-	if strings.EqualFold(currentLevel, l.String()) {
+	if currentLogLevel == l {
 		return false, nil
 	}
 
-	err = dConfig.Set(loggingKey, l.String())
-	if err != nil {
-		return false, fmt.Errorf("could not change log level from %s to %s: %w", currentLevel, l.String(), err)
+	if lErr := s.writeLogLevel(ctx, doguConfig, l); lErr != nil {
+		return false, fmt.Errorf("could not change log level from %s to %s: %w", currentLogLevel, l.String(), err)
 	}
 
 	return true, nil
 }
 
-func mapLogLevel(pLevel pb.LogLevel) (logLevel, error) {
+func (s *loggingService) GetLogLevel(ctx context.Context, doguName string) (logLevel, error) {
+	dConfig := s.configProvider.DoguConfig(doguName)
+
+	return s.getLogLevel(ctx, doguName, dConfig)
+}
+
+func (s *loggingService) getLogLevel(ctx context.Context, doguName string, doguConfig registry.ConfigurationContext) (logLevel, error) {
+	currentLogLevelStr, err := s.getConfigLogLevel(ctx, doguConfig)
+	if err != nil {
+		return levelUnknown, fmt.Errorf("could not get log level from config: %w", err)
+	}
+
+	if currentLogLevelStr == "" {
+		currentLogLevelStr, err = s.getDefaultLogLevel(ctx, doguName)
+		if err != nil {
+			return levelUnknown, fmt.Errorf("could not get default log level from dogu description: %w", err)
+		}
+	}
+
+	if currentLogLevelStr == "" {
+		logrus.Warnf("log level for dogu %s is neither set in config nor description", doguName)
+		return levelUnknown, nil
+	}
+
+	currentLogLevel, err := mapLogLevelFromString(currentLogLevelStr)
+	if err != nil {
+		logrus.Warnf("invalid log level set for dogu %s: %s", doguName, currentLogLevelStr)
+
+		return levelUnknown, nil
+	}
+
+	return currentLogLevel, nil
+}
+
+func (s *loggingService) getConfigLogLevel(_ context.Context, dConfig registry.ConfigurationContext) (string, error) {
+	_, configLevelStr, err := dConfig.GetOrFalse(loggingKey)
+	if err != nil {
+		return "", fmt.Errorf("could not receive value from config key: %w", err)
+	}
+
+	return configLevelStr, nil
+}
+
+func (s *loggingService) getDefaultLogLevel(ctx context.Context, doguName string) (string, error) {
+	doguDescription, err := s.doguDescriptorGetter.GetCurrent(ctx, doguName)
+	if err != nil {
+		return "", fmt.Errorf("could not get dogu description for dogu %s", doguName)
+	}
+
+	var defaultLevelStr string
+
+	for _, cfgValue := range doguDescription.Configuration {
+		if cfgValue.Name == loggingKey {
+			defaultLevelStr = cfgValue.Default
+			break
+		}
+	}
+
+	return defaultLevelStr, nil
+}
+
+func mapLogLevelFromProto(pLevel pb.LogLevel) (logLevel, error) {
 	switch pLevel {
 	case pb.LogLevel_DEBUG:
 		return levelDebug, nil
@@ -189,13 +257,39 @@ func mapLogLevel(pLevel pb.LogLevel) (logLevel, error) {
 	case pb.LogLevel_ERROR:
 		return levelError, nil
 	default:
-		return 0, fmt.Errorf("unknown loglevel: %v", pLevel)
+		return levelUnknown, fmt.Errorf("unknown log level: %v", pLevel)
 	}
+}
+
+func mapLogLevelFromString(sLevel string) (logLevel, error) {
+	sLevelUpper := strings.ToUpper(sLevel)
+
+	switch sLevelUpper {
+	case levelError.String():
+		return levelError, nil
+	case levelWarn.String():
+		return levelWarn, nil
+	case levelInfo.String():
+		return levelInfo, nil
+	case levelDebug.String():
+		return levelDebug, nil
+	default:
+		return levelUnknown, errors.New("unknown log level")
+	}
+}
+
+func (s *loggingService) writeLogLevel(_ context.Context, dConfig registry.ConfigurationContext, l logLevel) error {
+	err := dConfig.Set(loggingKey, l.String())
+	if err != nil {
+		return fmt.Errorf("could not write to dogu config: %w", err)
+	}
+
+	return nil
 }
 
 func writeLogLinesToStream(logProvider logProvider, doguName string, linesCount int, server doguLogMessagesServer) error {
 	if doguName == "" {
-		return status.Error(codes.InvalidArgument, responseMessageMissingDoguname)
+		return createInternalErr(errMissingDoguName, codes.InvalidArgument)
 	}
 	logrus.Debugf("retrieving %d line(s) of log messages for dogu '%s'", linesCount, doguName)
 
