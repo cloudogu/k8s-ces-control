@@ -42,25 +42,27 @@ type doguDescriptionGetter interface {
 	GetCurrent(ctx context.Context, simpleDoguName string) (*core.Dogu, error)
 }
 
-type logLevel int
+type LogLevel int
 
 const (
-	levelUnknown logLevel = iota
-	levelError
-	levelWarn
-	levelInfo
-	levelDebug
+	LevelUnknown LogLevel = iota
+	LevelError
+	LevelWarn
+	LevelInfo
+	LevelDebug
 )
 
-func (l logLevel) String() string {
+func (l LogLevel) String() string {
 	switch l {
-	case levelDebug:
+	case LevelUnknown:
+		return "UNKNOWN"
+	case LevelDebug:
 		return "DEBUG"
-	case levelInfo:
+	case LevelInfo:
 		return "INFO"
-	case levelWarn:
+	case LevelWarn:
 		return "WARN"
-	case levelError:
+	case LevelError:
 		return "ERROR"
 	default:
 		return "WARN"
@@ -166,7 +168,7 @@ func (s *loggingService) SetLogLevel(ctx context.Context, req *pb.LogLevelReques
 	return &emptypb.Empty{}, nil
 }
 
-func (s *loggingService) setLogLevel(ctx context.Context, doguName string, l logLevel) (bool, error) {
+func (s *loggingService) setLogLevel(ctx context.Context, doguName string, l LogLevel) (bool, error) {
 	doguConfig := s.configProvider.DoguConfig(doguName)
 
 	currentLogLevel, err := s.getLogLevel(ctx, doguName, doguConfig)
@@ -185,35 +187,35 @@ func (s *loggingService) setLogLevel(ctx context.Context, doguName string, l log
 	return true, nil
 }
 
-func (s *loggingService) GetLogLevel(ctx context.Context, doguName string) (logLevel, error) {
+func (s *loggingService) GetLogLevel(ctx context.Context, doguName string) (LogLevel, error) {
 	dConfig := s.configProvider.DoguConfig(doguName)
 
 	return s.getLogLevel(ctx, doguName, dConfig)
 }
 
-func (s *loggingService) getLogLevel(ctx context.Context, doguName string, doguConfig registry.ConfigurationContext) (logLevel, error) {
+func (s *loggingService) getLogLevel(ctx context.Context, doguName string, doguConfig registry.ConfigurationContext) (LogLevel, error) {
 	currentLogLevelStr, err := s.getConfigLogLevel(ctx, doguConfig)
 	if err != nil {
-		return levelUnknown, fmt.Errorf("could not get log level from config: %w", err)
+		return LevelUnknown, fmt.Errorf("could not get log level from config: %w", err)
 	}
 
 	if currentLogLevelStr == "" {
 		currentLogLevelStr, err = s.getDefaultLogLevel(ctx, doguName)
 		if err != nil {
-			return levelUnknown, fmt.Errorf("could not get default log level from dogu description: %w", err)
+			return LevelUnknown, fmt.Errorf("could not get default log level from dogu description: %w", err)
 		}
 	}
 
 	if currentLogLevelStr == "" {
 		logrus.Warnf("log level for dogu %s is neither set in config nor description", doguName)
-		return levelUnknown, nil
+		return LevelUnknown, nil
 	}
 
 	currentLogLevel, err := mapLogLevelFromString(currentLogLevelStr)
 	if err != nil {
 		logrus.Warnf("invalid log level set for dogu %s: %s", doguName, currentLogLevelStr)
 
-		return levelUnknown, nil
+		return LevelUnknown, nil
 	}
 
 	return currentLogLevel, nil
@@ -246,39 +248,39 @@ func (s *loggingService) getDefaultLogLevel(ctx context.Context, doguName string
 	return defaultLevelStr, nil
 }
 
-func mapLogLevelFromProto(pLevel pb.LogLevel) (logLevel, error) {
+func mapLogLevelFromProto(pLevel pb.LogLevel) (LogLevel, error) {
 	switch pLevel {
 	case pb.LogLevel_DEBUG:
-		return levelDebug, nil
+		return LevelDebug, nil
 	case pb.LogLevel_INFO:
-		return levelInfo, nil
+		return LevelInfo, nil
 	case pb.LogLevel_WARN:
-		return levelWarn, nil
+		return LevelWarn, nil
 	case pb.LogLevel_ERROR:
-		return levelError, nil
+		return LevelError, nil
 	default:
-		return levelUnknown, fmt.Errorf("unknown log level: %v", pLevel)
+		return LevelUnknown, fmt.Errorf("unknown log level: %v", pLevel)
 	}
 }
 
-func mapLogLevelFromString(sLevel string) (logLevel, error) {
+func mapLogLevelFromString(sLevel string) (LogLevel, error) {
 	sLevelUpper := strings.ToUpper(sLevel)
 
 	switch sLevelUpper {
-	case levelError.String():
-		return levelError, nil
-	case levelWarn.String():
-		return levelWarn, nil
-	case levelInfo.String():
-		return levelInfo, nil
-	case levelDebug.String():
-		return levelDebug, nil
+	case LevelError.String():
+		return LevelError, nil
+	case LevelWarn.String():
+		return LevelWarn, nil
+	case LevelInfo.String():
+		return LevelInfo, nil
+	case LevelDebug.String():
+		return LevelDebug, nil
 	default:
-		return levelUnknown, errors.New("unknown log level")
+		return LevelUnknown, errors.New("unknown log level")
 	}
 }
 
-func (s *loggingService) writeLogLevel(_ context.Context, dConfig registry.ConfigurationContext, l logLevel) error {
+func (s *loggingService) writeLogLevel(_ context.Context, dConfig registry.ConfigurationContext, l LogLevel) error {
 	err := dConfig.Set(loggingKey, l.String())
 	if err != nil {
 		return fmt.Errorf("could not write to dogu config: %w", err)
