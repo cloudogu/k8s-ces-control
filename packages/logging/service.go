@@ -141,21 +141,23 @@ func (s *loggingService) GetForDogu(request *pb.DoguLogMessageRequest, server pb
 }
 
 // ApplyLogLevelWithRestart sets the log level for a specific dogu and restarts the dogu if the log level was changed.
-func (s *loggingService) ApplyLogLevelWithRestart(ctx context.Context, req *pb.LogLevelRequest) (*emptypb.Empty, error) {
+func (s *loggingService) ApplyLogLevelWithRestart(ctx context.Context, req *pb.LogLevelRequest) (res *emptypb.Empty, err error) {
 	doguName := req.DoguName
 
+	createInternalErrWithCtx := wrapCreateInternalErrWithContext(fmt.Sprintf("error occurred in ApplyLogLevelWithRestart for dogu \"%s\"", doguName))
+
 	if strings.TrimSpace(doguName) == "" {
-		return nil, createInternalErr(errMissingDoguName, codes.InvalidArgument)
+		return nil, createInternalErrWithCtx(errMissingDoguName, codes.InvalidArgument)
 	}
 
 	lLevel, err := mapLogLevelFromProto(req.GetLogLevel())
 	if err != nil {
-		return nil, createInternalErr(fmt.Errorf("unable to map log level from proto message: %w", err), codes.InvalidArgument)
+		return nil, createInternalErrWithCtx(fmt.Errorf("unable to map log level from proto message: %w", err), codes.InvalidArgument)
 	}
 
 	restart, err := s.setLogLevel(ctx, doguName, lLevel)
 	if err != nil {
-		return nil, createInternalErr(fmt.Errorf("unable to set log level: %w", err), codes.Internal)
+		return nil, createInternalErrWithCtx(fmt.Errorf("unable to set log level: %w", err), codes.Internal)
 	}
 
 	if !restart {
@@ -163,7 +165,7 @@ func (s *loggingService) ApplyLogLevelWithRestart(ctx context.Context, req *pb.L
 	}
 
 	if lErr := s.doguRestarter.RestartDogu(ctx, doguName); lErr != nil {
-		return nil, createInternalErr(fmt.Errorf("unable to restart dogu %s after setting new log level: %w", doguName, lErr), codes.Internal)
+		return nil, createInternalErrWithCtx(fmt.Errorf("unable to restart dogu %s after setting new log level: %w", doguName, lErr), codes.Internal)
 	}
 
 	return &emptypb.Empty{}, nil
@@ -352,4 +354,12 @@ func compressMessages(doguName string, logLines []logLine) ([]byte, error) {
 func createInternalErr(err error, code codes.Code) error {
 	logrus.Error(err)
 	return status.Error(code, err.Error())
+}
+
+func wrapCreateInternalErrWithContext(errCtx string) func(error, codes.Code) error {
+	return func(err error, code codes.Code) error {
+		contextError := fmt.Errorf("%s : %w", errCtx, err)
+
+		return createInternalErr(contextError, code)
+	}
 }
