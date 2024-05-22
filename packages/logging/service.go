@@ -42,33 +42,6 @@ type doguDescriptionGetter interface {
 	GetCurrent(ctx context.Context, simpleDoguName string) (*core.Dogu, error)
 }
 
-type LogLevel int
-
-const (
-	LevelUnknown LogLevel = iota
-	LevelError
-	LevelWarn
-	LevelInfo
-	LevelDebug
-)
-
-func (l LogLevel) String() string {
-	switch l {
-	case LevelUnknown:
-		return "UNKNOWN"
-	case LevelDebug:
-		return "DEBUG"
-	case LevelInfo:
-		return "INFO"
-	case LevelWarn:
-		return "WARN"
-	case LevelError:
-		return "ERROR"
-	default:
-		return "WARN"
-	}
-}
-
 // NewLoggingService creates a new logging service.
 func NewLoggingService(provider logProvider, cp configProvider, restarter doguRestarter, descriptionGetter doguDescriptionGetter) *loggingService {
 	return &loggingService{
@@ -150,7 +123,7 @@ func (s *loggingService) ApplyLogLevelWithRestart(ctx context.Context, req *pb.L
 		return nil, createInternalErrWithCtx(errMissingDoguName, codes.InvalidArgument)
 	}
 
-	lLevel, err := mapLogLevelFromProto(req.GetLogLevel())
+	lLevel, err := CreateLogLevelFromProto(req.GetLogLevel())
 	if err != nil {
 		return nil, createInternalErrWithCtx(fmt.Errorf("unable to map log level from proto message: %w", err), codes.InvalidArgument)
 	}
@@ -196,6 +169,10 @@ func (s *loggingService) setLogLevel(ctx context.Context, doguName string, l Log
 	return true, nil
 }
 
+// GetLogLevel provides the log level currently set for a specific dogu.
+// For this the dogu config is checked as well as the dogu description as fall back.
+// When there is no value set for the log level LevelUnknown is returned without an error.
+// An error is only returned in case dogu config or dogu description cannot be read.
 func (s *loggingService) GetLogLevel(ctx context.Context, doguName string) (LogLevel, error) {
 	dConfig := s.configProvider.DoguConfig(doguName)
 
@@ -224,7 +201,7 @@ func (s *loggingService) getLogLevel(ctx context.Context, doguName string, doguC
 
 	logrus.Debugf("current log level from dogu %s is %s", doguName, currentLogLevelStr)
 
-	currentLogLevel, err := mapLogLevelFromString(currentLogLevelStr)
+	currentLogLevel, err := CreateLogLevelFromString(currentLogLevelStr)
 	if err != nil {
 		logrus.Warnf("invalid log level set for dogu %s: %s", doguName, currentLogLevelStr)
 
@@ -259,38 +236,6 @@ func (s *loggingService) getDefaultLogLevel(ctx context.Context, doguName string
 	}
 
 	return defaultLevelStr, nil
-}
-
-func mapLogLevelFromProto(pLevel pb.LogLevel) (LogLevel, error) {
-	switch pLevel {
-	case pb.LogLevel_DEBUG:
-		return LevelDebug, nil
-	case pb.LogLevel_INFO:
-		return LevelInfo, nil
-	case pb.LogLevel_WARN:
-		return LevelWarn, nil
-	case pb.LogLevel_ERROR:
-		return LevelError, nil
-	default:
-		return LevelUnknown, fmt.Errorf("unknown log level: %v", pLevel)
-	}
-}
-
-func mapLogLevelFromString(sLevel string) (LogLevel, error) {
-	sLevelUpper := strings.ToUpper(sLevel)
-
-	switch sLevelUpper {
-	case LevelError.String():
-		return LevelError, nil
-	case LevelWarn.String():
-		return LevelWarn, nil
-	case LevelInfo.String():
-		return LevelInfo, nil
-	case LevelDebug.String():
-		return LevelDebug, nil
-	default:
-		return LevelUnknown, errors.New("unknown log level")
-	}
 }
 
 func (s *loggingService) writeLogLevel(_ context.Context, dConfig registry.ConfigurationContext, l LogLevel) error {
