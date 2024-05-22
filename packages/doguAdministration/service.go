@@ -8,7 +8,6 @@ import (
 	"github.com/cloudogu/cesapp-lib/core"
 	v1bp "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
-	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	v1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
@@ -19,13 +18,17 @@ import (
 
 const responseMessageMissingDoguName = "dogu name is empty"
 
+type logService interface {
+	GetLogLevel(string2 string) (string, error)
+}
+
 // NewDoguAdministrationServer returns a new administration server instance to start/stop.. etc. Dogus.
-func NewDoguAdministrationServer(client clusterClient, reg cesRegistry, namespace string, loggingService *logging.LoggingService) *server {
+func NewDoguAdministrationServer(client clusterClient, reg cesRegistry, namespace string, logService logService) *server {
 	return &server{client: client,
 		doguRegistry:   reg.DoguRegistry(),
 		doguInterActor: doguinteraction.NewDefaultDoguInterActor(client, namespace, reg),
 		ns:             namespace,
-		loggingService: *loggingService,
+		loggingService: logService,
 	}
 }
 
@@ -35,7 +38,7 @@ type server struct {
 	client         clusterClient
 	doguInterActor doguInterActor
 	ns             string
-	loggingService logging.LoggingService
+	loggingService logService
 }
 
 // StartDogu starts the specified dogu

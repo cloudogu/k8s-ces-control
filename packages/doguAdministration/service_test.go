@@ -9,6 +9,7 @@ import (
 	blueprintcrv1 "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
 	v1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -26,9 +27,10 @@ func TestNewDoguAdministrationServer(t *testing.T) {
 		doguRegMock := newMockDoguRegistry(t)
 		regMock := newMockCesRegistry(t)
 		regMock.EXPECT().DoguRegistry().Return(doguRegMock)
+		loggingMock := newMockLogService(t)
 
 		// when
-		actual := NewDoguAdministrationServer(clientMock, regMock, "testNamespace")
+		actual := NewDoguAdministrationServer(clientMock, regMock, "testNamespace", loggingMock)
 
 		// then
 		assert.NotEmpty(t, actual)
@@ -45,10 +47,12 @@ func Test_server_GetDoguList(t *testing.T) {
 		clientMock := newMockClusterClient(t)
 		clientMock.EXPECT().Dogus("ecosystem").Return(doguClientMock)
 		doguRegMock := newMockDoguRegistry(t)
+		loggingMock := newMockLogService(t)
 		sut := &server{
-			doguRegistry: doguRegMock,
-			client:       clientMock,
-			ns:           "ecosystem",
+			doguRegistry:   doguRegMock,
+			client:         clientMock,
+			ns:             "ecosystem",
+			loggingService: loggingMock,
 		}
 
 		// when
@@ -66,10 +70,12 @@ func Test_server_GetDoguList(t *testing.T) {
 		clientMock := newMockClusterClient(t)
 		clientMock.EXPECT().Dogus("ecosystem").Return(doguClientMock)
 		doguRegMock := newMockDoguRegistry(t)
+		loggingMock := newMockLogService(t)
 		sut := &server{
-			doguRegistry: doguRegMock,
-			client:       clientMock,
-			ns:           "ecosystem",
+			doguRegistry:   doguRegMock,
+			client:         clientMock,
+			ns:             "ecosystem",
+			loggingService: loggingMock,
 		}
 
 		// when
@@ -92,10 +98,12 @@ func Test_server_GetDoguList(t *testing.T) {
 		doguRegMock := newMockDoguRegistry(t)
 		doguRegMock.EXPECT().Get("will-succeed").Return(&core.Dogu{}, nil)
 		doguRegMock.EXPECT().Get("will-fail").Return(nil, assert.AnError)
+		loggingMock := newMockLogService(t)
 		sut := &server{
-			doguRegistry: doguRegMock,
-			client:       clientMock,
-			ns:           "ecosystem",
+			doguRegistry:   doguRegMock,
+			client:         clientMock,
+			ns:             "ecosystem",
+			loggingService: loggingMock,
 		}
 
 		// when
@@ -120,10 +128,12 @@ func Test_server_GetDoguList(t *testing.T) {
 		doguRegMock := newMockDoguRegistry(t)
 		doguRegMock.EXPECT().Get("will-fail").Return(nil, assert.AnError)
 		doguRegMock.EXPECT().Get("will-fail-too").Return(nil, assert.AnError)
+		loggingMock := newMockLogService(t)
 		sut := &server{
-			doguRegistry: doguRegMock,
-			client:       clientMock,
-			ns:           "ecosystem",
+			doguRegistry:   doguRegMock,
+			client:         clientMock,
+			ns:             "ecosystem",
+			loggingService: loggingMock,
 		}
 
 		// when
@@ -160,10 +170,13 @@ func Test_server_GetDoguList(t *testing.T) {
 			Description: "qwert",
 			Tags:        []string{"example", "banana"},
 		}, nil)
+		loggingMock := newMockLogService(t)
+		loggingMock.EXPECT().GetLogLevel(mock.Anything).Return("DEBUG", nil)
 		sut := &server{
-			doguRegistry: doguRegMock,
-			client:       clientMock,
-			ns:           "ecosystem",
+			doguRegistry:   doguRegMock,
+			client:         clientMock,
+			ns:             "ecosystem",
+			loggingService: loggingMock,
 		}
 
 		// when
@@ -179,6 +192,7 @@ func Test_server_GetDoguList(t *testing.T) {
 					Version:     "1.2.3-2",
 					Description: "asdf",
 					Tags:        []string{"example"},
+					LogLevel:    "DEBUG",
 				},
 				{
 					Name:        "will-succeed-too",
@@ -186,6 +200,7 @@ func Test_server_GetDoguList(t *testing.T) {
 					Version:     "3.2.1-1",
 					Description: "qwert",
 					Tags:        []string{"example", "banana"},
+					LogLevel:    "DEBUG",
 				},
 			},
 		}, actual)

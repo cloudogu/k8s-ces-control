@@ -171,9 +171,9 @@ func (s *LoggingService) GetLogLevel(doguName string) (string, error) {
 func (s *LoggingService) setLogLevel(_ context.Context, doguName string, l logLevel) (bool, error) {
 	dConfig := s.configProvider.DoguConfig(doguName)
 
-	currentLevel, err := s.GetLogLevel(doguName)
+	currentLevel, err := dConfig.Get(loggingKey)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("could not get current log level: %w", err)
 	}
 
 	if strings.EqualFold(currentLevel, l.String()) {
