@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// LogLevel is the log level that can be defined for a dogu.
 type LogLevel int
 
 const (
@@ -17,6 +18,7 @@ const (
 	LevelDebug
 )
 
+// String converts LogLevel type to a string
 func (l LogLevel) String() string {
 	switch l {
 	case LevelUnknown:
@@ -34,6 +36,7 @@ func (l LogLevel) String() string {
 	}
 }
 
+// CreateLogLevelFromProto maps protobuf log level to an internal log level used in application
 func CreateLogLevelFromProto(pLevel pb.LogLevel) (LogLevel, error) {
 	switch pLevel {
 	case pb.LogLevel_DEBUG:
@@ -49,6 +52,7 @@ func CreateLogLevelFromProto(pLevel pb.LogLevel) (LogLevel, error) {
 	}
 }
 
+// CreateLogLevelFromString maps a string to an internal log level used in application
 func CreateLogLevelFromString(sLevel string) (LogLevel, error) {
 	sLevelUpper := strings.ToUpper(sLevel)
 
