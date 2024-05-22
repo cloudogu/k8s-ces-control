@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- [#27] API GetDoguList reports current LogLevel
 - [#25] API to set log level for a dogu
 
 ## [v0.7.0] - 2024-05-02
