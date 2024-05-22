@@ -8,6 +8,7 @@ import (
 	"github.com/cloudogu/cesapp-lib/core"
 	v1bp "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
+	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	v1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
@@ -19,7 +20,7 @@ import (
 const responseMessageMissingDoguName = "dogu name is empty"
 
 type logService interface {
-	GetLogLevel(string2 string) (string, error)
+	GetLogLevel(context.Context, string) (logging.LogLevel, error)
 }
 
 // NewDoguAdministrationServer returns a new administration server instance to start/stop.. etc. Dogus.
@@ -129,12 +130,9 @@ func (s *server) createDoguListResponse(dogus []*core.Dogu) *pb.DoguListResponse
 
 	for _, dogu := range dogus {
 
-		var logLevel, err = s.loggingService.GetLogLevel(dogu.GetSimpleName())
+		logLevel, err := s.loggingService.GetLogLevel(context.TODO(), dogu.GetSimpleName())
 		if err != nil {
-			logLevel, err = findDefaultLogLevel(dogu)
-			if err != nil {
-				logrus.Warn(err)
-			}
+			logrus.Warn(err)
 		}
 
 		result = append(result, &pb.Dogu{
@@ -143,7 +141,7 @@ func (s *server) createDoguListResponse(dogus []*core.Dogu) *pb.DoguListResponse
 			Version:     dogu.Version,
 			Description: dogu.Description,
 			Tags:        dogu.Tags,
-			LogLevel:    logLevel,
+			LogLevel:    logLevel.String(),
 		})
 	}
 
@@ -177,13 +175,4 @@ func getCurrentBlueprintID(blueprintList []v1bp.Blueprint) string {
 	}
 
 	return latestBluePrint.Name
-}
-
-func findDefaultLogLevel(dogu *core.Dogu) (string, error) {
-	for i := range dogu.Configuration {
-		if dogu.Configuration[i].Name == "logging/root" {
-			return dogu.Configuration[i].Default, nil
-		}
-	}
-	return "UNKNOWN", fmt.Errorf("could not find default log level for Dogu %s", dogu.Name)
 }

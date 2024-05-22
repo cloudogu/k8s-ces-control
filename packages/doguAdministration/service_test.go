@@ -7,6 +7,7 @@ import (
 	"github.com/cloudogu/ces-control-api/generated/types"
 	"github.com/cloudogu/cesapp-lib/core"
 	blueprintcrv1 "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
+	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	v1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -171,7 +172,7 @@ func Test_server_GetDoguList(t *testing.T) {
 			Tags:        []string{"example", "banana"},
 		}, nil)
 		loggingMock := newMockLogService(t)
-		loggingMock.EXPECT().GetLogLevel(mock.Anything).Return("DEBUG", nil)
+		loggingMock.EXPECT().GetLogLevel(mock.Anything, mock.Anything).Return(logging.LevelDebug, nil)
 		sut := &server{
 			doguRegistry:   doguRegMock,
 			client:         clientMock,
