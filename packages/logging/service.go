@@ -160,6 +160,8 @@ func (s *loggingService) ApplyLogLevelWithRestart(ctx context.Context, req *pb.L
 		return nil, createInternalErrWithCtx(fmt.Errorf("unable to set log level: %w", err), codes.Internal)
 	}
 
+	logrus.Debugf("restart needed for log level change: %v", restart)
+
 	if !restart {
 		return &emptypb.Empty{}, nil
 	}
@@ -167,6 +169,8 @@ func (s *loggingService) ApplyLogLevelWithRestart(ctx context.Context, req *pb.L
 	if lErr := s.doguRestarter.RestartDogu(ctx, doguName); lErr != nil {
 		return nil, createInternalErrWithCtx(fmt.Errorf("unable to restart dogu %s after setting new log level: %w", doguName, lErr), codes.Internal)
 	}
+
+	logrus.Debugf("Restarted dogu %s", doguName)
 
 	return &emptypb.Empty{}, nil
 }
@@ -187,6 +191,8 @@ func (s *loggingService) setLogLevel(ctx context.Context, doguName string, l Log
 		return false, fmt.Errorf("could not change log level from %s to %s: %w", currentLogLevel, l.String(), err)
 	}
 
+	logrus.Debugf("written new log level %s for dogu %s", l.String(), doguName)
+
 	return true, nil
 }
 
@@ -203,6 +209,8 @@ func (s *loggingService) getLogLevel(ctx context.Context, doguName string, doguC
 	}
 
 	if currentLogLevelStr == "" {
+		logrus.Debugf("config log level is empty, try to get default log level from dogu descrption")
+
 		currentLogLevelStr, err = s.getDefaultLogLevel(ctx, doguName)
 		if err != nil {
 			return LevelUnknown, fmt.Errorf("could not get default log level from dogu description: %w", err)
@@ -213,6 +221,8 @@ func (s *loggingService) getLogLevel(ctx context.Context, doguName string, doguC
 		logrus.Warnf("log level for dogu %s is neither set in config nor description", doguName)
 		return LevelUnknown, nil
 	}
+
+	logrus.Debugf("current log level from dogu %s is %s", doguName, currentLogLevelStr)
 
 	currentLogLevel, err := mapLogLevelFromString(currentLogLevelStr)
 	if err != nil {
