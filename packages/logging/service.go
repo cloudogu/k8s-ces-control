@@ -139,7 +139,8 @@ func (s *loggingService) ApplyLogLevelWithRestart(ctx context.Context, req *pb.L
 		return &emptypb.Empty{}, nil
 	}
 
-	if lErr := s.doguRestarter.RestartDogu(ctx, doguName); lErr != nil {
+	// Decouple grpc-request context from RestartDogu context by creating a new context
+	if lErr := s.doguRestarter.RestartDogu(context.Background(), doguName); lErr != nil {
 		return nil, createInternalErrWithCtx(fmt.Errorf("unable to restart dogu %s after setting new log level: %w", doguName, lErr), codes.Internal)
 	}
 
