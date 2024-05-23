@@ -79,7 +79,9 @@ func Test_server_GetByName(t *testing.T) {
 
 		request := &health.DoguHealthRequest{DoguName: "my-dogu"}
 		deploymentMock := newMockDeploymentClient(t)
-		unhealthyDeployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 0}}
+		var replicas = new(int32)
+		*replicas = 1
+		unhealthyDeployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 0}, Spec: v1.DeploymentSpec{Replicas: replicas}}
 		deploymentMock.EXPECT().Get(context.TODO(), "my-dogu", metav1.GetOptions{}).Return(unhealthyDeployment, nil)
 		appsMock := newMockAppsV1Client(t)
 		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
@@ -91,7 +93,14 @@ func Test_server_GetByName(t *testing.T) {
 			ShortName:   "my-dogu",
 			DisplayName: "my-dogu",
 			Healthy:     false,
-			Results:     []*health.DoguHealthCheck{},
+			Results: []*health.DoguHealthCheck{
+				{
+					Type:     "container",
+					Success:  true,
+					Message:  "Check whether a deployment has at least one replica, ready or not.",
+					Critical: false,
+				},
+			},
 		}
 
 		// when
@@ -109,7 +118,9 @@ func Test_server_GetByName(t *testing.T) {
 
 		request := &health.DoguHealthRequest{DoguName: "my-dogu"}
 		deploymentMock := newMockDeploymentClient(t)
-		healthyDeployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}}
+		var replicas = new(int32)
+		*replicas = 1
+		healthyDeployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}, Spec: v1.DeploymentSpec{Replicas: replicas}}
 		deploymentMock.EXPECT().Get(context.TODO(), "my-dogu", metav1.GetOptions{}).Return(healthyDeployment, nil)
 		appsMock := newMockAppsV1Client(t)
 		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
@@ -124,7 +135,7 @@ func Test_server_GetByName(t *testing.T) {
 			Results: []*health.DoguHealthCheck{{
 				Type:    "container",
 				Success: true,
-				Message: "Check whether a deployment contains at least one ready replica.",
+				Message: "Check whether a deployment has at least one replica, ready or not.",
 			}},
 		}
 
@@ -134,6 +145,9 @@ func Test_server_GetByName(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, expectedResponse, actual)
+		appsMock.AssertExpectations(t)
+		clientMock.AssertExpectations(t)
+		deploymentMock.AssertExpectations(t)
 	})
 }
 
@@ -147,7 +161,9 @@ func Test_server_GetByNames(t *testing.T) {
 		request := &health.DoguHealthListRequest{Dogus: []string{"will-fail", "will-succeed"}}
 		deploymentMock := newMockDeploymentClient(t)
 		deploymentMock.EXPECT().Get(context.TODO(), "will-fail", metav1.GetOptions{}).Return(nil, assert.AnError)
-		healthyDeployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}}
+		var replicas = new(int32)
+		*replicas = 1
+		healthyDeployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}, Spec: v1.DeploymentSpec{Replicas: replicas}}
 		deploymentMock.EXPECT().Get(context.TODO(), "will-succeed", metav1.GetOptions{}).Return(healthyDeployment, nil)
 		appsMock := newMockAppsV1Client(t)
 		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
@@ -170,9 +186,10 @@ func Test_server_GetByNames(t *testing.T) {
 					DisplayName: "will-succeed",
 					Healthy:     true,
 					Results: []*health.DoguHealthCheck{{
-						Type:    "container",
-						Success: true,
-						Message: "Check whether a deployment contains at least one ready replica.",
+						Type:     "container",
+						Success:  true,
+						Message:  "Check whether a deployment has at least one replica, ready or not.",
+						Critical: false,
 					}},
 				},
 			},
@@ -237,9 +254,13 @@ func Test_server_GetByNames(t *testing.T) {
 
 		request := &health.DoguHealthListRequest{Dogus: []string{"healthy", "unhealthy"}}
 		deploymentMock := newMockDeploymentClient(t)
-		healthyDeployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}}
+		var replicasHealthy = new(int32)
+		*replicasHealthy = 1
+		healthyDeployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}, Spec: v1.DeploymentSpec{Replicas: replicasHealthy}}
 		deploymentMock.EXPECT().Get(context.TODO(), "healthy", metav1.GetOptions{}).Return(healthyDeployment, nil)
-		unhealthyDeployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 0}}
+		var replicasUnHealthy = new(int32)
+		*replicasUnHealthy = 0
+		unhealthyDeployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 0}, Spec: v1.DeploymentSpec{Replicas: replicasUnHealthy}}
 		deploymentMock.EXPECT().Get(context.TODO(), "unhealthy", metav1.GetOptions{}).Return(unhealthyDeployment, nil)
 		appsMock := newMockAppsV1Client(t)
 		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
@@ -255,9 +276,10 @@ func Test_server_GetByNames(t *testing.T) {
 					DisplayName: "healthy",
 					Healthy:     true,
 					Results: []*health.DoguHealthCheck{{
-						Type:    "container",
-						Success: true,
-						Message: "Check whether a deployment contains at least one ready replica.",
+						Type:     "container",
+						Success:  true,
+						Message:  "Check whether a deployment has at least one replica, ready or not.",
+						Critical: false,
 					}},
 				},
 				"unhealthy": {
@@ -265,7 +287,12 @@ func Test_server_GetByNames(t *testing.T) {
 					ShortName:   "unhealthy",
 					DisplayName: "unhealthy",
 					Healthy:     false,
-					Results:     []*health.DoguHealthCheck{},
+					Results: []*health.DoguHealthCheck{{
+						Type:     "container",
+						Success:  false,
+						Message:  "Check whether a deployment has at least one replica, ready or not.",
+						Critical: false,
+					}},
 				},
 			},
 		}
@@ -285,9 +312,11 @@ func Test_server_GetByNames(t *testing.T) {
 
 		request := &health.DoguHealthListRequest{Dogus: []string{"healthy1", "healthy2"}}
 		deploymentMock := newMockDeploymentClient(t)
-		healthy1Deployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}}
+		var replicas = new(int32)
+		*replicas = 1
+		healthy1Deployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}, Spec: v1.DeploymentSpec{Replicas: replicas}}
 		deploymentMock.EXPECT().Get(context.TODO(), "healthy1", metav1.GetOptions{}).Return(healthy1Deployment, nil)
-		healthy2Deployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}}
+		healthy2Deployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}, Spec: v1.DeploymentSpec{Replicas: replicas}}
 		deploymentMock.EXPECT().Get(context.TODO(), "healthy2", metav1.GetOptions{}).Return(healthy2Deployment, nil)
 		appsMock := newMockAppsV1Client(t)
 		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
@@ -305,7 +334,7 @@ func Test_server_GetByNames(t *testing.T) {
 					Results: []*health.DoguHealthCheck{{
 						Type:    "container",
 						Success: true,
-						Message: "Check whether a deployment contains at least one ready replica.",
+						Message: "Check whether a deployment has at least one replica, ready or not.",
 					}},
 				},
 				"healthy2": {
@@ -316,7 +345,7 @@ func Test_server_GetByNames(t *testing.T) {
 					Results: []*health.DoguHealthCheck{{
 						Type:    "container",
 						Success: true,
-						Message: "Check whether a deployment contains at least one ready replica.",
+						Message: "Check whether a deployment has at least one replica, ready or not.",
 					}},
 				},
 			},
@@ -383,8 +412,12 @@ func Test_server_GetAll(t *testing.T) {
 		config.CurrentNamespace = "ecosystem"
 
 		deploymentMock := newMockDeploymentClient(t)
-		healthyDeployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}}
-		unhealthyDeployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 0}}
+		var replicasHealthy = new(int32)
+		*replicasHealthy = 1
+		healthyDeployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}, Spec: v1.DeploymentSpec{Replicas: replicasHealthy}}
+		var replicasUnhealthy = new(int32)
+		*replicasUnhealthy = 1
+		unhealthyDeployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 0}, Spec: v1.DeploymentSpec{Replicas: replicasUnhealthy}}
 		deploymentMock.EXPECT().Get(context.TODO(), "healthy", metav1.GetOptions{}).Return(healthyDeployment, nil)
 		deploymentMock.EXPECT().Get(context.TODO(), "unhealthy", metav1.GetOptions{}).Return(unhealthyDeployment, nil)
 		appsMock := newMockAppsV1Client(t)
@@ -412,7 +445,7 @@ func Test_server_GetAll(t *testing.T) {
 					Results: []*health.DoguHealthCheck{{
 						Type:    "container",
 						Success: true,
-						Message: "Check whether a deployment contains at least one ready replica.",
+						Message: "Check whether a deployment has at least one replica, ready or not.",
 					}},
 				},
 				"unhealthy": {
@@ -420,7 +453,11 @@ func Test_server_GetAll(t *testing.T) {
 					ShortName:   "unhealthy",
 					DisplayName: "unhealthy",
 					Healthy:     false,
-					Results:     []*health.DoguHealthCheck{},
+					Results: []*health.DoguHealthCheck{{
+						Type:    "container",
+						Success: true,
+						Message: "Check whether a deployment has at least one replica, ready or not.",
+					}},
 				},
 			},
 		}
@@ -439,8 +476,10 @@ func Test_server_GetAll(t *testing.T) {
 		config.CurrentNamespace = "ecosystem"
 
 		deploymentMock := newMockDeploymentClient(t)
-		healthy1Deployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}}
-		healthy2Deployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}}
+		var replicas = new(int32)
+		*replicas = 1
+		healthy1Deployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}, Spec: v1.DeploymentSpec{Replicas: replicas}}
+		healthy2Deployment := &v1.Deployment{Status: v1.DeploymentStatus{ReadyReplicas: 1}, Spec: v1.DeploymentSpec{Replicas: replicas}}
 		deploymentMock.EXPECT().Get(context.TODO(), "healthy1", metav1.GetOptions{}).Return(healthy1Deployment, nil)
 		deploymentMock.EXPECT().Get(context.TODO(), "healthy2", metav1.GetOptions{}).Return(healthy2Deployment, nil)
 		appsMock := newMockAppsV1Client(t)
@@ -468,7 +507,7 @@ func Test_server_GetAll(t *testing.T) {
 					Results: []*health.DoguHealthCheck{{
 						Type:    "container",
 						Success: true,
-						Message: "Check whether a deployment contains at least one ready replica.",
+						Message: "Check whether a deployment has at least one replica, ready or not.",
 					}},
 				},
 				"healthy2": {
@@ -479,7 +518,7 @@ func Test_server_GetAll(t *testing.T) {
 					Results: []*health.DoguHealthCheck{{
 						Type:    "container",
 						Success: true,
-						Message: "Check whether a deployment contains at least one ready replica.",
+						Message: "Check whether a deployment has at least one replica, ready or not.",
 					}},
 				},
 			},

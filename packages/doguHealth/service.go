@@ -103,17 +103,18 @@ func (s *server) getDoguHealthResponse(ctx context.Context, doguName string) (*p
 		Results:     []*pbHealth.DoguHealthCheck{},
 	}
 
-	// It is necessary to provide a "checkTypeContainer" result for the admin dogu. It is used to decide whether a dogu
-	// can be started (container result exists) or not (container result does not exist).
-	if isHealthy {
-		containerStatusResult := &pbHealth.DoguHealthCheck{
-			Type:    checkTypeContainer,
-			Success: isHealthy,
-			Message: "Check whether a deployment contains at least one ready replica.",
-		}
+	// When replicas is > 0 it indicates that the dogu is not stopped.
+	// The admin dogu notices that there is a Dogu which is not healthy with a deployment > 0 and assumes: Dogu is starting
+	hasReplica := *doguDeployment.Spec.Replicas > 0
 
-		response.Results = append(response.Results, containerStatusResult)
+	containerStatusResult := &pbHealth.DoguHealthCheck{
+		Type:     checkTypeContainer,
+		Success:  hasReplica,
+		Message:  "Check whether a deployment has at least one replica, ready or not.",
+		Critical: false,
 	}
+
+	response.Results = append(response.Results, containerStatusResult)
 
 	return response, nil
 }
