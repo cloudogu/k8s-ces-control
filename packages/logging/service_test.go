@@ -420,27 +420,22 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 			mockedDescriptionGetter := newMockDoguDescriptionGetter(t)
 
 			if tc.xResponse {
-				mockedConfigProvider.On("DoguConfig", mock.Anything).Return(mockedConfigurationContext)
+				mockedConfigProvider.EXPECT().DoguConfig(mock.Anything).Return(mockedConfigurationContext)
 
-				mockedConfigurationContext.On("GetOrFalse", mock.Anything).Return(true, "TEST", nil)
-				mockedConfigurationContext.On("Set", mock.Anything, mock.Anything).Return(nil)
+				mockedConfigurationContext.EXPECT().GetOrFalse(mock.Anything).Return(true, "TEST", nil)
+				mockedConfigurationContext.EXPECT().Set(mock.Anything, mock.Anything).Return(nil)
 
-				mockedDoguRestarter.On("RestartDogu", mock.Anything, mock.Anything).Return(nil)
+				mockedDoguRestarter.EXPECT().RestartDogu(mock.Anything, mock.Anything).Return(nil)
 			}
 
 			sut := NewLoggingService(mockedLogProvider, mockedConfigProvider, mockedDoguRestarter, mockedDescriptionGetter)
 
-			resp, err := sut.SetLogLevel(context.TODO(), tc.req)
+			resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), tc.req)
 
 			assert.Equal(t, tc.xResponse, resp != nil)
 			assert.Equal(t, tc.xResponseCode, status.Code(err))
 
-			if tc.xResponse {
-				mockedConfigProvider.AssertNumberOfCalls(t, "DoguConfig", 1)
-				mockedConfigurationContext.AssertNumberOfCalls(t, "GetOrFalse", 1)
-				mockedConfigurationContext.AssertNumberOfCalls(t, "Set", 1)
-				mockedDoguRestarter.AssertNumberOfCalls(t, "RestartDogu", 1)
-			} else {
+			if !tc.xResponse {
 				mockedConfigProvider.AssertNotCalled(t, "DoguConfig", mock.Anything)
 				mockedConfigurationContext.AssertNotCalled(t, "GetOrFalse", mock.Anything)
 				mockedConfigurationContext.AssertNotCalled(t, "Set", mock.Anything, mock.Anything)
@@ -449,6 +444,71 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 		})
 	}
 
+	t.Run("Get log level from default config", func(t *testing.T) {
+		mockedLogProvider := newMockLogProvider(t)
+		mockedConfigProvider := newMockConfigProvider(t)
+		mockedDoguRestarter := newMockDoguRestarter(t)
+		mockedConfigurationContext := NewMockConfigurationContext(t)
+		mockedDescriptionGetter := newMockDoguDescriptionGetter(t)
+
+		mockedConfigProvider.EXPECT().DoguConfig(mock.Anything).Return(mockedConfigurationContext)
+		mockedConfigurationContext.EXPECT().GetOrFalse(mock.Anything).Return(false, "", nil)
+		mockedDescriptionGetter.EXPECT().GetCurrent(mock.Anything, mock.Anything).Return(&core.Dogu{
+			Name: "test",
+			Configuration: []core.ConfigurationField{
+				{
+					Name:    "logging/root",
+					Default: "WARN",
+				},
+			},
+		}, nil)
+
+		mockedConfigurationContext.EXPECT().Set(mock.Anything, mock.Anything).Return(nil)
+		mockedDoguRestarter.EXPECT().RestartDogu(mock.Anything, mock.Anything).Return(nil)
+
+		sut := NewLoggingService(mockedLogProvider, mockedConfigProvider, mockedDoguRestarter, mockedDescriptionGetter)
+
+		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
+			DoguName: "test",
+			LogLevel: pb.LogLevel_DEBUG,
+		})
+
+		assert.True(t, resp != nil)
+		assert.Equal(t, codes.OK, status.Code(err))
+	})
+
+	t.Run("Set log level even when no current log level is found", func(t *testing.T) {
+		mockedLogProvider := newMockLogProvider(t)
+		mockedConfigProvider := newMockConfigProvider(t)
+		mockedDoguRestarter := newMockDoguRestarter(t)
+		mockedConfigurationContext := NewMockConfigurationContext(t)
+		mockedDescriptionGetter := newMockDoguDescriptionGetter(t)
+
+		mockedConfigProvider.EXPECT().DoguConfig(mock.Anything).Return(mockedConfigurationContext)
+		mockedConfigurationContext.EXPECT().GetOrFalse(mock.Anything).Return(false, "", nil)
+		mockedDescriptionGetter.EXPECT().GetCurrent(mock.Anything, mock.Anything).Return(&core.Dogu{
+			Name: "test",
+			Configuration: []core.ConfigurationField{
+				{
+					Name: "logging/root",
+				},
+			},
+		}, nil)
+
+		mockedConfigurationContext.EXPECT().Set(mock.Anything, mock.Anything).Return(nil)
+		mockedDoguRestarter.EXPECT().RestartDogu(mock.Anything, mock.Anything).Return(nil)
+
+		sut := NewLoggingService(mockedLogProvider, mockedConfigProvider, mockedDoguRestarter, mockedDescriptionGetter)
+
+		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
+			DoguName: "test",
+			LogLevel: pb.LogLevel_DEBUG,
+		})
+
+		assert.True(t, resp != nil)
+		assert.Equal(t, codes.OK, status.Code(err))
+	})
+
 	t.Run("No restart as log level already set", func(t *testing.T) {
 		mockedLogProvider := newMockLogProvider(t)
 		mockedConfigProvider := newMockConfigProvider(t)
@@ -456,13 +516,13 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 		mockedConfigurationContext := NewMockConfigurationContext(t)
 		mockedDescriptionGetter := newMockDoguDescriptionGetter(t)
 
-		mockedConfigProvider.On("DoguConfig", mock.Anything).Return(mockedConfigurationContext)
+		mockedConfigProvider.EXPECT().DoguConfig(mock.Anything).Return(mockedConfigurationContext)
 
-		mockedConfigurationContext.On("GetOrFalse", mock.Anything).Return(true, "DEBUG", nil)
+		mockedConfigurationContext.EXPECT().GetOrFalse(mock.Anything).Return(true, "DEBUG", nil)
 
 		sut := NewLoggingService(mockedLogProvider, mockedConfigProvider, mockedDoguRestarter, mockedDescriptionGetter)
 
-		resp, err := sut.SetLogLevel(context.TODO(), &pb.LogLevelRequest{
+		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
 			LogLevel: pb.LogLevel_DEBUG,
 		})
@@ -474,20 +534,20 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 		mockedDoguRestarter.AssertNotCalled(t, "RestartDogu", mock.Anything, mock.Anything)
 	})
 
-	t.Run("Error getting current log level", func(t *testing.T) {
+	t.Run("Error getting config log level", func(t *testing.T) {
 		mockedLogProvider := newMockLogProvider(t)
 		mockedConfigProvider := newMockConfigProvider(t)
 		mockedDoguRestarter := newMockDoguRestarter(t)
 		mockedConfigurationContext := NewMockConfigurationContext(t)
 		mockedDescriptionGetter := newMockDoguDescriptionGetter(t)
 
-		mockedConfigProvider.On("DoguConfig", mock.Anything).Return(mockedConfigurationContext)
+		mockedConfigProvider.EXPECT().DoguConfig(mock.Anything).Return(mockedConfigurationContext)
 
-		mockedConfigurationContext.On("GetOrFalse", mock.Anything).Return(false, "", errors.New("testError"))
+		mockedConfigurationContext.EXPECT().GetOrFalse(mock.Anything).Return(false, "", errors.New("testError"))
 
 		sut := NewLoggingService(mockedLogProvider, mockedConfigProvider, mockedDoguRestarter, mockedDescriptionGetter)
 
-		resp, err := sut.SetLogLevel(context.TODO(), &pb.LogLevelRequest{
+		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
 			LogLevel: pb.LogLevel_DEBUG,
 		})
@@ -499,6 +559,28 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 		mockedDoguRestarter.AssertNotCalled(t, "RestartDogu", mock.Anything, mock.Anything)
 	})
 
+	t.Run("Error getting default log level", func(t *testing.T) {
+		mockedLogProvider := newMockLogProvider(t)
+		mockedConfigProvider := newMockConfigProvider(t)
+		mockedDoguRestarter := newMockDoguRestarter(t)
+		mockedConfigurationContext := NewMockConfigurationContext(t)
+		mockedDescriptionGetter := newMockDoguDescriptionGetter(t)
+
+		mockedConfigProvider.EXPECT().DoguConfig(mock.Anything).Return(mockedConfigurationContext)
+		mockedConfigurationContext.EXPECT().GetOrFalse(mock.Anything).Return(false, "", nil)
+		mockedDescriptionGetter.EXPECT().GetCurrent(mock.Anything, mock.Anything).Return(nil, errors.New("testError"))
+
+		sut := NewLoggingService(mockedLogProvider, mockedConfigProvider, mockedDoguRestarter, mockedDescriptionGetter)
+
+		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
+			DoguName: "test",
+			LogLevel: pb.LogLevel_DEBUG,
+		})
+
+		assert.Nil(t, resp)
+		assert.Equal(t, codes.Internal, status.Code(err))
+	})
+
 	t.Run("Error setting new log level", func(t *testing.T) {
 		mockedLogProvider := newMockLogProvider(t)
 		mockedConfigProvider := newMockConfigProvider(t)
@@ -506,10 +588,10 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 		mockedConfigurationContext := NewMockConfigurationContext(t)
 		mockedDescriptionGetter := newMockDoguDescriptionGetter(t)
 
-		mockedConfigProvider.On("DoguConfig", mock.Anything).Return(mockedConfigurationContext)
+		mockedConfigProvider.EXPECT().DoguConfig(mock.Anything).Return(mockedConfigurationContext)
 
-		mockedConfigurationContext.On("GetOrFalse", mock.Anything).Return(false, "", nil)
-		mockedConfigurationContext.On("Set", mock.Anything, mock.Anything).Return(errors.New("testError"))
+		mockedConfigurationContext.EXPECT().GetOrFalse(mock.Anything).Return(false, "", nil)
+		mockedConfigurationContext.EXPECT().Set(mock.Anything, mock.Anything).Return(errors.New("testError"))
 
 		mockedDescriptionGetter.EXPECT().GetCurrent(mock.Anything, mock.Anything).Return(&core.Dogu{
 			Name: "test",
@@ -523,7 +605,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		sut := NewLoggingService(mockedLogProvider, mockedConfigProvider, mockedDoguRestarter, mockedDescriptionGetter)
 
-		resp, err := sut.SetLogLevel(context.TODO(), &pb.LogLevelRequest{
+		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
 			LogLevel: pb.LogLevel_DEBUG,
 		})
@@ -551,15 +633,15 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 			},
 		}, nil)
 
-		mockedConfigProvider.On("DoguConfig", mock.Anything).Return(mockedConfigurationContext)
+		mockedConfigProvider.EXPECT().DoguConfig(mock.Anything).Return(mockedConfigurationContext)
 
-		mockedConfigurationContext.On("GetOrFalse", mock.Anything).Return(false, "", nil)
-		mockedConfigurationContext.On("Set", mock.Anything, mock.Anything).Return(nil)
-		mockedDoguRestarter.On("RestartDogu", mock.Anything, mock.Anything).Return(errors.New("testError"))
+		mockedConfigurationContext.EXPECT().GetOrFalse(mock.Anything).Return(false, "", nil)
+		mockedConfigurationContext.EXPECT().Set(mock.Anything, mock.Anything).Return(nil)
+		mockedDoguRestarter.EXPECT().RestartDogu(mock.Anything, mock.Anything).Return(errors.New("testError"))
 
 		sut := NewLoggingService(mockedLogProvider, mockedConfigProvider, mockedDoguRestarter, mockedDescriptionGetter)
 
-		resp, err := sut.SetLogLevel(context.TODO(), &pb.LogLevelRequest{
+		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
 			LogLevel: pb.LogLevel_DEBUG,
 		})
@@ -567,4 +649,5 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 		assert.Nil(t, resp)
 		assert.Equal(t, codes.Internal, status.Code(err))
 	})
+
 }
