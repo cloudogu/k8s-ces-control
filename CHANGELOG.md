@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- [#27] API GetDoguList reports current LogLevel
 - [#25] API to set log level for a dogu
   - when the provided log level differs from the log level set in the config, a dogu restart is triggered to apply the change
 
