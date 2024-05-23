@@ -105,12 +105,13 @@ func (s *server) getDoguHealthResponse(ctx context.Context, doguName string) (*p
 
 	// When replicas is > 0 it indicates that the dogu is not stopped.
 	// The admin dogu notices that there is a Dogu which is not healthy with a deployment > 0 and assumes: Dogu is starting
-	shouldStart := doguDeployment.Status.UnavailableReplicas > 0
+	hasReplica := *doguDeployment.Spec.Replicas > 0
 
 	containerStatusResult := &pbHealth.DoguHealthCheck{
-		Type:    checkTypeContainer,
-		Success: shouldStart,
-		Message: "Check whether a deployment contains at least one ready replica.",
+		Type:     checkTypeContainer,
+		Success:  hasReplica,
+		Message:  "Check whether a deployment has at least one replica, ready or not.",
+		Critical: false,
 	}
 
 	response.Results = append(response.Results, containerStatusResult)
