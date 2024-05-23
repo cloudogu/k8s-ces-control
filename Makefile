@@ -2,7 +2,7 @@
 ARTIFACT_ID=k8s-ces-control
 VERSION=0.7.0
 GOTAG=1.22.0
-LINT_VERSION=v1.53.2
+LINT_VERSION=v1.58.2
 STAGE?=production
 LOG_LEVEL?=info
 
