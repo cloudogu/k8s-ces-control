@@ -8,6 +8,7 @@ import (
 	"github.com/cloudogu/cesapp-lib/core"
 	v1bp "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
+	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	v1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
@@ -18,12 +19,17 @@ import (
 
 const responseMessageMissingDoguName = "dogu name is empty"
 
+type logService interface {
+	GetLogLevel(context.Context, string) (logging.LogLevel, error)
+}
+
 // NewDoguAdministrationServer returns a new administration server instance to start/stop.. etc. Dogus.
-func NewDoguAdministrationServer(client clusterClient, reg cesRegistry, namespace string) *server {
+func NewDoguAdministrationServer(client clusterClient, reg cesRegistry, namespace string, logService logService) *server {
 	return &server{client: client,
 		doguRegistry:   reg.DoguRegistry(),
 		doguInterActor: doguinteraction.NewDefaultDoguInterActor(client, namespace, reg),
 		ns:             namespace,
+		loggingService: logService,
 	}
 }
 
@@ -33,6 +39,7 @@ type server struct {
 	client         clusterClient
 	doguInterActor doguInterActor
 	ns             string
+	loggingService logService
 }
 
 // StartDogu starts the specified dogu
@@ -102,7 +109,7 @@ func (s *server) GetDoguList(ctx context.Context, _ *pb.DoguListRequest) (*pb.Do
 		return nil, err
 	}
 
-	return createDoguListResponse(doguJsonList), nil
+	return s.createDoguListResponse(doguJsonList), nil
 }
 
 func (s *server) getDoguJsonList(doguListItems []v1.Dogu) (dogus []*core.Dogu, multiErr error) {
@@ -118,15 +125,23 @@ func (s *server) getDoguJsonList(doguListItems []v1.Dogu) (dogus []*core.Dogu, m
 	return dogus, multiErr
 }
 
-func createDoguListResponse(dogus []*core.Dogu) *pb.DoguListResponse {
+func (s *server) createDoguListResponse(dogus []*core.Dogu) *pb.DoguListResponse {
 	var result []*pb.Dogu
+
 	for _, dogu := range dogus {
+
+		logLevel, err := s.loggingService.GetLogLevel(context.TODO(), dogu.GetSimpleName())
+		if err != nil {
+			logrus.Warn(err)
+		}
+
 		result = append(result, &pb.Dogu{
 			Name:        dogu.GetSimpleName(),
 			DisplayName: dogu.DisplayName,
 			Version:     dogu.Version,
 			Description: dogu.Description,
 			Tags:        dogu.Tags,
+			LogLevel:    logLevel.String(),
 		})
 	}
 
