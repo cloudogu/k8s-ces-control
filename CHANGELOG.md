@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#25] API to set log level for a dogu
   - when the provided log level differs from the log level set in the config, a dogu restart is triggered to apply the change
 
+### Fixed
+- A bug where the healthcheck never returned the correct container state (#29) 
+
 ## [v0.7.0] - 2024-05-02
 ### Added
 - [#23] Add new query API for Dogu-Logs
