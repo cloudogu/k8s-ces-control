@@ -433,9 +433,10 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 				mockedConfigurationContext.EXPECT().GetOrFalse(mock.Anything).Return(true, "TEST", nil)
 				mockedConfigurationContext.EXPECT().Set(mock.Anything, mock.Anything).Return(nil)
 
+				replica := int32(1)
 				mockedDeploymentGetter.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(&appsv1.Deployment{
-					Status: appsv1.DeploymentStatus{
-						ReadyReplicas: 1,
+					Spec: appsv1.DeploymentSpec{
+						Replicas: &replica,
 					},
 				}, nil)
 
@@ -480,9 +481,10 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		mockedConfigurationContext.EXPECT().Set(mock.Anything, mock.Anything).Return(nil)
 
+		replica := int32(1)
 		mockedDeploymentGetter.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(&appsv1.Deployment{
-			Status: appsv1.DeploymentStatus{
-				ReadyReplicas: 1,
+			Spec: appsv1.DeploymentSpec{
+				Replicas: &replica,
 			},
 		}, nil)
 
@@ -520,9 +522,10 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		mockedConfigurationContext.EXPECT().Set(mock.Anything, mock.Anything).Return(nil)
 
+		replica := int32(1)
 		mockedDeploymentGetter.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(&appsv1.Deployment{
-			Status: appsv1.DeploymentStatus{
-				ReadyReplicas: 1,
+			Spec: appsv1.DeploymentSpec{
+				Replicas: &replica,
 			},
 		}, nil)
 
@@ -553,9 +556,10 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		mockedConfigurationContext.EXPECT().Set(mock.Anything, mock.Anything).Return(nil)
 
+		replica := int32(0)
 		mockedDeploymentGetter.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(&appsv1.Deployment{
-			Status: appsv1.DeploymentStatus{
-				ReadyReplicas: 0,
+			Spec: appsv1.DeploymentSpec{
+				Replicas: &replica,
 			},
 		}, nil)
 
@@ -712,9 +716,10 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 		mockedConfigurationContext.EXPECT().GetOrFalse(mock.Anything).Return(false, "", nil)
 		mockedConfigurationContext.EXPECT().Set(mock.Anything, mock.Anything).Return(nil)
 
+		replica := int32(1)
 		mockedDeploymentGetter.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(&appsv1.Deployment{
-			Status: appsv1.DeploymentStatus{
-				ReadyReplicas: 1,
+			Spec: appsv1.DeploymentSpec{
+				Replicas: &replica,
 			},
 		}, nil)
 

@@ -179,7 +179,7 @@ func (s *loggingService) setLogLevel(ctx context.Context, doguName string, l Log
 		return false, fmt.Errorf("could not get deployment to check status of dogu: %w", err)
 	}
 
-	if deployment.Status.ReadyReplicas == 0 {
+	if deployment.Spec.Replicas == nil || *deployment.Spec.Replicas == 0 {
 		logrus.Debugf("No replicas found for dogu %s, dogu is stopped", doguName)
 		return false, nil
 	}
