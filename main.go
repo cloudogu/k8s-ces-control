@@ -120,6 +120,7 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 			client.CoreV1().ConfigMaps(config.CurrentNamespace),
 			cesReg,
 		),
+		client.AppsV1().Deployments(config.CurrentNamespace),
 	)
 
 	pbLogging.RegisterDoguLogMessagesServer(grpcServer, loggingService)

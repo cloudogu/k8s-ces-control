@@ -54,9 +54,13 @@ func Test_registerServices(tt *testing.T) {
 		config.CurrentNamespace = "ecosystem"
 		clientSetMock := newMockClusterClient(t)
 		coreV1Mock := newMockCoreV1Interface(t)
+		appsV1Mock := newMockAppv1Interface(t)
 		clientSetMock.EXPECT().CoreV1().Return(coreV1Mock)
+		clientSetMock.EXPECT().AppsV1().Return(appsV1Mock)
 		configMapInterfaceMock := newMockConfigMapInterface(t)
+		deploymentInterfaceMock := newMockDeploymentInterface(t)
 		coreV1Mock.EXPECT().ConfigMaps(config.CurrentNamespace).Return(configMapInterfaceMock)
+		appsV1Mock.EXPECT().Deployments(config.CurrentNamespace).Return(deploymentInterfaceMock)
 
 		// when
 		err := registerServices(clientSetMock, mockGrpcServerRegistrar)
