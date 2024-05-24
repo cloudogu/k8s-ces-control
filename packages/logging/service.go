@@ -12,7 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	"strings"
 	"time"
 
@@ -31,10 +30,6 @@ const loggingKey = "logging/root"
 
 type doguLogMessagesServer interface {
 	pb.DoguLogMessages_GetForDoguServer
-}
-
-type deploymentInterface interface {
-	appsv1.DeploymentInterface
 }
 
 type configProvider interface {
