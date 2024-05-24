@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.8.1] - 2024-05-24
+### Fixed
+- [#31] After setting a new log level for a dogu, the dogu restarts even when it is stopped - dogu should stay stopped
+
 ## [v0.8.0] - 2024-05-23
 ### Changed
 - Update Makefiles to 9.0.5
