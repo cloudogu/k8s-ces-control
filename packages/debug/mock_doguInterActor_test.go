@@ -21,17 +21,17 @@ func (_m *mockDoguInterActor) EXPECT() *mockDoguInterActor_Expecter {
 	return &mockDoguInterActor_Expecter{mock: &_m.Mock}
 }
 
-// SetLogLevelInAllDogus provides a mock function with given fields: logLevel
-func (_m *mockDoguInterActor) SetLogLevelInAllDogus(logLevel string) error {
-	ret := _m.Called(logLevel)
+// SetLogLevelInAllDogus provides a mock function with given fields: ctx, logLevel
+func (_m *mockDoguInterActor) SetLogLevelInAllDogus(ctx context.Context, logLevel string) error {
+	ret := _m.Called(ctx, logLevel)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SetLogLevelInAllDogus")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(logLevel)
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, logLevel)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -45,14 +45,15 @@ type mockDoguInterActor_SetLogLevelInAllDogus_Call struct {
 }
 
 // SetLogLevelInAllDogus is a helper method to define mock.On call
+//   - ctx context.Context
 //   - logLevel string
-func (_e *mockDoguInterActor_Expecter) SetLogLevelInAllDogus(logLevel interface{}) *mockDoguInterActor_SetLogLevelInAllDogus_Call {
-	return &mockDoguInterActor_SetLogLevelInAllDogus_Call{Call: _e.mock.On("SetLogLevelInAllDogus", logLevel)}
+func (_e *mockDoguInterActor_Expecter) SetLogLevelInAllDogus(ctx interface{}, logLevel interface{}) *mockDoguInterActor_SetLogLevelInAllDogus_Call {
+	return &mockDoguInterActor_SetLogLevelInAllDogus_Call{Call: _e.mock.On("SetLogLevelInAllDogus", ctx, logLevel)}
 }
 
-func (_c *mockDoguInterActor_SetLogLevelInAllDogus_Call) Run(run func(logLevel string)) *mockDoguInterActor_SetLogLevelInAllDogus_Call {
+func (_c *mockDoguInterActor_SetLogLevelInAllDogus_Call) Run(run func(ctx context.Context, logLevel string)) *mockDoguInterActor_SetLogLevelInAllDogus_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string))
+		run(args[0].(context.Context), args[1].(string))
 	})
 	return _c
 }
@@ -62,7 +63,7 @@ func (_c *mockDoguInterActor_SetLogLevelInAllDogus_Call) Return(_a0 error) *mock
 	return _c
 }
 
-func (_c *mockDoguInterActor_SetLogLevelInAllDogus_Call) RunAndReturn(run func(string) error) *mockDoguInterActor_SetLogLevelInAllDogus_Call {
+func (_c *mockDoguInterActor_SetLogLevelInAllDogus_Call) RunAndReturn(run func(context.Context, string) error) *mockDoguInterActor_SetLogLevelInAllDogus_Call {
 	_c.Call.Return(run)
 	return _c
 }

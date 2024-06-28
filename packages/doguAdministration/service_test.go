@@ -27,11 +27,10 @@ func TestNewDoguAdministrationServer(t *testing.T) {
 		clientMock := newMockClusterClient(t)
 		doguRegMock := newMockDoguRegistry(t)
 		regMock := newMockCesRegistry(t)
-		regMock.EXPECT().DoguRegistry().Return(doguRegMock)
 		loggingMock := newMockLogService(t)
 
 		// when
-		actual := NewDoguAdministrationServer(clientMock, regMock, "testNamespace", loggingMock)
+		actual := NewDoguAdministrationServer(clientMock, regMock, doguRegMock, "testNamespace", loggingMock)
 
 		// then
 		assert.NotEmpty(t, actual)
@@ -97,8 +96,8 @@ func Test_server_GetDoguList(t *testing.T) {
 		clientMock := newMockClusterClient(t)
 		clientMock.EXPECT().Dogus("ecosystem").Return(doguClientMock)
 		doguRegMock := newMockDoguRegistry(t)
-		doguRegMock.EXPECT().Get("will-succeed").Return(&core.Dogu{}, nil)
-		doguRegMock.EXPECT().Get("will-fail").Return(nil, assert.AnError)
+		doguRegMock.EXPECT().GetCurrent(testCtx, "will-succeed").Return(&core.Dogu{}, nil)
+		doguRegMock.EXPECT().GetCurrent(testCtx, "will-fail").Return(nil, assert.AnError)
 		loggingMock := newMockLogService(t)
 		sut := &server{
 			doguRegistry:   doguRegMock,
@@ -108,7 +107,7 @@ func Test_server_GetDoguList(t *testing.T) {
 		}
 
 		// when
-		actual, err := sut.GetDoguList(context.TODO(), nil)
+		actual, err := sut.GetDoguList(testCtx, nil)
 
 		// then
 		require.Error(t, err)
@@ -127,8 +126,8 @@ func Test_server_GetDoguList(t *testing.T) {
 		clientMock := newMockClusterClient(t)
 		clientMock.EXPECT().Dogus("ecosystem").Return(doguClientMock)
 		doguRegMock := newMockDoguRegistry(t)
-		doguRegMock.EXPECT().Get("will-fail").Return(nil, assert.AnError)
-		doguRegMock.EXPECT().Get("will-fail-too").Return(nil, assert.AnError)
+		doguRegMock.EXPECT().GetCurrent(testCtx, "will-fail").Return(nil, assert.AnError)
+		doguRegMock.EXPECT().GetCurrent(testCtx, "will-fail-too").Return(nil, assert.AnError)
 		loggingMock := newMockLogService(t)
 		sut := &server{
 			doguRegistry:   doguRegMock,
@@ -138,7 +137,7 @@ func Test_server_GetDoguList(t *testing.T) {
 		}
 
 		// when
-		actual, err := sut.GetDoguList(context.TODO(), nil)
+		actual, err := sut.GetDoguList(testCtx, nil)
 
 		// then
 		require.Error(t, err)
@@ -157,14 +156,14 @@ func Test_server_GetDoguList(t *testing.T) {
 		clientMock := newMockClusterClient(t)
 		clientMock.EXPECT().Dogus("ecosystem").Return(doguClientMock)
 		doguRegMock := newMockDoguRegistry(t)
-		doguRegMock.EXPECT().Get("will-succeed").Return(&core.Dogu{
+		doguRegMock.EXPECT().GetCurrent(testCtx, "will-succeed").Return(&core.Dogu{
 			Name:        "ns1/will-succeed",
 			DisplayName: "WillSucceed",
 			Version:     "1.2.3-2",
 			Description: "asdf",
 			Tags:        []string{"example"},
 		}, nil)
-		doguRegMock.EXPECT().Get("will-succeed-too").Return(&core.Dogu{
+		doguRegMock.EXPECT().GetCurrent(testCtx, "will-succeed-too").Return(&core.Dogu{
 			Name:        "ns2/will-succeed-too",
 			DisplayName: "WillSucceedToo",
 			Version:     "3.2.1-1",
@@ -181,7 +180,7 @@ func Test_server_GetDoguList(t *testing.T) {
 		}
 
 		// when
-		actual, err := sut.GetDoguList(context.TODO(), nil)
+		actual, err := sut.GetDoguList(testCtx, nil)
 
 		// then
 		require.NoError(t, err)

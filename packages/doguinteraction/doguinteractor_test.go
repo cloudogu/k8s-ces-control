@@ -24,9 +24,10 @@ func TestNewDefaultDoguInterActor(t *testing.T) {
 		// given
 		clientSetMock := newMockClusterClientSet(t)
 		registryMock := newMockCesRegistry(t)
+		doguRegistryMock := newMockDoguRegistry(t)
 
 		// when
-		actor := NewDefaultDoguInterActor(clientSetMock, testNamespace, registryMock)
+		actor := NewDefaultDoguInterActor(clientSetMock, testNamespace, registryMock, doguRegistryMock)
 
 		// then
 		require.NotNil(t, actor)
@@ -267,10 +268,10 @@ func Test_defaultDoguInterActor_StartAllDogus(t *testing.T) {
 		// given
 		cesRegistryMock := newMockCesRegistry(t)
 		doguRegistryMock := newMockDoguRegistry(t)
-		cesRegistryMock.EXPECT().DoguRegistry().Return(doguRegistryMock)
-		doguRegistryMock.EXPECT().GetAll().Return(nil, assert.AnError)
+		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return(nil, assert.AnError)
 		sut := defaultDoguInterActor{
-			registry: cesRegistryMock,
+			registry:     cesRegistryMock,
+			doguRegistry: doguRegistryMock,
 		}
 
 		// when
@@ -294,8 +295,7 @@ func Test_defaultDoguInterActor_StartAllDogus(t *testing.T) {
 
 		cesRegistryMock := newMockCesRegistry(t)
 		doguRegistryMock := newMockDoguRegistry(t)
-		cesRegistryMock.EXPECT().DoguRegistry().Return(doguRegistryMock)
-		doguRegistryMock.EXPECT().GetAll().Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine", Dependencies: []core.Dependency{{Name: "postgresql"}}}}, nil)
+		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine", Dependencies: []core.Dependency{{Name: "postgresql"}}}}, nil)
 
 		clientSetMock := newMockClusterClientSet(t)
 		appsV1Mock := newMockAppsV1Interface(t)
@@ -319,9 +319,10 @@ func Test_defaultDoguInterActor_StartAllDogus(t *testing.T) {
 		})
 
 		sut := defaultDoguInterActor{
-			registry:  cesRegistryMock,
-			clientSet: clientSetMock,
-			namespace: testNamespace,
+			registry:     cesRegistryMock,
+			doguRegistry: doguRegistryMock,
+			clientSet:    clientSetMock,
+			namespace:    testNamespace,
 		}
 
 		notRolledOutDeploy := getZeroReplicaDeployment()
@@ -358,10 +359,10 @@ func Test_defaultDoguInterActor_StopAllDogus(t *testing.T) {
 		// given
 		cesRegistryMock := newMockCesRegistry(t)
 		doguRegistryMock := newMockDoguRegistry(t)
-		cesRegistryMock.EXPECT().DoguRegistry().Return(doguRegistryMock)
-		doguRegistryMock.EXPECT().GetAll().Return(nil, assert.AnError)
+		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return(nil, assert.AnError)
 		sut := defaultDoguInterActor{
-			registry: cesRegistryMock,
+			registry:     cesRegistryMock,
+			doguRegistry: doguRegistryMock,
 		}
 
 		// when
@@ -385,8 +386,7 @@ func Test_defaultDoguInterActor_StopAllDogus(t *testing.T) {
 
 		cesRegistryMock := newMockCesRegistry(t)
 		doguRegistryMock := newMockDoguRegistry(t)
-		cesRegistryMock.EXPECT().DoguRegistry().Return(doguRegistryMock)
-		doguRegistryMock.EXPECT().GetAll().Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine", Dependencies: []core.Dependency{{Name: "postgresql"}}}}, nil)
+		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine", Dependencies: []core.Dependency{{Name: "postgresql"}}}}, nil)
 
 		clientSetMock := newMockClusterClientSet(t)
 		appsV1Mock := newMockAppsV1Interface(t)
@@ -410,9 +410,10 @@ func Test_defaultDoguInterActor_StopAllDogus(t *testing.T) {
 		})
 
 		sut := defaultDoguInterActor{
-			registry:  cesRegistryMock,
-			clientSet: clientSetMock,
-			namespace: testNamespace,
+			registry:     cesRegistryMock,
+			doguRegistry: doguRegistryMock,
+			clientSet:    clientSetMock,
+			namespace:    testNamespace,
 		}
 
 		notRolledOutDeploy := getZeroReplicaDeployment()
@@ -432,8 +433,7 @@ func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 		// given
 		cesRegistryMock := newMockCesRegistry(t)
 		doguRegistryMock := newMockDoguRegistry(t)
-		doguRegistryMock.EXPECT().GetAll().Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine"}}, nil)
-		cesRegistryMock.EXPECT().DoguRegistry().Return(doguRegistryMock)
+		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine"}}, nil)
 		postgresqlConfigMock := newMockConfigurationContext(t)
 		redmineConfigMock := newMockConfigurationContext(t)
 		postgresqlConfigMock.EXPECT().Set("logging/root", "DEBUG").Return(nil)
@@ -442,12 +442,13 @@ func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 		cesRegistryMock.EXPECT().DoguConfig("redmine").Return(redmineConfigMock)
 
 		sut := defaultDoguInterActor{
-			registry:  cesRegistryMock,
-			namespace: testNamespace,
+			registry:     cesRegistryMock,
+			doguRegistry: doguRegistryMock,
+			namespace:    testNamespace,
 		}
 
 		// when
-		err := sut.SetLogLevelInAllDogus("DEBUG")
+		err := sut.SetLogLevelInAllDogus(testCtx, "DEBUG")
 
 		// then
 		require.NoError(t, err)
@@ -457,8 +458,7 @@ func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 		// given
 		cesRegistryMock := newMockCesRegistry(t)
 		doguRegistryMock := newMockDoguRegistry(t)
-		doguRegistryMock.EXPECT().GetAll().Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine"}}, nil)
-		cesRegistryMock.EXPECT().DoguRegistry().Return(doguRegistryMock)
+		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine"}}, nil)
 		postgresqlConfigMock := newMockConfigurationContext(t)
 		redmineConfigMock := newMockConfigurationContext(t)
 		postgresqlConfigMock.EXPECT().Set("logging/root", "DEBUG").Return(assert.AnError)
@@ -467,12 +467,13 @@ func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 		cesRegistryMock.EXPECT().DoguConfig("redmine").Return(redmineConfigMock)
 
 		sut := defaultDoguInterActor{
-			registry:  cesRegistryMock,
-			namespace: testNamespace,
+			registry:     cesRegistryMock,
+			doguRegistry: doguRegistryMock,
+			namespace:    testNamespace,
 		}
 
 		// when
-		err := sut.SetLogLevelInAllDogus("DEBUG")
+		err := sut.SetLogLevelInAllDogus(testCtx, "DEBUG")
 
 		// then
 		require.Error(t, err)

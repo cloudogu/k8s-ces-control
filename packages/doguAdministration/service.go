@@ -24,10 +24,10 @@ type logService interface {
 }
 
 // NewDoguAdministrationServer returns a new administration server instance to start/stop.. etc. Dogus.
-func NewDoguAdministrationServer(client clusterClient, reg cesRegistry, namespace string, logService logService) *server {
+func NewDoguAdministrationServer(client clusterClient, reg cesRegistry, doguReg doguRegistry, namespace string, logService logService) *server {
 	return &server{client: client,
-		doguRegistry:   reg.DoguRegistry(),
-		doguInterActor: doguinteraction.NewDefaultDoguInterActor(client, namespace, reg),
+		doguRegistry:   doguReg,
+		doguInterActor: doguinteraction.NewDefaultDoguInterActor(client, namespace, reg, doguReg),
 		ns:             namespace,
 		loggingService: logService,
 	}
@@ -103,7 +103,7 @@ func (s *server) GetDoguList(ctx context.Context, _ *pb.DoguListRequest) (*pb.Do
 		return &pb.DoguListResponse{}, nil
 	}
 
-	doguJsonList, err := s.getDoguJsonList(list.Items)
+	doguJsonList, err := s.getDoguJsonList(ctx, list.Items)
 	if err != nil {
 		logrus.Error(fmt.Errorf("failed to get dogus from etcd"))
 		return nil, err
@@ -112,9 +112,9 @@ func (s *server) GetDoguList(ctx context.Context, _ *pb.DoguListRequest) (*pb.Do
 	return s.createDoguListResponse(doguJsonList), nil
 }
 
-func (s *server) getDoguJsonList(doguListItems []v1.Dogu) (dogus []*core.Dogu, multiErr error) {
+func (s *server) getDoguJsonList(ctx context.Context, doguListItems []v1.Dogu) (dogus []*core.Dogu, multiErr error) {
 	for _, doguListItem := range doguListItems {
-		dogu, err := s.doguRegistry.Get(doguListItem.GetName())
+		dogu, err := s.doguRegistry.GetCurrent(ctx, doguListItem.GetName())
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}

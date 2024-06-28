@@ -5,6 +5,7 @@ import (
 	"github.com/cloudogu/cesapp-lib/registry"
 	v1 "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
 	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
+	"github.com/cloudogu/k8s-registry-lib/dogu"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -20,7 +21,7 @@ type clusterClient interface {
 }
 
 type doguRegistry interface {
-	registry.DoguRegistry
+	dogu.LocalRegistry
 }
 
 type cesRegistry interface {

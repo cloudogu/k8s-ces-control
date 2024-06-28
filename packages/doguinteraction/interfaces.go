@@ -3,6 +3,7 @@ package doguinteraction
 import (
 	"github.com/cloudogu/cesapp-lib/registry"
 	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
+	"github.com/cloudogu/k8s-registry-lib/dogu"
 	"k8s.io/client-go/kubernetes"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -44,7 +45,7 @@ type cesRegistry interface {
 //nolint:unused
 //goland:noinspection GoUnusedType
 type doguRegistry interface {
-	registry.DoguRegistry
+	dogu.LocalRegistry
 }
 
 //nolint:unused

@@ -10,7 +10,7 @@ require (
 	github.com/cloudogu/cesapp-lib v0.12.2
 	github.com/cloudogu/k8s-blueprint-operator v0.0.0-20240301133756-6b9a1a81230f
 	github.com/cloudogu/k8s-dogu-operator v0.41.0
-	github.com/cloudogu/k8s-registry-lib v0.1.0
+	github.com/cloudogu/k8s-registry-lib v0.0.0-20240621115501-ef9dfeea39cf
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0

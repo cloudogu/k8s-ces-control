@@ -3,6 +3,8 @@
 package debug
 
 import (
+	context "context"
+
 	core "github.com/cloudogu/cesapp-lib/core"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -20,17 +22,17 @@ func (_m *mockDoguRegistry) EXPECT() *mockDoguRegistry_Expecter {
 	return &mockDoguRegistry_Expecter{mock: &_m.Mock}
 }
 
-// Enable provides a mock function with given fields: dogu
-func (_m *mockDoguRegistry) Enable(dogu *core.Dogu) error {
-	ret := _m.Called(dogu)
+// Enable provides a mock function with given fields: ctx, dogu
+func (_m *mockDoguRegistry) Enable(ctx context.Context, dogu *core.Dogu) error {
+	ret := _m.Called(ctx, dogu)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Enable")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*core.Dogu) error); ok {
-		r0 = rf(dogu)
+	if rf, ok := ret.Get(0).(func(context.Context, *core.Dogu) error); ok {
+		r0 = rf(ctx, dogu)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -44,14 +46,15 @@ type mockDoguRegistry_Enable_Call struct {
 }
 
 // Enable is a helper method to define mock.On call
+//   - ctx context.Context
 //   - dogu *core.Dogu
-func (_e *mockDoguRegistry_Expecter) Enable(dogu interface{}) *mockDoguRegistry_Enable_Call {
-	return &mockDoguRegistry_Enable_Call{Call: _e.mock.On("Enable", dogu)}
+func (_e *mockDoguRegistry_Expecter) Enable(ctx interface{}, dogu interface{}) *mockDoguRegistry_Enable_Call {
+	return &mockDoguRegistry_Enable_Call{Call: _e.mock.On("Enable", ctx, dogu)}
 }
 
-func (_c *mockDoguRegistry_Enable_Call) Run(run func(dogu *core.Dogu)) *mockDoguRegistry_Enable_Call {
+func (_c *mockDoguRegistry_Enable_Call) Run(run func(ctx context.Context, dogu *core.Dogu)) *mockDoguRegistry_Enable_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(*core.Dogu))
+		run(args[0].(context.Context), args[1].(*core.Dogu))
 	})
 	return _c
 }
@@ -61,34 +64,34 @@ func (_c *mockDoguRegistry_Enable_Call) Return(_a0 error) *mockDoguRegistry_Enab
 	return _c
 }
 
-func (_c *mockDoguRegistry_Enable_Call) RunAndReturn(run func(*core.Dogu) error) *mockDoguRegistry_Enable_Call {
+func (_c *mockDoguRegistry_Enable_Call) RunAndReturn(run func(context.Context, *core.Dogu) error) *mockDoguRegistry_Enable_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// Get provides a mock function with given fields: name
-func (_m *mockDoguRegistry) Get(name string) (*core.Dogu, error) {
-	ret := _m.Called(name)
+// GetCurrent provides a mock function with given fields: ctx, simpleDoguName
+func (_m *mockDoguRegistry) GetCurrent(ctx context.Context, simpleDoguName string) (*core.Dogu, error) {
+	ret := _m.Called(ctx, simpleDoguName)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Get")
+		panic("no return value specified for GetCurrent")
 	}
 
 	var r0 *core.Dogu
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (*core.Dogu, error)); ok {
-		return rf(name)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*core.Dogu, error)); ok {
+		return rf(ctx, simpleDoguName)
 	}
-	if rf, ok := ret.Get(0).(func(string) *core.Dogu); ok {
-		r0 = rf(name)
+	if rf, ok := ret.Get(0).(func(context.Context, string) *core.Dogu); ok {
+		r0 = rf(ctx, simpleDoguName)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*core.Dogu)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(name)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, simpleDoguName)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -96,57 +99,58 @@ func (_m *mockDoguRegistry) Get(name string) (*core.Dogu, error) {
 	return r0, r1
 }
 
-// mockDoguRegistry_Get_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Get'
-type mockDoguRegistry_Get_Call struct {
+// mockDoguRegistry_GetCurrent_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCurrent'
+type mockDoguRegistry_GetCurrent_Call struct {
 	*mock.Call
 }
 
-// Get is a helper method to define mock.On call
-//   - name string
-func (_e *mockDoguRegistry_Expecter) Get(name interface{}) *mockDoguRegistry_Get_Call {
-	return &mockDoguRegistry_Get_Call{Call: _e.mock.On("Get", name)}
+// GetCurrent is a helper method to define mock.On call
+//   - ctx context.Context
+//   - simpleDoguName string
+func (_e *mockDoguRegistry_Expecter) GetCurrent(ctx interface{}, simpleDoguName interface{}) *mockDoguRegistry_GetCurrent_Call {
+	return &mockDoguRegistry_GetCurrent_Call{Call: _e.mock.On("GetCurrent", ctx, simpleDoguName)}
 }
 
-func (_c *mockDoguRegistry_Get_Call) Run(run func(name string)) *mockDoguRegistry_Get_Call {
+func (_c *mockDoguRegistry_GetCurrent_Call) Run(run func(ctx context.Context, simpleDoguName string)) *mockDoguRegistry_GetCurrent_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string))
+		run(args[0].(context.Context), args[1].(string))
 	})
 	return _c
 }
 
-func (_c *mockDoguRegistry_Get_Call) Return(_a0 *core.Dogu, _a1 error) *mockDoguRegistry_Get_Call {
+func (_c *mockDoguRegistry_GetCurrent_Call) Return(_a0 *core.Dogu, _a1 error) *mockDoguRegistry_GetCurrent_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *mockDoguRegistry_Get_Call) RunAndReturn(run func(string) (*core.Dogu, error)) *mockDoguRegistry_Get_Call {
+func (_c *mockDoguRegistry_GetCurrent_Call) RunAndReturn(run func(context.Context, string) (*core.Dogu, error)) *mockDoguRegistry_GetCurrent_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// GetAll provides a mock function with given fields:
-func (_m *mockDoguRegistry) GetAll() ([]*core.Dogu, error) {
-	ret := _m.Called()
+// GetCurrentOfAll provides a mock function with given fields: ctx
+func (_m *mockDoguRegistry) GetCurrentOfAll(ctx context.Context) ([]*core.Dogu, error) {
+	ret := _m.Called(ctx)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetAll")
+		panic("no return value specified for GetCurrentOfAll")
 	}
 
 	var r0 []*core.Dogu
 	var r1 error
-	if rf, ok := ret.Get(0).(func() ([]*core.Dogu, error)); ok {
-		return rf()
+	if rf, ok := ret.Get(0).(func(context.Context) ([]*core.Dogu, error)); ok {
+		return rf(ctx)
 	}
-	if rf, ok := ret.Get(0).(func() []*core.Dogu); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(context.Context) []*core.Dogu); ok {
+		r0 = rf(ctx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*core.Dogu)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -154,36 +158,37 @@ func (_m *mockDoguRegistry) GetAll() ([]*core.Dogu, error) {
 	return r0, r1
 }
 
-// mockDoguRegistry_GetAll_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetAll'
-type mockDoguRegistry_GetAll_Call struct {
+// mockDoguRegistry_GetCurrentOfAll_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCurrentOfAll'
+type mockDoguRegistry_GetCurrentOfAll_Call struct {
 	*mock.Call
 }
 
-// GetAll is a helper method to define mock.On call
-func (_e *mockDoguRegistry_Expecter) GetAll() *mockDoguRegistry_GetAll_Call {
-	return &mockDoguRegistry_GetAll_Call{Call: _e.mock.On("GetAll")}
+// GetCurrentOfAll is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *mockDoguRegistry_Expecter) GetCurrentOfAll(ctx interface{}) *mockDoguRegistry_GetCurrentOfAll_Call {
+	return &mockDoguRegistry_GetCurrentOfAll_Call{Call: _e.mock.On("GetCurrentOfAll", ctx)}
 }
 
-func (_c *mockDoguRegistry_GetAll_Call) Run(run func()) *mockDoguRegistry_GetAll_Call {
+func (_c *mockDoguRegistry_GetCurrentOfAll_Call) Run(run func(ctx context.Context)) *mockDoguRegistry_GetCurrentOfAll_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		run(args[0].(context.Context))
 	})
 	return _c
 }
 
-func (_c *mockDoguRegistry_GetAll_Call) Return(_a0 []*core.Dogu, _a1 error) *mockDoguRegistry_GetAll_Call {
+func (_c *mockDoguRegistry_GetCurrentOfAll_Call) Return(_a0 []*core.Dogu, _a1 error) *mockDoguRegistry_GetCurrentOfAll_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *mockDoguRegistry_GetAll_Call) RunAndReturn(run func() ([]*core.Dogu, error)) *mockDoguRegistry_GetAll_Call {
+func (_c *mockDoguRegistry_GetCurrentOfAll_Call) RunAndReturn(run func(context.Context) ([]*core.Dogu, error)) *mockDoguRegistry_GetCurrentOfAll_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// IsEnabled provides a mock function with given fields: name
-func (_m *mockDoguRegistry) IsEnabled(name string) (bool, error) {
-	ret := _m.Called(name)
+// IsEnabled provides a mock function with given fields: ctx, simpleDoguName
+func (_m *mockDoguRegistry) IsEnabled(ctx context.Context, simpleDoguName string) (bool, error) {
+	ret := _m.Called(ctx, simpleDoguName)
 
 	if len(ret) == 0 {
 		panic("no return value specified for IsEnabled")
@@ -191,17 +196,17 @@ func (_m *mockDoguRegistry) IsEnabled(name string) (bool, error) {
 
 	var r0 bool
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (bool, error)); ok {
-		return rf(name)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return rf(ctx, simpleDoguName)
 	}
-	if rf, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = rf(name)
+	if rf, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = rf(ctx, simpleDoguName)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(name)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, simpleDoguName)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -215,14 +220,15 @@ type mockDoguRegistry_IsEnabled_Call struct {
 }
 
 // IsEnabled is a helper method to define mock.On call
-//   - name string
-func (_e *mockDoguRegistry_Expecter) IsEnabled(name interface{}) *mockDoguRegistry_IsEnabled_Call {
-	return &mockDoguRegistry_IsEnabled_Call{Call: _e.mock.On("IsEnabled", name)}
+//   - ctx context.Context
+//   - simpleDoguName string
+func (_e *mockDoguRegistry_Expecter) IsEnabled(ctx interface{}, simpleDoguName interface{}) *mockDoguRegistry_IsEnabled_Call {
+	return &mockDoguRegistry_IsEnabled_Call{Call: _e.mock.On("IsEnabled", ctx, simpleDoguName)}
 }
 
-func (_c *mockDoguRegistry_IsEnabled_Call) Run(run func(name string)) *mockDoguRegistry_IsEnabled_Call {
+func (_c *mockDoguRegistry_IsEnabled_Call) Run(run func(ctx context.Context, simpleDoguName string)) *mockDoguRegistry_IsEnabled_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string))
+		run(args[0].(context.Context), args[1].(string))
 	})
 	return _c
 }
@@ -232,22 +238,22 @@ func (_c *mockDoguRegistry_IsEnabled_Call) Return(_a0 bool, _a1 error) *mockDogu
 	return _c
 }
 
-func (_c *mockDoguRegistry_IsEnabled_Call) RunAndReturn(run func(string) (bool, error)) *mockDoguRegistry_IsEnabled_Call {
+func (_c *mockDoguRegistry_IsEnabled_Call) RunAndReturn(run func(context.Context, string) (bool, error)) *mockDoguRegistry_IsEnabled_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// Register provides a mock function with given fields: dogu
-func (_m *mockDoguRegistry) Register(dogu *core.Dogu) error {
-	ret := _m.Called(dogu)
+// Register provides a mock function with given fields: ctx, dogu
+func (_m *mockDoguRegistry) Register(ctx context.Context, dogu *core.Dogu) error {
+	ret := _m.Called(ctx, dogu)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Register")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*core.Dogu) error); ok {
-		r0 = rf(dogu)
+	if rf, ok := ret.Get(0).(func(context.Context, *core.Dogu) error); ok {
+		r0 = rf(ctx, dogu)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -261,14 +267,15 @@ type mockDoguRegistry_Register_Call struct {
 }
 
 // Register is a helper method to define mock.On call
+//   - ctx context.Context
 //   - dogu *core.Dogu
-func (_e *mockDoguRegistry_Expecter) Register(dogu interface{}) *mockDoguRegistry_Register_Call {
-	return &mockDoguRegistry_Register_Call{Call: _e.mock.On("Register", dogu)}
+func (_e *mockDoguRegistry_Expecter) Register(ctx interface{}, dogu interface{}) *mockDoguRegistry_Register_Call {
+	return &mockDoguRegistry_Register_Call{Call: _e.mock.On("Register", ctx, dogu)}
 }
 
-func (_c *mockDoguRegistry_Register_Call) Run(run func(dogu *core.Dogu)) *mockDoguRegistry_Register_Call {
+func (_c *mockDoguRegistry_Register_Call) Run(run func(ctx context.Context, dogu *core.Dogu)) *mockDoguRegistry_Register_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(*core.Dogu))
+		run(args[0].(context.Context), args[1].(*core.Dogu))
 	})
 	return _c
 }
@@ -278,22 +285,22 @@ func (_c *mockDoguRegistry_Register_Call) Return(_a0 error) *mockDoguRegistry_Re
 	return _c
 }
 
-func (_c *mockDoguRegistry_Register_Call) RunAndReturn(run func(*core.Dogu) error) *mockDoguRegistry_Register_Call {
+func (_c *mockDoguRegistry_Register_Call) RunAndReturn(run func(context.Context, *core.Dogu) error) *mockDoguRegistry_Register_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// Unregister provides a mock function with given fields: name
-func (_m *mockDoguRegistry) Unregister(name string) error {
-	ret := _m.Called(name)
+// UnregisterAllVersions provides a mock function with given fields: ctx, simpleDoguName
+func (_m *mockDoguRegistry) UnregisterAllVersions(ctx context.Context, simpleDoguName string) error {
+	ret := _m.Called(ctx, simpleDoguName)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Unregister")
+		panic("no return value specified for UnregisterAllVersions")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(name)
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, simpleDoguName)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -301,30 +308,31 @@ func (_m *mockDoguRegistry) Unregister(name string) error {
 	return r0
 }
 
-// mockDoguRegistry_Unregister_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Unregister'
-type mockDoguRegistry_Unregister_Call struct {
+// mockDoguRegistry_UnregisterAllVersions_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UnregisterAllVersions'
+type mockDoguRegistry_UnregisterAllVersions_Call struct {
 	*mock.Call
 }
 
-// Unregister is a helper method to define mock.On call
-//   - name string
-func (_e *mockDoguRegistry_Expecter) Unregister(name interface{}) *mockDoguRegistry_Unregister_Call {
-	return &mockDoguRegistry_Unregister_Call{Call: _e.mock.On("Unregister", name)}
+// UnregisterAllVersions is a helper method to define mock.On call
+//   - ctx context.Context
+//   - simpleDoguName string
+func (_e *mockDoguRegistry_Expecter) UnregisterAllVersions(ctx interface{}, simpleDoguName interface{}) *mockDoguRegistry_UnregisterAllVersions_Call {
+	return &mockDoguRegistry_UnregisterAllVersions_Call{Call: _e.mock.On("UnregisterAllVersions", ctx, simpleDoguName)}
 }
 
-func (_c *mockDoguRegistry_Unregister_Call) Run(run func(name string)) *mockDoguRegistry_Unregister_Call {
+func (_c *mockDoguRegistry_UnregisterAllVersions_Call) Run(run func(ctx context.Context, simpleDoguName string)) *mockDoguRegistry_UnregisterAllVersions_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string))
+		run(args[0].(context.Context), args[1].(string))
 	})
 	return _c
 }
 
-func (_c *mockDoguRegistry_Unregister_Call) Return(_a0 error) *mockDoguRegistry_Unregister_Call {
+func (_c *mockDoguRegistry_UnregisterAllVersions_Call) Return(_a0 error) *mockDoguRegistry_UnregisterAllVersions_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *mockDoguRegistry_Unregister_Call) RunAndReturn(run func(string) error) *mockDoguRegistry_Unregister_Call {
+func (_c *mockDoguRegistry_UnregisterAllVersions_Call) RunAndReturn(run func(context.Context, string) error) *mockDoguRegistry_UnregisterAllVersions_Call {
 	_c.Call.Return(run)
 	return _c
 }

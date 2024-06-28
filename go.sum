@@ -14,6 +14,8 @@ github.com/cloudogu/k8s-blueprint-operator v0.0.0-20240301133756-6b9a1a81230f h1
 github.com/cloudogu/k8s-blueprint-operator v0.0.0-20240301133756-6b9a1a81230f/go.mod h1:EETK+FaJOu4zTyHwlQx1W4OzL3ksPWERqNqO/fjv+eQ=
 github.com/cloudogu/k8s-dogu-operator v0.41.0 h1:Xsw3yhb2W6sMHibJ8u/ho1Gf84XDVo906kKV+atfm9w=
 github.com/cloudogu/k8s-dogu-operator v0.41.0/go.mod h1:uj3IY4z1MvU6hHdifANbfMVOfoD8wbfMfNaaXDqpGvw=
+github.com/cloudogu/k8s-registry-lib v0.0.0-20240621115501-ef9dfeea39cf h1:DBevpArJE1ZA+0pK6E6LGN/sc4Bzqtw1oJKfgAD4C2A=
+github.com/cloudogu/k8s-registry-lib v0.0.0-20240621115501-ef9dfeea39cf/go.mod h1:YV7Cws6Qfgk3sE9q2qDLltXGg1+6HmEDy6VPJHRODi4=
 github.com/cloudogu/k8s-registry-lib v0.1.0 h1:6bJ+z/pJmXbLaR3wUG7c18fJsRv/ghb1ixSsX4ypbA0=
 github.com/cloudogu/k8s-registry-lib v0.1.0/go.mod h1:WpZcd/Xanqwu/GkzRA8KCHD0wKIQSt2UMlXR5FlU/8A=
 github.com/coreos/go-semver v0.3.1 h1:yi21YpKnrx1gt5R+la8n5WgS0kCrsPp33dmEyHReZr4=
