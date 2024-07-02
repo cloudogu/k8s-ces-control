@@ -2,6 +2,7 @@ package doguAdministration
 
 import (
 	"context"
+	"github.com/cloudogu/cesapp-lib/core"
 	"github.com/cloudogu/cesapp-lib/registry"
 	v1 "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
 	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
@@ -20,9 +21,9 @@ type clusterClient interface {
 }
 
 type doguRegistry interface {
-	registry.DoguRegistry
+	// GetCurrentOfAll retrieves the specs of all dogus' currently installed versions.
+	GetCurrentOfAll(ctx context.Context) ([]*core.Dogu, error)
 }
-
 type cesRegistry interface {
 	registry.Registry
 }

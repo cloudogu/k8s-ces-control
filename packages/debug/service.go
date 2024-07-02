@@ -25,7 +25,6 @@ const (
 type defaultDebugModeService struct {
 	pbMaintenance.UnimplementedDebugModeServer
 	globalConfig          configurationContext
-	doguConfig            doguRegistry
 	clientSet             clusterClientSet
 	debugModeRegistry     debugModeRegistry
 	maintenanceModeSwitch maintenanceModeSwitch
@@ -34,17 +33,15 @@ type defaultDebugModeService struct {
 }
 
 // NewDebugModeService returns an instance of debugModeService.
-func NewDebugModeService(registry cesRegistry, clusterClient clusterClientSet, namespace string) *defaultDebugModeService {
-	cmDebugModeRegistry := NewConfigMapDebugModeRegistry(registry, clusterClient, namespace)
-	globalConfig := registry.GlobalConfig()
+func NewDebugModeService(registry cesRegistry, doguReg doguRegistry, clusterClient clusterClientSet, namespace string) *defaultDebugModeService {
+	cmDebugModeRegistry := NewConfigMapDebugModeRegistry(registry, doguReg, clusterClient, namespace)
 	return &defaultDebugModeService{
-		globalConfig:          globalConfig,
-		doguConfig:            registry.DoguRegistry(),
+		globalConfig:          registry.GlobalConfig(),
 		clientSet:             clusterClient,
 		debugModeRegistry:     cmDebugModeRegistry,
-		maintenanceModeSwitch: NewDefaultMaintenanceModeSwitch(globalConfig),
+		maintenanceModeSwitch: NewDefaultMaintenanceModeSwitch(registry.GlobalConfig()),
 		namespace:             namespace,
-		doguInterActor:        doguinteraction.NewDefaultDoguInterActor(clusterClient, namespace, registry),
+		doguInterActor:        doguinteraction.NewDefaultDoguInterActor(clusterClient, namespace, registry, doguReg),
 	}
 }
 
@@ -75,7 +72,7 @@ func (s *defaultDebugModeService) Enable(ctx context.Context, req *pbMaintenance
 		return nil, s.rollbackDisable(ctx, createInternalError(fmt.Errorf("failed to backup dogu log levels: %w", err)))
 	}
 
-	err = s.doguInterActor.SetLogLevelInAllDogus(logLevelDebug)
+	err = s.doguInterActor.SetLogLevelInAllDogus(ctx, logLevelDebug)
 	if err != nil {
 		return nil, s.rollbackRestoreDisable(ctx, createInternalError(fmt.Errorf("failed to set dogu log levels to debug: %w", err)))
 	}
