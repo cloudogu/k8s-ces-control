@@ -79,7 +79,7 @@ func Test_server_GetDoguList(t *testing.T) {
 		require.Error(t, err)
 		assert.Nil(t, actual)
 		assert.ErrorIs(t, err, assert.AnError)
-		assert.ErrorContains(t, err, "failed to get dogus registry")
+		assert.ErrorContains(t, err, "failed to get dogu registry")
 	})
 	t.Run("should succeed", func(t *testing.T) {
 		// given

@@ -93,7 +93,8 @@ func getGRPCInternalDoguActionError(verb string, err error) error {
 func (s *server) GetDoguList(ctx context.Context, _ *pb.DoguListRequest) (*pb.DoguListResponse, error) {
 	doguJsonList, err := s.doguRegistry.GetCurrentOfAll(ctx)
 	if err != nil {
-		logrus.Error(fmt.Errorf("failed to get dogus registry"))
+		err = fmt.Errorf("failed to get dogu registry: %w", err)
+		logrus.Error(err)
 		return nil, err
 	}
 

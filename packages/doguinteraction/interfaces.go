@@ -1,9 +1,10 @@
 package doguinteraction
 
 import (
+	"context"
+	"github.com/cloudogu/cesapp-lib/core"
 	"github.com/cloudogu/cesapp-lib/registry"
 	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
-	"github.com/cloudogu/k8s-registry-lib/dogu"
 	"k8s.io/client-go/kubernetes"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -42,10 +43,9 @@ type cesRegistry interface {
 	registry.Registry
 }
 
-//nolint:unused
-//goland:noinspection GoUnusedType
 type doguRegistry interface {
-	dogu.LocalRegistry
+	// GetCurrentOfAll retrieves the specs of all dogus' currently installed versions.
+	GetCurrentOfAll(ctx context.Context) ([]*core.Dogu, error)
 }
 
 //nolint:unused

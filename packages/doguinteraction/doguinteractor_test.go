@@ -433,7 +433,13 @@ func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 		// given
 		cesRegistryMock := newMockCesRegistry(t)
 		doguRegistryMock := newMockDoguRegistry(t)
-		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine"}}, nil)
+		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return(
+			[]*core.Dogu{
+				{Name: "official/postgresql"},
+				{Name: "official/redmine"},
+			},
+			nil,
+		)
 		postgresqlConfigMock := newMockConfigurationContext(t)
 		redmineConfigMock := newMockConfigurationContext(t)
 		postgresqlConfigMock.EXPECT().Set("logging/root", "DEBUG").Return(nil)
@@ -458,7 +464,13 @@ func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 		// given
 		cesRegistryMock := newMockCesRegistry(t)
 		doguRegistryMock := newMockDoguRegistry(t)
-		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine"}}, nil)
+		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return(
+			[]*core.Dogu{
+				{Name: "official/postgresql"},
+				{Name: "official/redmine"},
+			},
+			nil,
+		)
 		postgresqlConfigMock := newMockConfigurationContext(t)
 		redmineConfigMock := newMockConfigurationContext(t)
 		postgresqlConfigMock.EXPECT().Set("logging/root", "DEBUG").Return(assert.AnError)
@@ -479,6 +491,27 @@ func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 		require.Error(t, err)
 		assert.ErrorIs(t, err, assert.AnError)
 		assert.ErrorContains(t, err, "assert.AnError general error for testing\nassert.AnError general error for testing")
+	})
+
+	t.Run("should return errors on error getting current dogus", func(t *testing.T) {
+		// given
+		cesRegistryMock := newMockCesRegistry(t)
+		doguRegistryMock := newMockDoguRegistry(t)
+		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return(nil, assert.AnError)
+
+		sut := defaultDoguInterActor{
+			registry:     cesRegistryMock,
+			doguRegistry: doguRegistryMock,
+			namespace:    testNamespace,
+		}
+
+		// when
+		err := sut.SetLogLevelInAllDogus(testCtx, "DEBUG")
+
+		// then
+		require.Error(t, err)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to get all dogus")
 	})
 }
 
