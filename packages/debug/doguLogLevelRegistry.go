@@ -27,8 +27,6 @@ func NewDoguLogLevelRegistryMap(cesRegistry cesregistry.Registry, doguReg doguRe
 
 // MarshalFromCesRegistryToString marshals the registry to yaml string.
 func (d *doguLogLevelYamlRegistryMap) MarshalFromCesRegistryToString(ctx context.Context) (string, error) {
-	d.logLevelRegistryMap = map[string]string{}
-
 	allDogus, err := d.doguReg.GetCurrentOfAll(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get all dogus: %w", err)
