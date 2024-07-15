@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.0] - 2024-07-15
+
 ### Changed
 - [#33] - Use configmap based dogu registry instead of etcd to retrieve dogu.jsons
 
