@@ -4,6 +4,7 @@ import (
 	"context"
 	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
 	"github.com/cloudogu/ces-control-api/generated/types"
+	"github.com/cloudogu/cesapp-lib/core"
 	"github.com/cloudogu/cesapp-lib/registry"
 	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
 	"k8s.io/client-go/kubernetes"
@@ -38,7 +39,8 @@ type configurationContext interface {
 //nolint:unused
 //goland:noinspection GoUnusedType
 type doguRegistry interface {
-	registry.DoguRegistry
+	// GetCurrentOfAll retrieves the specs of all dogus' currently installed versions.
+	GetCurrentOfAll(ctx context.Context) ([]*core.Dogu, error)
 }
 
 type debugModeRegistry interface {
@@ -57,9 +59,9 @@ type debugModeRegistry interface {
 
 type doguLogLevelRegistry interface {
 	// MarshalFromCesRegistryToString converts the log levels from the ces registry to a string
-	MarshalFromCesRegistryToString(registry cesRegistry) (string, error)
+	MarshalFromCesRegistryToString(ctx context.Context) (string, error)
 	// UnMarshalFromStringToCesRegistry writes the log level string to the ces registry.
-	UnMarshalFromStringToCesRegistry(registry cesRegistry, unmarshal string) error
+	UnMarshalFromStringToCesRegistry(unmarshal string) error
 }
 
 type maintenanceModeSwitch interface {
@@ -75,7 +77,7 @@ type doguInterActor interface {
 	// StartAllDogus starts all dogus.
 	StartAllDogus(ctx context.Context) error
 	// SetLogLevelInAllDogus sets the specified log level to all dogus.
-	SetLogLevelInAllDogus(logLevel string) error
+	SetLogLevelInAllDogus(ctx context.Context, logLevel string) error
 }
 
 type debugModeServer interface {
