@@ -3,18 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
-	"github.com/cloudogu/k8s-registry-lib/dogu"
 	"net"
 	"os"
-
-	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/health"
-	"google.golang.org/grpc/health/grpc_health_v1"
-	"google.golang.org/grpc/reflection"
-	"k8s.io/client-go/kubernetes"
 
 	pbDoguAdministration "github.com/cloudogu/ces-control-api/generated/doguAdministration"
 	pgHealth "github.com/cloudogu/ces-control-api/generated/health"
@@ -26,8 +16,20 @@ import (
 	"github.com/cloudogu/k8s-ces-control/packages/debug"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
 	"github.com/cloudogu/k8s-ces-control/packages/doguHealth"
+	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
+	"github.com/cloudogu/k8s-registry-lib/dogu"
+
+	"k8s.io/client-go/kubernetes"
+
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/reflection"
 )
 
 const (

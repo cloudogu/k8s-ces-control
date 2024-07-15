@@ -9,3 +9,9 @@ type clusterClient interface {
 	ecoSystem.EcoSystemV1Alpha1Interface
 	kubernetes.Interface
 }
+
+//nolint:unused
+//goland:noinspection GoUnusedType
+type doguClient interface {
+	ecoSystem.DoguInterface
+}
