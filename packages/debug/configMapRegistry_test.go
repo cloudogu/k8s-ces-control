@@ -32,7 +32,7 @@ func TestNewConfigMapDebugModeRegistry(t *testing.T) {
 		coreV1Mock.EXPECT().ConfigMaps(testNamespace).Return(configMapInterfaceMock)
 
 		// when
-		cmRegistry := NewConfigMapDebugModeRegistry(cesRegistryMock, clientSetMock, testNamespace)
+		cmRegistry := NewConfigMapDebugModeRegistry(cesRegistryMock, nil, clientSetMock, testNamespace)
 
 		// then
 		require.NotNil(t, cmRegistry)
@@ -45,7 +45,7 @@ func Test_configMapDebugModeRegistry_BackupDoguLogLevels(t *testing.T) {
 		expectedDoguLogLevelRegistryStr := "dogua: DEBUG\ndogub: ERROR\n"
 		cesRegistryMock := newMockCesRegistry(t)
 		doguLogLevelRegistryMock := newMockDoguLogLevelRegistry(t)
-		doguLogLevelRegistryMock.EXPECT().MarshalFromCesRegistryToString(cesRegistryMock).Return(expectedDoguLogLevelRegistryStr, nil)
+		doguLogLevelRegistryMock.EXPECT().MarshalFromCesRegistryToString(testCtx).Return(expectedDoguLogLevelRegistryStr, nil)
 
 		configMapRegistry := &v1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{Name: "debug-mode-registry", Namespace: testNamespace},
@@ -128,7 +128,7 @@ func Test_configMapDebugModeRegistry_BackupDoguLogLevels(t *testing.T) {
 		// given
 		cesRegistryMock := newMockCesRegistry(t)
 		doguLogLevelRegistryMock := newMockDoguLogLevelRegistry(t)
-		doguLogLevelRegistryMock.EXPECT().MarshalFromCesRegistryToString(cesRegistryMock).Return("", assert.AnError)
+		doguLogLevelRegistryMock.EXPECT().MarshalFromCesRegistryToString(testCtx).Return("", assert.AnError)
 
 		configMapRegistry := &v1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{Name: "debug-mode-registry", Namespace: testNamespace},
@@ -273,7 +273,7 @@ func Test_configMapDebugModeRegistry_RestoreDoguLogLevels(t *testing.T) {
 		cesRegistryMock := newMockCesRegistry(t)
 		doguLogLevelRegistryStr := "dogua: DEBUG\ndogub: ERROR\n"
 		doguLogLevelRegistryMock := newMockDoguLogLevelRegistry(t)
-		doguLogLevelRegistryMock.EXPECT().UnMarshalFromStringToCesRegistry(cesRegistryMock, doguLogLevelRegistryStr).Return(nil)
+		doguLogLevelRegistryMock.EXPECT().UnMarshalFromStringToCesRegistry(doguLogLevelRegistryStr).Return(nil)
 
 		configMapRegistry := &v1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{Name: "debug-mode-registry", Namespace: testNamespace},
@@ -368,7 +368,7 @@ func Test_configMapDebugModeRegistry_RestoreDoguLogLevels(t *testing.T) {
 		// given
 		doguLogLevelRegistryMock := newMockDoguLogLevelRegistry(t)
 		cesRegistryMock := newMockCesRegistry(t)
-		doguLogLevelRegistryMock.EXPECT().UnMarshalFromStringToCesRegistry(cesRegistryMock, "dogua: test\ndogub test").Return(assert.AnError)
+		doguLogLevelRegistryMock.EXPECT().UnMarshalFromStringToCesRegistry("dogua: test\ndogub test").Return(assert.AnError)
 
 		configMapRegistry := &v1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{Name: "debug-mode-registry", Namespace: testNamespace},

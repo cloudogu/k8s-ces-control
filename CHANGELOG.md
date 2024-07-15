@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.0] - 2024-07-15
+
+### Changed
+- [#33] - Use configmap based dogu registry instead of etcd to retrieve dogu.jsons
+
 ## [v0.8.1] - 2024-05-24
 ### Fixed
 - [#31] After setting a new log level for a dogu, the dogu restarts even when it is stopped - dogu should stay stopped

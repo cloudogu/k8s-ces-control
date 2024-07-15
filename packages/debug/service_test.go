@@ -15,7 +15,6 @@ func TestNewdefaultDebugModeService(t *testing.T) {
 		globalConfigMock := newMockConfigurationContext(t)
 		cesRegistryMock.EXPECT().GlobalConfig().Return(globalConfigMock)
 		doguRegistryMock := newMockDoguRegistry(t)
-		cesRegistryMock.EXPECT().DoguRegistry().Return(doguRegistryMock)
 
 		clientSetMock := newMockClusterClientSet(t)
 		coreV1Mock := newMockCoreV1Interface(t)
@@ -24,7 +23,7 @@ func TestNewdefaultDebugModeService(t *testing.T) {
 		coreV1Mock.EXPECT().ConfigMaps(testNamespace).Return(configMapClientMock)
 
 		// when
-		service := NewDebugModeService(cesRegistryMock, clientSetMock, testNamespace)
+		service := NewDebugModeService(cesRegistryMock, doguRegistryMock, clientSetMock, testNamespace)
 
 		// then
 		require.NotNil(t, service)
@@ -153,7 +152,7 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 		doguInterActorMock.EXPECT().StopAllDogus(noInheritedTestCtx).Return(nil).Run(func(ctx context.Context) {
 			doguInterActorMock.EXPECT().StartAllDogus(noInheritedTestCtx).Return(nil)
 		})
-		doguInterActorMock.EXPECT().SetLogLevelInAllDogus("DEBUG").Return(nil)
+		doguInterActorMock.EXPECT().SetLogLevelInAllDogus(testCtx, "DEBUG").Return(nil)
 		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
 		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Activating debug mode").Return(nil)
 		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(nil)
@@ -243,7 +242,7 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 	t.Run("should return error on error set debug log level", func(t *testing.T) {
 		// given
 		doguInterActorMock := newMockDoguInterActor(t)
-		doguInterActorMock.EXPECT().SetLogLevelInAllDogus("DEBUG").Return(assert.AnError)
+		doguInterActorMock.EXPECT().SetLogLevelInAllDogus(testCtx, "DEBUG").Return(assert.AnError)
 		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
 		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Activating debug mode").Return(nil)
 		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(nil)
@@ -265,7 +264,7 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 	t.Run("should return wrapped error on rollback error set debug log level", func(t *testing.T) {
 		// given
 		doguInterActorMock := newMockDoguInterActor(t)
-		doguInterActorMock.EXPECT().SetLogLevelInAllDogus("DEBUG").Return(assert.AnError)
+		doguInterActorMock.EXPECT().SetLogLevelInAllDogus(testCtx, "DEBUG").Return(assert.AnError)
 		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
 		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Activating debug mode").Return(nil)
 		maintenanceModeSwitchMock.EXPECT().DeactivateMaintenanceMode().Return(nil)
@@ -288,7 +287,7 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 	t.Run("should return error on error stop all dogus", func(t *testing.T) {
 		// given
 		doguInterActorMock := newMockDoguInterActor(t)
-		doguInterActorMock.EXPECT().SetLogLevelInAllDogus("DEBUG").Return(nil)
+		doguInterActorMock.EXPECT().SetLogLevelInAllDogus(testCtx, "DEBUG").Return(nil)
 		doguInterActorMock.EXPECT().StopAllDogus(noInheritedTestCtx).Return(assert.AnError)
 		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
 		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Activating debug mode").Return(nil)
@@ -313,7 +312,7 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 	t.Run("should return wrapped error on error rollback stop all dogus", func(t *testing.T) {
 		// given
 		doguInterActorMock := newMockDoguInterActor(t)
-		doguInterActorMock.EXPECT().SetLogLevelInAllDogus("DEBUG").Return(nil)
+		doguInterActorMock.EXPECT().SetLogLevelInAllDogus(testCtx, "DEBUG").Return(nil)
 		doguInterActorMock.EXPECT().StopAllDogus(noInheritedTestCtx).Return(assert.AnError)
 		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
 		maintenanceModeSwitchMock.EXPECT().ActivateMaintenanceMode("Service unavailable", "Activating debug mode").Return(nil)
@@ -339,7 +338,7 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 	t.Run("should return error on error start all dogus", func(t *testing.T) {
 		// given
 		doguInterActorMock := newMockDoguInterActor(t)
-		doguInterActorMock.EXPECT().SetLogLevelInAllDogus("DEBUG").Return(nil)
+		doguInterActorMock.EXPECT().SetLogLevelInAllDogus(testCtx, "DEBUG").Return(nil)
 		doguInterActorMock.EXPECT().StopAllDogus(noInheritedTestCtx).Return(nil)
 		doguInterActorMock.EXPECT().StartAllDogus(noInheritedTestCtx).Return(assert.AnError)
 		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)

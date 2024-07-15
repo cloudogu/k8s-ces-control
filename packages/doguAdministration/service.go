@@ -9,8 +9,6 @@ import (
 	v1bp "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
-	v1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
-	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -24,10 +22,10 @@ type logService interface {
 }
 
 // NewDoguAdministrationServer returns a new administration server instance to start/stop.. etc. Dogus.
-func NewDoguAdministrationServer(client clusterClient, reg cesRegistry, namespace string, logService logService) *server {
+func NewDoguAdministrationServer(client clusterClient, reg cesRegistry, doguReg doguRegistry, namespace string, logService logService) *server {
 	return &server{client: client,
-		doguRegistry:   reg.DoguRegistry(),
-		doguInterActor: doguinteraction.NewDefaultDoguInterActor(client, namespace, reg),
+		doguRegistry:   doguReg,
+		doguInterActor: doguinteraction.NewDefaultDoguInterActor(client, namespace, reg, doguReg),
 		ns:             namespace,
 		loggingService: logService,
 	}
@@ -93,44 +91,22 @@ func getGRPCInternalDoguActionError(verb string, err error) error {
 
 // GetDoguList returns the list of dogus to administrate (all)
 func (s *server) GetDoguList(ctx context.Context, _ *pb.DoguListRequest) (*pb.DoguListResponse, error) {
-	list, err := s.client.Dogus(s.ns).List(ctx, metav1.ListOptions{})
+	doguJsonList, err := s.doguRegistry.GetCurrentOfAll(ctx)
 	if err != nil {
+		err = fmt.Errorf("failed to get dogu registry: %w", err)
 		logrus.Error(err)
 		return nil, err
 	}
 
-	if len(list.Items) < 1 {
-		return &pb.DoguListResponse{}, nil
-	}
-
-	doguJsonList, err := s.getDoguJsonList(list.Items)
-	if err != nil {
-		logrus.Error(fmt.Errorf("failed to get dogus from etcd"))
-		return nil, err
-	}
-
-	return s.createDoguListResponse(doguJsonList), nil
+	return s.createDoguListResponse(ctx, doguJsonList), nil
 }
 
-func (s *server) getDoguJsonList(doguListItems []v1.Dogu) (dogus []*core.Dogu, multiErr error) {
-	for _, doguListItem := range doguListItems {
-		dogu, err := s.doguRegistry.Get(doguListItem.GetName())
-		if err != nil {
-			multiErr = multierror.Append(multiErr, err)
-		}
-
-		dogus = append(dogus, dogu)
-	}
-
-	return dogus, multiErr
-}
-
-func (s *server) createDoguListResponse(dogus []*core.Dogu) *pb.DoguListResponse {
+func (s *server) createDoguListResponse(ctx context.Context, dogus []*core.Dogu) *pb.DoguListResponse {
 	var result []*pb.Dogu
 
 	for _, dogu := range dogus {
 
-		logLevel, err := s.loggingService.GetLogLevel(context.TODO(), dogu.GetSimpleName())
+		logLevel, err := s.loggingService.GetLogLevel(ctx, dogu.GetSimpleName())
 		if err != nil {
 			logrus.Warn(err)
 		}
