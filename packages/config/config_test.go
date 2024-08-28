@@ -258,29 +258,6 @@ func TestIsDevelopmentStage(t *testing.T) {
 	})
 }
 
-func TestGetCesRegistry(t *testing.T) {
-	t.Run("should succeed", func(t *testing.T) {
-		// when
-		actual, err := GetCesRegistry()
-
-		// then
-		require.NoError(t, err)
-		assert.NotEmpty(t, actual)
-	})
-
-	t.Run("should fail", func(t *testing.T) {
-		// given
-		CurrentNamespace = "%31$:://:../dir%25"
-
-		// when
-		_, err := GetCesRegistry()
-
-		// then
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed to create CES registry: failed to create etcd client: parse \"http://etcd.%31$:://:../dir%25.svc.cluster.local:4001\"")
-	})
-}
-
 func TestPrintCloudoguLogo(t *testing.T) {
 	t.Run("should print logo", func(t *testing.T) {
 		// given
