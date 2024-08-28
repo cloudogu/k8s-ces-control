@@ -17,6 +17,7 @@ import (
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
 	"github.com/cloudogu/k8s-registry-lib/dogu"
+	"github.com/cloudogu/k8s-registry-lib/repository"
 	"net"
 	"os"
 
@@ -117,6 +118,7 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 		dogu.NewDoguVersionRegistry(client.CoreV1().ConfigMaps(config.CurrentNamespace)),
 		nil, //dogu.NewLocalDoguDescriptorRepository(client.CoreV1().ConfigMaps(config.CurrentNamespace)),
 	)
+	globalReg := repository.NewGlobalConfigRepository(client.CoreV1().ConfigMaps(config.CurrentNamespace))
 	loggingService := logging.NewLoggingService(
 		lokiLogProvider,
 		cesReg,
@@ -128,7 +130,7 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 	pbLogging.RegisterDoguLogMessagesServer(grpcServer, loggingService)
 	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministration.NewDoguAdministrationServer(client, cesReg, doguReg, config.CurrentNamespace, loggingService))
 	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService(client))
-	debugModeService := debug.NewDebugModeService(cesReg, doguReg, client, config.CurrentNamespace)
+	debugModeService := debug.NewDebugModeService(cesReg, *globalReg, doguReg, client, config.CurrentNamespace)
 	pbMaintenance.RegisterDebugModeServer(grpcServer, debugModeService)
 	watcher := debug.NewDefaultConfigMapRegistryWatcher(client.CoreV1().ConfigMaps(config.CurrentNamespace), debugModeService)
 	watcher.StartWatch(context.Background())

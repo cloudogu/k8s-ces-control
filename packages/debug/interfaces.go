@@ -66,9 +66,9 @@ type doguLogLevelRegistry interface {
 
 type maintenanceModeSwitch interface {
 	// ActivateMaintenanceMode activates the maintenance mode
-	ActivateMaintenanceMode(title, text string) error
+	ActivateMaintenanceMode(ctx context.Context, title, text string) error
 	// DeactivateMaintenanceMode deactivates the maintenance mode.
-	DeactivateMaintenanceMode() error
+	DeactivateMaintenanceMode(ctx context.Context) error
 }
 
 type doguInterActor interface {
