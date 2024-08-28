@@ -3,9 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net"
-	"os"
-
 	pbDoguAdministration "github.com/cloudogu/ces-control-api/generated/doguAdministration"
 	pgHealth "github.com/cloudogu/ces-control-api/generated/health"
 	pbLogging "github.com/cloudogu/ces-control-api/generated/logging"
@@ -20,6 +17,8 @@ import (
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
 	"github.com/cloudogu/k8s-registry-lib/dogu"
+	"net"
+	"os"
 
 	"k8s.io/client-go/kubernetes"
 
@@ -114,7 +113,10 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 		config.CurrentLokiGatewayConfig.Password,
 	)
 
-	doguReg := dogu.NewLocalRegistry(client.CoreV1().ConfigMaps(config.CurrentNamespace))
+	doguReg := debug.NewDoguRegistry(
+		dogu.NewDoguVersionRegistry(client.CoreV1().ConfigMaps(config.CurrentNamespace)),
+		nil, //dogu.NewLocalDoguDescriptorRepository(client.CoreV1().ConfigMaps(config.CurrentNamespace)),
+	)
 	loggingService := logging.NewLoggingService(
 		lokiLogProvider,
 		cesReg,

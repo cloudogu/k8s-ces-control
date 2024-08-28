@@ -22,6 +22,8 @@ github.com/cloudogu/k8s-dogu-operator v1.2.0 h1:TZ7pkQ2EBinwZMWY7H0/Bs4xVSHIWnQE
 github.com/cloudogu/k8s-dogu-operator v1.2.0/go.mod h1:GnYsLM82oVlf4szJtJ2XQuOf/B5IcRVj8Wk+7jPPNa0=
 github.com/cloudogu/k8s-registry-lib v0.2.0 h1:eSw+z/hEEspNyI9XiIH3HQOuaiQnBrKGG95+FK7Iq8E=
 github.com/cloudogu/k8s-registry-lib v0.2.0/go.mod h1:LQxxzN+4hrulxPbSXl/Srw8ADP4mxS8DXFxZSI5X/f0=
+github.com/cloudogu/k8s-registry-lib v0.3.0 h1:hDNtC8ERE6N19zGtIpi0MOcySNA6Z2WWUAkdigELxx0=
+github.com/cloudogu/k8s-registry-lib v0.3.0/go.mod h1:LQxxzN+4hrulxPbSXl/Srw8ADP4mxS8DXFxZSI5X/f0=
 github.com/coreos/go-semver v0.3.1 h1:yi21YpKnrx1gt5R+la8n5WgS0kCrsPp33dmEyHReZr4=
 github.com/coreos/go-semver v0.3.1/go.mod h1:irMmmIw/7yzSRPWryHsK7EYSg09caPQL03VsM8rvUec=
 github.com/cpuguy83/go-md2man/v2 v2.0.3 h1:qMCsGGgs+MAzDFyp9LpAe1Lqy/fY/qCovCm0qnXZOBM=
