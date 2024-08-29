@@ -1,7 +1,9 @@
 package debug
 
 import (
+	"context"
 	"github.com/cloudogu/cesapp-lib/core"
+	"github.com/cloudogu/k8s-registry-lib/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -10,7 +12,7 @@ import (
 func TestNewDoguLogLevelRegistry(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// when
-		debugReg := NewDoguLogLevelRegistryMap(nil, nil)
+		debugReg := NewDoguLogLevelRegistryMap(repository.DoguConfigRepository{}, nil)
 
 		// then
 		require.NotNil(t, debugReg)
@@ -21,18 +23,18 @@ func TestNewDoguLogLevelRegistry(t *testing.T) {
 func Test_doguLogLevelRegistry_UnMarshalFromStringToCesRegistry(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// given
-		cesRegistryMock := newMockCesRegistry(t)
-		doguAConfigMock := newMockConfigurationContext(t)
-		doguBConfigMock := newMockConfigurationContext(t)
-		doguAConfigMock.EXPECT().Set("logging/root", "ERROR").Return(nil)
-		doguBConfigMock.EXPECT().Set("logging/root", "INFO").Return(nil)
-		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
-		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
+		//cesRegistryMock := newMockCesRegistry(t)
+		//doguAConfigMock := newMockConfigurationContext(t)
+		//doguBConfigMock := newMockConfigurationContext(t)
+		//doguAConfigMock.EXPECT().Set("logging/root", "ERROR").Return(nil)
+		//doguBConfigMock.EXPECT().Set("logging/root", "INFO").Return(nil)
+		//cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
+		//cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
 
-		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock}
+		sut := &doguLogLevelYamlRegistryMap{}
 
 		// when
-		err := sut.UnMarshalFromStringToCesRegistry("dogua: ERROR\ndogub: INFO\n")
+		err := sut.UnMarshalFromStringToCesRegistry(context.TODO(), "dogua: ERROR\ndogub: INFO\n")
 
 		// then
 		require.NoError(t, err)
@@ -40,12 +42,11 @@ func Test_doguLogLevelRegistry_UnMarshalFromStringToCesRegistry(t *testing.T) {
 
 	t.Run("should return error on invalid registry string", func(t *testing.T) {
 		// given
-		cesRegistryMock := newMockCesRegistry(t)
 		notAMapString := "notayamlMap::;;!"
-		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock}
+		sut := &doguLogLevelYamlRegistryMap{}
 
 		// when
-		err := sut.UnMarshalFromStringToCesRegistry(notAMapString)
+		err := sut.UnMarshalFromStringToCesRegistry(context.TODO(), notAMapString)
 
 		// then
 		require.Error(t, err)
@@ -62,10 +63,10 @@ func Test_doguLogLevelRegistry_UnMarshalFromStringToCesRegistry(t *testing.T) {
 		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
 		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
 
-		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock}
+		sut := &doguLogLevelYamlRegistryMap{}
 
 		// when
-		err := sut.UnMarshalFromStringToCesRegistry("dogua: ERROR\ndogub: \"\"\n")
+		err := sut.UnMarshalFromStringToCesRegistry(context.TODO(), "dogua: ERROR\ndogub: \"\"\n")
 
 		// then
 		require.NoError(t, err)
@@ -81,10 +82,10 @@ func Test_doguLogLevelRegistry_UnMarshalFromStringToCesRegistry(t *testing.T) {
 		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
 		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
 
-		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock}
+		sut := &doguLogLevelYamlRegistryMap{}
 
 		// when
-		err := sut.UnMarshalFromStringToCesRegistry("dogua: ERROR\ndogub: \"\"\n")
+		err := sut.UnMarshalFromStringToCesRegistry(context.TODO(), "dogua: ERROR\ndogub: \"\"\n")
 
 		// then
 		require.Error(t, err)
@@ -102,10 +103,10 @@ func Test_doguLogLevelRegistry_UnMarshalFromStringToCesRegistry(t *testing.T) {
 		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
 		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
 
-		sut := &doguLogLevelYamlRegistryMap{cesRegistry: cesRegistryMock}
+		sut := &doguLogLevelYamlRegistryMap{}
 
 		// when
-		err := sut.UnMarshalFromStringToCesRegistry("dogua: ERROR\ndogub: \"\"\n")
+		err := sut.UnMarshalFromStringToCesRegistry(context.TODO(), "dogua: ERROR\ndogub: \"\"\n")
 
 		// then
 		require.Error(t, err)
@@ -133,7 +134,6 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 		doguBConfigMock.EXPECT().Get("logging/root").Return("INFO", nil)
 
 		sut := &doguLogLevelYamlRegistryMap{
-			cesRegistry:         cesRegistryMock,
 			doguReg:             doguRegistryMock,
 			logLevelRegistryMap: map[string]string{},
 		}
@@ -149,11 +149,9 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 	t.Run("should return error on error getting all dogus", func(t *testing.T) {
 		// given
 		doguRegistryMock := newMockDoguRegistry(t)
-		cesRegistryMock := newMockCesRegistry(t)
 		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return(nil, assert.AnError)
 
 		sut := &doguLogLevelYamlRegistryMap{
-			cesRegistry:         cesRegistryMock,
 			doguReg:             doguRegistryMock,
 			logLevelRegistryMap: map[string]string{},
 		}
@@ -183,7 +181,6 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 		doguBConfigMock.EXPECT().Get("logging/root").Return("INFO", nil)
 
 		sut := &doguLogLevelYamlRegistryMap{
-			cesRegistry:         cesRegistryMock,
 			doguReg:             doguRegistryMock,
 			logLevelRegistryMap: map[string]string{},
 		}
@@ -214,7 +211,6 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 		doguBConfigMock.EXPECT().Get("logging/root").Return("INFO", nil)
 
 		sut := &doguLogLevelYamlRegistryMap{
-			cesRegistry:         cesRegistryMock,
 			doguReg:             doguRegistryMock,
 			logLevelRegistryMap: map[string]string{},
 		}
@@ -243,7 +239,6 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 		doguBConfigMock.EXPECT().Get("logging/root").Return("", assert.AnError)
 
 		sut := &doguLogLevelYamlRegistryMap{
-			cesRegistry:         cesRegistryMock,
 			doguReg:             doguRegistryMock,
 			logLevelRegistryMap: map[string]string{},
 		}

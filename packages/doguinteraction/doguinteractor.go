@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cloudogu/cesapp-lib/core"
+	"github.com/cloudogu/k8s-registry-lib/config"
+	"github.com/cloudogu/k8s-registry-lib/repository"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -22,15 +24,15 @@ const (
 )
 
 type defaultDoguInterActor struct {
-	clientSet    clusterClientSet
-	registry     cesRegistry
-	doguRegistry doguRegistry
-	namespace    string
+	clientSet            clusterClientSet
+	doguConfigRepository repository.DoguConfigRepository
+	doguRegistry         doguRegistry
+	namespace            string
 }
 
 // NewDefaultDoguInterActor creates a new instance of defaultDoguInterActor.
-func NewDefaultDoguInterActor(clientSet clusterClientSet, namespace string, registry cesRegistry, doguRegistry doguRegistry) *defaultDoguInterActor {
-	return &defaultDoguInterActor{clientSet: clientSet, namespace: namespace, registry: registry, doguRegistry: doguRegistry}
+func NewDefaultDoguInterActor(doguConfigRepository repository.DoguConfigRepository, clientSet clusterClientSet, namespace string, doguRegistry doguRegistry) *defaultDoguInterActor {
+	return &defaultDoguInterActor{doguConfigRepository: doguConfigRepository, clientSet: clientSet, namespace: namespace, doguRegistry: doguRegistry}
 }
 
 // StartDogu starts the specified dogu.
@@ -198,10 +200,15 @@ func (ddi *defaultDoguInterActor) SetLogLevelInAllDogus(ctx context.Context, log
 
 	var multiError error
 	for _, dogu := range allDogus {
-		doguConfig := ddi.registry.DoguConfig(dogu.GetSimpleName())
-		setErr := doguConfig.Set(doguConfigKeyLogLevel, logLevel)
-		if setErr != nil {
-			multiError = errors.Join(multiError, setErr)
+		doguConfig, _ := ddi.doguConfigRepository.Get(ctx, config.SimpleDoguName(dogu.GetSimpleName()))
+		newConfig, err := doguConfig.Set(doguConfigKeyLogLevel, config.Value(logLevel))
+		if err != nil {
+			multiError = errors.Join(multiError, err)
+		}
+		doguConfig.Config = newConfig
+		_, err = ddi.doguConfigRepository.Update(ctx, doguConfig)
+		if err != nil {
+			multiError = errors.Join(multiError, err)
 		}
 	}
 

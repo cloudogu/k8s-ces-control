@@ -39,10 +39,6 @@ type podInterface interface {
 	corev1.PodInterface
 }
 
-type cesRegistry interface {
-	registry.Registry
-}
-
 type doguRegistry interface {
 	// GetCurrentOfAll retrieves the specs of all dogus' currently installed versions.
 	GetCurrentOfAll(ctx context.Context) ([]*core.Dogu, error)

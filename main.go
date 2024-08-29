@@ -7,8 +7,6 @@ import (
 	pgHealth "github.com/cloudogu/ces-control-api/generated/health"
 	pbLogging "github.com/cloudogu/ces-control-api/generated/logging"
 	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
-	"github.com/cloudogu/cesapp-lib/core"
-	cesregistry "github.com/cloudogu/cesapp-lib/registry"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
 	"github.com/cloudogu/k8s-ces-control/packages/debug"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
@@ -100,14 +98,6 @@ func configureApplication(_ *cli.Context) error {
 }
 
 func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) error {
-	cesReg, err := cesregistry.New(core.Registry{
-		Type:      "etcd",
-		Endpoints: []string{fmt.Sprintf("http://etcd.%s.svc.cluster.local:4001", config.CurrentNamespace)},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create CES registry: %w", err)
-	}
-
 	lokiLogProvider := logging.NewLokiLogProvider(
 		config.CurrentLokiGatewayConfig.Url,
 		config.CurrentLokiGatewayConfig.Username,
@@ -116,21 +106,21 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 
 	doguReg := debug.NewDoguRegistry(
 		dogu.NewDoguVersionRegistry(client.CoreV1().ConfigMaps(config.CurrentNamespace)),
-		nil, //dogu.NewLocalDoguDescriptorRepository(client.CoreV1().ConfigMaps(config.CurrentNamespace)),
 	)
-	globalReg := repository.NewGlobalConfigRepository(client.CoreV1().ConfigMaps(config.CurrentNamespace))
+	globalConfig := repository.NewGlobalConfigRepository(client.CoreV1().ConfigMaps(config.CurrentNamespace))
+	doguConfig := repository.NewDoguConfigRepository(client.CoreV1().ConfigMaps(config.CurrentNamespace))
 	loggingService := logging.NewLoggingService(
 		lokiLogProvider,
-		cesReg,
-		doguinteraction.NewDefaultDoguInterActor(client, config.CurrentNamespace, cesReg, doguReg),
+		*doguConfig,
+		doguinteraction.NewDefaultDoguInterActor(*doguConfig, client, config.CurrentNamespace, doguReg),
 		doguReg,
 		client.AppsV1().Deployments(config.CurrentNamespace),
 	)
 
 	pbLogging.RegisterDoguLogMessagesServer(grpcServer, loggingService)
-	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministration.NewDoguAdministrationServer(client, cesReg, doguReg, config.CurrentNamespace, loggingService))
+	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministration.NewDoguAdministrationServer(*doguConfig, client, doguReg, config.CurrentNamespace, loggingService))
 	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService(client))
-	debugModeService := debug.NewDebugModeService(cesReg, *globalReg, doguReg, client, config.CurrentNamespace)
+	debugModeService := debug.NewDebugModeService(*doguConfig, *globalConfig, doguReg, client, config.CurrentNamespace)
 	pbMaintenance.RegisterDebugModeServer(grpcServer, debugModeService)
 	watcher := debug.NewDefaultConfigMapRegistryWatcher(client.CoreV1().ConfigMaps(config.CurrentNamespace), debugModeService)
 	watcher.StartWatch(context.Background())

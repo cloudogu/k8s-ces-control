@@ -61,7 +61,7 @@ type doguLogLevelRegistry interface {
 	// MarshalFromCesRegistryToString converts the log levels from the ces registry to a string
 	MarshalFromCesRegistryToString(ctx context.Context) (string, error)
 	// UnMarshalFromStringToCesRegistry writes the log level string to the ces registry.
-	UnMarshalFromStringToCesRegistry(unmarshal string) error
+	UnMarshalFromStringToCesRegistry(ctx context.Context, unmarshal string) error
 }
 
 type maintenanceModeSwitch interface {
