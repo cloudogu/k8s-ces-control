@@ -10,11 +10,8 @@ import (
 func Test_defaultMaintenanceModeSwitch_ActivateMaintenanceMode(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// given
-		globalConfig := newMockDoguConfigRepository(t)
 		//globalConfigMock.EXPECT().Set("maintenance", "{\"title\":\"title\",\"text\":\"text\"}").Return(nil)
-		sut := defaultMaintenanceModeSwitch{
-			globalConfig: globalConfig,
-		}
+		sut := defaultMaintenanceModeSwitch{}
 
 		// when
 		err := sut.ActivateMaintenanceMode(context.TODO(), "title", "text")
