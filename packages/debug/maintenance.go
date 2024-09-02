@@ -28,10 +28,6 @@ func NewDefaultMaintenanceModeSwitch(globalConfigRepository repository.GlobalCon
 
 // ActivateMaintenanceMode activates the maintenance mode.
 func (d *defaultMaintenanceModeSwitch) ActivateMaintenanceMode(ctx context.Context, title, text string) error {
-	gConfig, err := d.globalConfig.Get(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get globalConfig: %w", err)
-	}
 	value := maintenanceRegistryObject{
 		Title: title,
 		Text:  text,
@@ -43,11 +39,13 @@ func (d *defaultMaintenanceModeSwitch) ActivateMaintenanceMode(ctx context.Conte
 	}
 
 	maintenanceJsonStr := string(marshal)
-	newGlobalConfig, err := gConfig.Set(maintenanceKey, config.Value(maintenanceJsonStr))
+	newConfig := config.CreateGlobalConfig(make(config.Entries))
+	newConfig.Set(maintenanceKey, config.Value(maintenanceJsonStr))
+	newGlobalConfig, err := d.globalConfig.Update(ctx, newConfig)
 	if err != nil {
 		return err
 	}
-	_, err = d.globalConfig.Update(ctx, config.GlobalConfig{newGlobalConfig})
+	_, err = d.globalConfig.Update(ctx, newGlobalConfig)
 	if err != nil {
 		return fmt.Errorf("failed to set value [%s] with key %s: %w", maintenanceJsonStr, maintenanceKey, err)
 	}

@@ -7,6 +7,8 @@ import (
 	"github.com/cloudogu/cesapp-lib/core"
 	"github.com/cloudogu/cesapp-lib/registry"
 	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
+	"github.com/cloudogu/k8s-registry-lib/config"
+	"github.com/cloudogu/k8s-registry-lib/repository"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
@@ -34,6 +36,19 @@ type cesRegistry interface {
 //goland:noinspection GoUnusedType
 type configurationContext interface {
 	registry.ConfigurationContext
+}
+
+type doguConfig interface {
+	String() string
+	Set(k config.Key, v config.Value) (config.Config, error)
+	Get(k config.Key) (config.Value, bool)
+	GetAll() config.Entries
+	GetChangeHistory() []config.Change
+	Delete(k config.Key) config.Config
+	DeleteRecursive(k config.Key) config.Config
+	DeleteAll() config.Config
+	Diff(other config.Config) []config.DiffResult
+	createCopy() config.Config
 }
 
 //nolint:unused
@@ -83,4 +98,22 @@ type doguInterActor interface {
 type debugModeServer interface {
 	// Disable disables the debug mode.
 	Disable(context.Context, *pbMaintenance.ToggleDebugModeRequest) (*types.BasicResponse, error)
+}
+
+type doguConfigRepository interface {
+	Get(context.Context, config.SimpleDoguName) (config.DoguConfig, error)
+	Delete(context.Context, config.SimpleDoguName) error
+	Create(context.Context, config.DoguConfig) (config.DoguConfig, error)
+	Update(context.Context, config.DoguConfig) (config.DoguConfig, error)
+	SaveOrMerge(context.Context, config.DoguConfig) (config.DoguConfig, error)
+	Watch(ctx context.Context, dName config.SimpleDoguName, filters ...config.WatchFilter) (<-chan repository.DoguConfigWatchResult, error)
+}
+
+type globalConfigRepository interface {
+	Get(context.Context) (config.GlobalConfig, error)
+	Delete(context.Context) error
+	Create(context.Context, config.GlobalConfig) (config.GlobalConfig, error)
+	Update(context.Context, config.GlobalConfig) (config.GlobalConfig, error)
+	SaveOrMerge(context.Context, config.GlobalConfig) (config.GlobalConfig, error)
+	Watch(ctx context.Context, dName config.SimpleDoguName, filters ...config.WatchFilter) (<-chan repository.GlobalConfigWatchResult, error)
 }

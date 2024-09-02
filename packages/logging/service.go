@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/cloudogu/cesapp-lib/core"
 	"github.com/cloudogu/k8s-registry-lib/config"
-	"github.com/cloudogu/k8s-registry-lib/repository"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	v1 "k8s.io/api/apps/v1"
@@ -46,7 +45,7 @@ type deploymentGetter interface {
 }
 
 // NewLoggingService creates a new logging service.
-func NewLoggingService(provider logProvider, doguConfigRepository repository.DoguConfigRepository, restarter doguRestarter, descriptionGetter doguDescriptionGetter, deploymentGetter deploymentGetter) *loggingService {
+func NewLoggingService(provider logProvider, doguConfigRepository doguConfigRepository, restarter doguRestarter, descriptionGetter doguDescriptionGetter, deploymentGetter deploymentGetter) *loggingService {
 	return &loggingService{
 		logProvider:          provider,
 		doguConfigRepository: doguConfigRepository,
@@ -59,7 +58,7 @@ func NewLoggingService(provider logProvider, doguConfigRepository repository.Dog
 type loggingService struct {
 	pb.UnimplementedDoguLogMessagesServer
 	logProvider          logProvider
-	doguConfigRepository repository.DoguConfigRepository
+	doguConfigRepository doguConfigRepository
 	doguRestarter        doguRestarter
 	doguDescriptorGetter doguDescriptionGetter
 	deploymentGetter     deploymentGetter

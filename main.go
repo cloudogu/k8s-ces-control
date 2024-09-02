@@ -112,7 +112,7 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 	loggingService := logging.NewLoggingService(
 		lokiLogProvider,
 		*doguConfig,
-		doguinteraction.NewDefaultDoguInterActor(*doguConfig, client, config.CurrentNamespace, doguReg),
+		doguinteraction.NewDefaultDoguInterActor(doguConfig, client, config.CurrentNamespace, doguReg),
 		doguReg,
 		client.AppsV1().Deployments(config.CurrentNamespace),
 	)

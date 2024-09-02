@@ -3,7 +3,6 @@ package debug
 import (
 	"context"
 	"fmt"
-	"github.com/cloudogu/k8s-registry-lib/repository"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,7 +35,7 @@ type configMapDebugModeRegistry struct {
 }
 
 // NewConfigMapDebugModeRegistry creates a new instance of configMapDebugModeRegistry.
-func NewConfigMapDebugModeRegistry(doguConfigRepository repository.DoguConfigRepository, doguReg doguRegistry, clusterClientSet clusterClientSet, namespace string) *configMapDebugModeRegistry {
+func NewConfigMapDebugModeRegistry(doguConfigRepository doguConfigRepository, doguReg doguRegistry, clusterClientSet clusterClientSet, namespace string) *configMapDebugModeRegistry {
 	return &configMapDebugModeRegistry{
 		configMapInterface:   clusterClientSet.CoreV1().ConfigMaps(namespace),
 		namespace:            namespace,

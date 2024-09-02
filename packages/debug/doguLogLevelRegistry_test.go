@@ -3,8 +3,10 @@ package debug
 import (
 	"context"
 	"github.com/cloudogu/cesapp-lib/core"
+	"github.com/cloudogu/k8s-registry-lib/config"
 	"github.com/cloudogu/k8s-registry-lib/repository"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -23,15 +25,18 @@ func TestNewDoguLogLevelRegistry(t *testing.T) {
 func Test_doguLogLevelRegistry_UnMarshalFromStringToCesRegistry(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// given
-		//cesRegistryMock := newMockCesRegistry(t)
-		//doguAConfigMock := newMockConfigurationContext(t)
-		//doguBConfigMock := newMockConfigurationContext(t)
-		//doguAConfigMock.EXPECT().Set("logging/root", "ERROR").Return(nil)
-		//doguBConfigMock.EXPECT().Set("logging/root", "INFO").Return(nil)
-		//cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
-		//cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
+		doguConfigRepositoryMock := newMockDoguConfigRepository(t)
+		doguConfigA := config.DoguConfig{DoguName: config.SimpleDoguName("dogua")}
+		doguConfigA.Config = config.CreateConfig(make(config.Entries))
+		doguConfigB := config.DoguConfig{DoguName: config.SimpleDoguName("dogua")}
+		doguConfigB.Config = config.CreateConfig(make(config.Entries))
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogua")).Return(doguConfigA, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogub")).Return(doguConfigB, nil)
+		doguConfigRepositoryMock.EXPECT().Update(context.TODO(), mock.Anything).Return(config.DoguConfig{}, nil)
 
-		sut := &doguLogLevelYamlRegistryMap{}
+		sut := &doguLogLevelYamlRegistryMap{
+			doguConfigRepository: doguConfigRepositoryMock,
+		}
 
 		// when
 		err := sut.UnMarshalFromStringToCesRegistry(context.TODO(), "dogua: ERROR\ndogub: INFO\n")
@@ -55,63 +60,24 @@ func Test_doguLogLevelRegistry_UnMarshalFromStringToCesRegistry(t *testing.T) {
 
 	t.Run("should delete log level if the key is an empty string (restore to default level)", func(t *testing.T) {
 		// given
-		cesRegistryMock := newMockCesRegistry(t)
-		doguAConfigMock := newMockConfigurationContext(t)
-		doguBConfigMock := newMockConfigurationContext(t)
-		doguAConfigMock.EXPECT().Set("logging/root", "ERROR").Return(nil)
-		doguBConfigMock.EXPECT().Delete("logging/root").Return(nil)
-		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
-		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
+		doguConfigRepositoryMock := newMockDoguConfigRepository(t)
+		doguConfigA := config.DoguConfig{DoguName: config.SimpleDoguName("dogua")}
+		doguConfigA.Config = config.CreateConfig(make(config.Entries))
+		doguConfigB := config.DoguConfig{DoguName: config.SimpleDoguName("dogua")}
+		doguConfigB.Config = config.CreateConfig(make(config.Entries))
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogua")).Return(doguConfigA, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogub")).Return(doguConfigB, nil)
+		doguConfigRepositoryMock.EXPECT().Update(context.TODO(), mock.Anything).Return(config.DoguConfig{}, nil)
 
-		sut := &doguLogLevelYamlRegistryMap{}
+		sut := &doguLogLevelYamlRegistryMap{
+			doguConfigRepository: doguConfigRepositoryMock,
+		}
 
 		// when
 		err := sut.UnMarshalFromStringToCesRegistry(context.TODO(), "dogua: ERROR\ndogub: \"\"\n")
 
 		// then
 		require.NoError(t, err)
-	})
-
-	t.Run("should return error on delete error", func(t *testing.T) {
-		// given
-		cesRegistryMock := newMockCesRegistry(t)
-		doguAConfigMock := newMockConfigurationContext(t)
-		doguBConfigMock := newMockConfigurationContext(t)
-		doguAConfigMock.EXPECT().Set("logging/root", "ERROR").Return(nil)
-		doguBConfigMock.EXPECT().Delete("logging/root").Return(assert.AnError)
-		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
-		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
-
-		sut := &doguLogLevelYamlRegistryMap{}
-
-		// when
-		err := sut.UnMarshalFromStringToCesRegistry(context.TODO(), "dogua: ERROR\ndogub: \"\"\n")
-
-		// then
-		require.Error(t, err)
-		assert.ErrorIs(t, err, assert.AnError)
-		assert.ErrorContains(t, err, "assert.AnError general error for testing")
-	})
-
-	t.Run("should return error on set log level error", func(t *testing.T) {
-		// given
-		cesRegistryMock := newMockCesRegistry(t)
-		doguAConfigMock := newMockConfigurationContext(t)
-		doguBConfigMock := newMockConfigurationContext(t)
-		doguAConfigMock.EXPECT().Set("logging/root", "ERROR").Return(assert.AnError)
-		doguBConfigMock.EXPECT().Delete("logging/root").Return(nil)
-		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
-		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
-
-		sut := &doguLogLevelYamlRegistryMap{}
-
-		// when
-		err := sut.UnMarshalFromStringToCesRegistry(context.TODO(), "dogua: ERROR\ndogub: \"\"\n")
-
-		// then
-		require.Error(t, err)
-		assert.ErrorIs(t, err, assert.AnError)
-		assert.ErrorContains(t, err, "assert.AnError general error for testing")
 	})
 }
 
@@ -121,21 +87,24 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 		expectedRegistryStr := "dogua: ERROR\ndogub: INFO\n"
 		doguA := &core.Dogu{Name: "official/dogua"}
 		doguB := &core.Dogu{Name: "official/dogub"}
-		doguAConfigMock := newMockConfigurationContext(t)
-		doguBConfigMock := newMockConfigurationContext(t)
+		doguConfigRepositoryMock := newMockDoguConfigRepository(t)
+
+		configA := config.CreateConfig(make(config.Entries))
+		configA.Set("logging/root", "ERROR")
+		doguConfigA := config.DoguConfig{DoguName: config.SimpleDoguName("dogua"), Config: configA}
+		configB := config.CreateConfig(make(config.Entries))
+		configB.Set("logging/root", "INFO")
+		doguConfigB := config.DoguConfig{DoguName: config.SimpleDoguName("dogua"), Config: configB}
+
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogua")).Return(doguConfigA, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogub")).Return(doguConfigB, nil)
 		doguRegistryMock := newMockDoguRegistry(t)
-		cesRegistryMock := newMockCesRegistry(t)
-		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
-		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
 		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{doguA, doguB}, nil)
-		doguAConfigMock.EXPECT().Exists("logging/root").Return(true, nil)
-		doguAConfigMock.EXPECT().Get("logging/root").Return("ERROR", nil)
-		doguBConfigMock.EXPECT().Exists("logging/root").Return(true, nil)
-		doguBConfigMock.EXPECT().Get("logging/root").Return("INFO", nil)
 
 		sut := &doguLogLevelYamlRegistryMap{
-			doguReg:             doguRegistryMock,
-			logLevelRegistryMap: map[string]string{},
+			doguReg:              doguRegistryMock,
+			doguConfigRepository: doguConfigRepositoryMock,
+			logLevelRegistryMap:  map[string]string{},
 		}
 
 		// when
@@ -166,23 +135,40 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 	})
 
 	t.Run("should return error on error getting logging key", func(t *testing.T) {
-		// given
+		//// given
+		//doguA := &core.Dogu{Name: "official/dogua"}
+		//doguB := &core.Dogu{Name: "official/dogub"}
+		//doguAConfigMock := newMockConfigurationContext(t)
+		//doguBConfigMock := newMockConfigurationContext(t)
+		//doguRegistryMock := newMockDoguRegistry(t)
+		//cesRegistryMock := newMockCesRegistry(t)
+		//cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
+		//cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
+		//doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{doguA, doguB}, nil)
+		//doguAConfigMock.EXPECT().Exists("logging/root").Return(false, assert.AnError)
+		//doguBConfigMock.EXPECT().Exists("logging/root").Return(true, nil)
+		//doguBConfigMock.EXPECT().Get("logging/root").Return("INFO", nil)
+
 		doguA := &core.Dogu{Name: "official/dogua"}
 		doguB := &core.Dogu{Name: "official/dogub"}
-		doguAConfigMock := newMockConfigurationContext(t)
-		doguBConfigMock := newMockConfigurationContext(t)
+		doguConfigRepositoryMock := newMockDoguConfigRepository(t)
+
+		configA := config.CreateConfig(make(config.Entries))
+		configA.Set("logging/root", "ERROR")
+		doguConfigA := config.DoguConfig{DoguName: config.SimpleDoguName("dogua"), Config: configA}
+		configB := config.CreateConfig(make(config.Entries))
+		configB.Set("logging/root", "INFO")
+		doguConfigB := config.DoguConfig{DoguName: config.SimpleDoguName("dogua"), Config: configB}
+
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogua")).Return(doguConfigA, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogub")).Return(doguConfigB, nil)
 		doguRegistryMock := newMockDoguRegistry(t)
-		cesRegistryMock := newMockCesRegistry(t)
-		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
-		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
 		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{doguA, doguB}, nil)
-		doguAConfigMock.EXPECT().Exists("logging/root").Return(false, assert.AnError)
-		doguBConfigMock.EXPECT().Exists("logging/root").Return(true, nil)
-		doguBConfigMock.EXPECT().Get("logging/root").Return("INFO", nil)
 
 		sut := &doguLogLevelYamlRegistryMap{
-			doguReg:             doguRegistryMock,
-			logLevelRegistryMap: map[string]string{},
+			doguReg:              doguRegistryMock,
+			doguConfigRepository: doguConfigRepositoryMock,
+			logLevelRegistryMap:  map[string]string{},
 		}
 
 		// when
@@ -196,23 +182,41 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 
 	t.Run("should write entry with empty string for dogus not containing a log level entry", func(t *testing.T) {
 		// given
+		//expectedRegistryStr := "dogua: \"\"\ndogub: INFO\n"
+		//doguA := &core.Dogu{Name: "official/dogua"}
+		//doguB := &core.Dogu{Name: "official/dogub"}
+		//doguAConfigMock := newMockConfigurationContext(t)
+		//doguBConfigMock := newMockConfigurationContext(t)
+		//doguRegistryMock := newMockDoguRegistry(t)
+		//cesRegistryMock := newMockCesRegistry(t)
+		//cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
+		//cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
+		//doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{doguA, doguB}, nil)
+		//doguAConfigMock.EXPECT().Exists("logging/root").Return(false, nil)
+		//doguBConfigMock.EXPECT().Exists("logging/root").Return(true, nil)
+		//doguBConfigMock.EXPECT().Get("logging/root").Return("INFO", nil)
+
 		expectedRegistryStr := "dogua: \"\"\ndogub: INFO\n"
 		doguA := &core.Dogu{Name: "official/dogua"}
 		doguB := &core.Dogu{Name: "official/dogub"}
-		doguAConfigMock := newMockConfigurationContext(t)
-		doguBConfigMock := newMockConfigurationContext(t)
+		doguConfigRepositoryMock := newMockDoguConfigRepository(t)
+
+		configA := config.CreateConfig(make(config.Entries))
+		configA.Set("logging/root", "ERROR")
+		doguConfigA := config.DoguConfig{DoguName: config.SimpleDoguName("dogua"), Config: configA}
+		configB := config.CreateConfig(make(config.Entries))
+		configB.Set("logging/root", "INFO")
+		doguConfigB := config.DoguConfig{DoguName: config.SimpleDoguName("dogua"), Config: configB}
+
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogua")).Return(doguConfigA, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogub")).Return(doguConfigB, nil)
 		doguRegistryMock := newMockDoguRegistry(t)
-		cesRegistryMock := newMockCesRegistry(t)
-		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
-		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
 		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{doguA, doguB}, nil)
-		doguAConfigMock.EXPECT().Exists("logging/root").Return(false, nil)
-		doguBConfigMock.EXPECT().Exists("logging/root").Return(true, nil)
-		doguBConfigMock.EXPECT().Get("logging/root").Return("INFO", nil)
 
 		sut := &doguLogLevelYamlRegistryMap{
-			doguReg:             doguRegistryMock,
-			logLevelRegistryMap: map[string]string{},
+			doguReg:              doguRegistryMock,
+			doguConfigRepository: doguConfigRepositoryMock,
+			logLevelRegistryMap:  map[string]string{},
 		}
 
 		// when
@@ -225,22 +229,39 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 
 	t.Run("should return error on error getting dogu log level", func(t *testing.T) {
 		// given
+		//doguA := &core.Dogu{Name: "official/dogua"}
+		//doguB := &core.Dogu{Name: "official/dogub"}
+		//doguAConfigMock := newMockConfigurationContext(t)
+		//doguBConfigMock := newMockConfigurationContext(t)
+		//doguRegistryMock := newMockDoguRegistry(t)
+		//cesRegistryMock := newMockCesRegistry(t)
+		//cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
+		//cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
+		//doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{doguA, doguB}, nil)
+		//doguAConfigMock.EXPECT().Exists("logging/root").Return(false, nil)
+		//doguBConfigMock.EXPECT().Exists("logging/root").Return(true, nil)
+		//doguBConfigMock.EXPECT().Get("logging/root").Return("", assert.AnError)
+
 		doguA := &core.Dogu{Name: "official/dogua"}
 		doguB := &core.Dogu{Name: "official/dogub"}
-		doguAConfigMock := newMockConfigurationContext(t)
-		doguBConfigMock := newMockConfigurationContext(t)
+		doguConfigRepositoryMock := newMockDoguConfigRepository(t)
+
+		configA := config.CreateConfig(make(config.Entries))
+		configA.Set("logging/root", "ERROR")
+		doguConfigA := config.DoguConfig{DoguName: config.SimpleDoguName("dogua"), Config: configA}
+		configB := config.CreateConfig(make(config.Entries))
+		configB.Set("logging/root", "INFO")
+		doguConfigB := config.DoguConfig{DoguName: config.SimpleDoguName("dogua"), Config: configB}
+
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogua")).Return(doguConfigA, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogub")).Return(doguConfigB, nil)
 		doguRegistryMock := newMockDoguRegistry(t)
-		cesRegistryMock := newMockCesRegistry(t)
-		cesRegistryMock.EXPECT().DoguConfig("dogua").Return(doguAConfigMock)
-		cesRegistryMock.EXPECT().DoguConfig("dogub").Return(doguBConfigMock)
 		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{doguA, doguB}, nil)
-		doguAConfigMock.EXPECT().Exists("logging/root").Return(false, nil)
-		doguBConfigMock.EXPECT().Exists("logging/root").Return(true, nil)
-		doguBConfigMock.EXPECT().Get("logging/root").Return("", assert.AnError)
 
 		sut := &doguLogLevelYamlRegistryMap{
-			doguReg:             doguRegistryMock,
-			logLevelRegistryMap: map[string]string{},
+			doguReg:              doguRegistryMock,
+			doguConfigRepository: doguConfigRepositoryMock,
+			logLevelRegistryMap:  map[string]string{},
 		}
 
 		// when

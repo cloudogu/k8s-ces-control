@@ -9,7 +9,6 @@ import (
 	v1bp "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
-	"github.com/cloudogu/k8s-registry-lib/repository"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -23,10 +22,10 @@ type logService interface {
 }
 
 // NewDoguAdministrationServer returns a new administration server instance to start/stop.. etc. Dogus.
-func NewDoguAdministrationServer(doguConfiRepository repository.DoguConfigRepository, client clusterClient, doguReg doguRegistry, namespace string, logService logService) *server {
+func NewDoguAdministrationServer(doguConfigRepository doguConfigRepository, client clusterClient, doguReg doguRegistry, namespace string, logService logService) *server {
 	return &server{client: client,
 		doguRegistry:   doguReg,
-		doguInterActor: doguinteraction.NewDefaultDoguInterActor(doguConfiRepository, client, namespace, doguReg),
+		doguInterActor: doguinteraction.NewDefaultDoguInterActor(doguConfigRepository, client, namespace, doguReg),
 		ns:             namespace,
 		loggingService: logService,
 	}

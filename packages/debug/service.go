@@ -33,7 +33,7 @@ type defaultDebugModeService struct {
 }
 
 // NewDebugModeService returns an instance of debugModeService.
-func NewDebugModeService(doguConfigRepository repository.DoguConfigRepository, globalConfigRepository repository.GlobalConfigRepository, doguReg doguRegistry, clusterClient clusterClientSet, namespace string) *defaultDebugModeService {
+func NewDebugModeService(doguConfigRepository doguConfigRepository, globalConfigRepository repository.GlobalConfigRepository, doguReg doguRegistry, clusterClient clusterClientSet, namespace string) *defaultDebugModeService {
 	cmDebugModeRegistry := NewConfigMapDebugModeRegistry(doguConfigRepository, doguReg, clusterClient, namespace)
 	return &defaultDebugModeService{
 		clientSet:             clusterClient,

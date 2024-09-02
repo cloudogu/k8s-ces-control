@@ -23,13 +23,19 @@ var testCtx = context.TODO()
 func TestNewDoguAdministrationServer(t *testing.T) {
 	t.Run("server should not be empty", func(t *testing.T) {
 		// given
+		doguConfigRepositoryMock := newMockDoguConfigRepository(t)
 		clientMock := newMockClusterClient(t)
 		doguRegMock := newMockDoguRegistry(t)
-		regMock := newMockCesRegistry(t)
 		loggingMock := newMockLogService(t)
 
 		// when
-		actual := NewDoguAdministrationServer(clientMock, regMock, doguRegMock, "testNamespace", loggingMock)
+		actual := NewDoguAdministrationServer(
+			doguConfigRepositoryMock,
+			clientMock,
+			doguRegMock,
+			"testNamespace",
+			loggingMock,
+		)
 
 		// then
 		assert.NotEmpty(t, actual)

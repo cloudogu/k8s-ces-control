@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/cloudogu/cesapp-lib/core"
 	"github.com/cloudogu/k8s-registry-lib/config"
-	"github.com/cloudogu/k8s-registry-lib/repository"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -25,13 +24,13 @@ const (
 
 type defaultDoguInterActor struct {
 	clientSet            clusterClientSet
-	doguConfigRepository repository.DoguConfigRepository
+	doguConfigRepository doguConfigRepository
 	doguRegistry         doguRegistry
 	namespace            string
 }
 
 // NewDefaultDoguInterActor creates a new instance of defaultDoguInterActor.
-func NewDefaultDoguInterActor(doguConfigRepository repository.DoguConfigRepository, clientSet clusterClientSet, namespace string, doguRegistry doguRegistry) *defaultDoguInterActor {
+func NewDefaultDoguInterActor(doguConfigRepository doguConfigRepository, clientSet clusterClientSet, namespace string, doguRegistry doguRegistry) *defaultDoguInterActor {
 	return &defaultDoguInterActor{doguConfigRepository: doguConfigRepository, clientSet: clientSet, namespace: namespace, doguRegistry: doguRegistry}
 }
 
@@ -205,8 +204,13 @@ func (ddi *defaultDoguInterActor) SetLogLevelInAllDogus(ctx context.Context, log
 		if err != nil {
 			multiError = errors.Join(multiError, err)
 		}
-		doguConfig.Config = newConfig
-		_, err = ddi.doguConfigRepository.Update(ctx, doguConfig)
+
+		newDoguConfig := config.DoguConfig{
+			DoguName: config.SimpleDoguName(dogu.GetSimpleName()),
+			Config:   newConfig,
+		}
+
+		_, err = ddi.doguConfigRepository.Update(ctx, newDoguConfig)
 		if err != nil {
 			multiError = errors.Join(multiError, err)
 		}
