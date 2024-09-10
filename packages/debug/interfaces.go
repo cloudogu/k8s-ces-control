@@ -5,7 +5,6 @@ import (
 	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
 	"github.com/cloudogu/ces-control-api/generated/types"
 	"github.com/cloudogu/cesapp-lib/core"
-	"github.com/cloudogu/cesapp-lib/registry"
 	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
 	"github.com/cloudogu/k8s-registry-lib/config"
 	"k8s.io/client-go/kubernetes"
@@ -25,16 +24,6 @@ type coreV1Interface interface {
 
 type configMapInterface interface {
 	v1.ConfigMapInterface
-}
-
-type cesRegistry interface {
-	registry.Registry
-}
-
-//nolint:unused
-//goland:noinspection GoUnusedType
-type configurationContext interface {
-	registry.ConfigurationContext
 }
 
 type doguConfig interface {
