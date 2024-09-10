@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
-	"github.com/cloudogu/k8s-registry-lib/repository"
 	"github.com/sirupsen/logrus"
 
 	"google.golang.org/grpc/codes"
@@ -33,7 +32,7 @@ type defaultDebugModeService struct {
 }
 
 // NewDebugModeService returns an instance of debugModeService.
-func NewDebugModeService(doguConfigRepository doguConfigRepository, globalConfigRepository repository.GlobalConfigRepository, doguReg doguRegistry, clusterClient clusterClientSet, namespace string) *defaultDebugModeService {
+func NewDebugModeService(doguConfigRepository doguConfigRepository, globalConfigRepository globalConfigRepository, doguReg doguRegistry, clusterClient clusterClientSet, namespace string) *defaultDebugModeService {
 	cmDebugModeRegistry := NewConfigMapDebugModeRegistry(doguConfigRepository, doguReg, clusterClient, namespace)
 	return &defaultDebugModeService{
 		clientSet:             clusterClient,
