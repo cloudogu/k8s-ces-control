@@ -200,14 +200,11 @@ func (s *loggingService) GetLogLevel(ctx context.Context, doguName string) (LogL
 }
 
 func (s *loggingService) getLogLevel(ctx context.Context, doguName string, doguConfig config.DoguConfig) (LogLevel, error) {
-	currentLogLevelStr, err := s.getConfigLogLevel(ctx, doguConfig)
-	if err != nil {
-		return LevelUnknown, fmt.Errorf("could not get log level from config: %w", err)
-	}
+	currentLogLevelStr := s.getConfigLogLevel(ctx, doguConfig)
 
 	if currentLogLevelStr == "" {
 		logrus.Debugf("config log level is empty, try to get default log level from dogu descrption")
-
+		var err error
 		currentLogLevelStr, err = s.getDefaultLogLevel(ctx, doguName)
 		if err != nil {
 			return LevelUnknown, fmt.Errorf("could not get default log level from dogu description: %w", err)
@@ -231,10 +228,10 @@ func (s *loggingService) getLogLevel(ctx context.Context, doguName string, doguC
 	return currentLogLevel, nil
 }
 
-func (s *loggingService) getConfigLogLevel(_ context.Context, dConfig config.DoguConfig) (string, error) {
+func (s *loggingService) getConfigLogLevel(_ context.Context, dConfig config.DoguConfig) string {
 	configLevelStr, _ := dConfig.Get(loggingKey)
 
-	return string(configLevelStr), nil
+	return string(configLevelStr)
 }
 
 func (s *loggingService) getDefaultLogLevel(ctx context.Context, doguName string) (string, error) {
@@ -255,10 +252,15 @@ func (s *loggingService) getDefaultLogLevel(ctx context.Context, doguName string
 	return defaultLevelStr, nil
 }
 
-func (s *loggingService) writeLogLevel(_ context.Context, dConfig config.DoguConfig, l LogLevel) error {
-	_, err := dConfig.Set(loggingKey, config.Value(l.String()))
+func (s *loggingService) writeLogLevel(ctx context.Context, dConfig config.DoguConfig, l LogLevel) error {
+	doguConfig, err := dConfig.Set(loggingKey, config.Value(l.String()))
 	if err != nil {
 		return fmt.Errorf("could not write to dogu config: %w", err)
+	}
+
+	dConfig, err = s.doguConfigRepository.Update(ctx, config.DoguConfig{DoguName: dConfig.DoguName, Config: doguConfig})
+	if err != nil {
+		return fmt.Errorf("could not update dogu config for dogu %q: %w", dConfig.DoguName, err)
 	}
 
 	return nil
