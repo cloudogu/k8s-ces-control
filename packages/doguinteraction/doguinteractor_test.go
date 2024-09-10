@@ -437,13 +437,16 @@ func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 		)
 
 		doguConfigRepositoryMock := newMockDoguConfigRepository(t)
-		doguConfigA := config.DoguConfig{DoguName: config.SimpleDoguName("postgresql")}
-		doguConfigA.Config = config.CreateConfig(make(config.Entries))
-		doguConfigB := config.DoguConfig{DoguName: config.SimpleDoguName("redmine")}
-		doguConfigB.Config = config.CreateConfig(make(config.Entries))
+		doguConfigA := config.CreateDoguConfig("postgresql", config.Entries{})
+		doguConfigB := config.CreateDoguConfig("redmine", config.Entries{})
 		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("postgresql")).Return(doguConfigA, nil)
 		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("redmine")).Return(doguConfigB, nil)
-		doguConfigRepositoryMock.EXPECT().Update(context.TODO(), mock.Anything).Return(config.DoguConfig{}, nil)
+		doguConfigRepositoryMock.EXPECT().Update(context.TODO(), mock.Anything).RunAndReturn(func(ctx context.Context, doguConfig config.DoguConfig) (config.DoguConfig, error) {
+			get, b := doguConfig.Get("logging/root")
+			require.True(t, b)
+			assert.Equal(t, "DEBUG", get.String())
+			return doguConfig, nil
+		}).Times(2)
 
 		sut := defaultDoguInterActor{
 			doguConfigRepository: doguConfigRepositoryMock,
@@ -458,7 +461,7 @@ func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("should return errors on error setting log levels", func(t *testing.T) {
+	t.Run("should return errors on error updating log levels", func(t *testing.T) {
 		// given
 		doguRegistryMock := newMockDoguRegistry(t)
 		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return(
@@ -468,25 +471,21 @@ func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 			},
 			nil,
 		)
-		postgresqlConfigMock := newMockConfigurationContext(t)
-		redmineConfigMock := newMockConfigurationContext(t)
-		postgresqlConfigMock.EXPECT().Set("logging/root", "DEBUG").Return(assert.AnError)
-		redmineConfigMock.EXPECT().Set("logging/root", "DEBUG").Return(assert.AnError)
-
-		//cesRegistryMock.EXPECT().DoguConfig("postgresql").Return(postgresqlConfigMock)
-		//cesRegistryMock.EXPECT().DoguConfig("redmine").Return(redmineConfigMock)
 
 		doguConfigRepositoryMock := newMockDoguConfigRepository(t)
-		doguConfigA := config.DoguConfig{DoguName: config.SimpleDoguName("postgresql")}
-		doguConfigA.Config = config.CreateConfig(make(config.Entries))
-		doguConfigB := config.DoguConfig{DoguName: config.SimpleDoguName("redmine")}
-		doguConfigB.Config = config.CreateConfig(make(config.Entries))
+		doguConfigA := config.CreateDoguConfig("postgresql", config.Entries{})
+		doguConfigB := config.CreateDoguConfig("redmine", config.Entries{})
 		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("postgresql")).Return(doguConfigA, nil)
 		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("redmine")).Return(doguConfigB, nil)
-		doguConfigRepositoryMock.EXPECT().Update(context.TODO(), mock.Anything).Return(config.DoguConfig{}, nil)
+		doguConfigRepositoryMock.EXPECT().Update(context.TODO(), mock.Anything).RunAndReturn(func(ctx context.Context, doguConfig config.DoguConfig) (config.DoguConfig, error) {
+			get, b := doguConfig.Get("logging/root")
+			require.True(t, b)
+			assert.Equal(t, "DEBUG", get.String())
+			return doguConfig, assert.AnError
+		}).Times(2)
 
 		sut := defaultDoguInterActor{
-			doguConfigRepository: repository.DoguConfigRepository{},
+			doguConfigRepository: doguConfigRepositoryMock,
 			doguRegistry:         doguRegistryMock,
 			namespace:            testNamespace,
 		}
