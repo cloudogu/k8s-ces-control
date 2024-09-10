@@ -26,19 +26,6 @@ type configMapInterface interface {
 	v1.ConfigMapInterface
 }
 
-type doguConfig interface {
-	String() string
-	Set(k config.Key, v config.Value) (config.Config, error)
-	Get(k config.Key) (config.Value, bool)
-	GetAll() config.Entries
-	GetChangeHistory() []config.Change
-	Delete(k config.Key) config.Config
-	DeleteRecursive(k config.Key) config.Config
-	DeleteAll() config.Config
-	Diff(other config.Config) []config.DiffResult
-	createCopy() config.Config
-}
-
 //nolint:unused
 //goland:noinspection GoUnusedType
 type doguRegistry interface {

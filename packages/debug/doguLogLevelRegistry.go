@@ -73,7 +73,7 @@ func (d *doguLogLevelYamlRegistryMap) restoreToCesRegistry(ctx context.Context) 
 		// If the dogu had no log level it is defined as an empty string in the registry.
 		// In this case we have to delete the entry.
 		if level == "" {
-			newDoguConfig := doguConfig.Delete(config.Key(keyDoguConfigLogLevel))
+			newDoguConfig := doguConfig.Delete(keyDoguConfigLogLevel)
 			doguConfig.Config = newDoguConfig
 			_, err := d.doguConfigRepository.Update(ctx, doguConfig)
 			if err != nil {
@@ -81,7 +81,7 @@ func (d *doguLogLevelYamlRegistryMap) restoreToCesRegistry(ctx context.Context) 
 			}
 			continue
 		}
-		newDoguConfig, err := doguConfig.Set(config.Key(keyDoguConfigLogLevel), config.Value(level))
+		newDoguConfig, err := doguConfig.Set(keyDoguConfigLogLevel, config.Value(level))
 		if err != nil {
 			multiError = errors.Join(multiError, err)
 			continue
