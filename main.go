@@ -111,16 +111,16 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 	doguConfig := repository.NewDoguConfigRepository(client.CoreV1().ConfigMaps(config.CurrentNamespace))
 	loggingService := logging.NewLoggingService(
 		lokiLogProvider,
-		*doguConfig,
+		doguConfig,
 		doguinteraction.NewDefaultDoguInterActor(doguConfig, client, config.CurrentNamespace, doguReg),
 		doguReg,
 		client.AppsV1().Deployments(config.CurrentNamespace),
 	)
 
 	pbLogging.RegisterDoguLogMessagesServer(grpcServer, loggingService)
-	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministration.NewDoguAdministrationServer(*doguConfig, client, doguReg, config.CurrentNamespace, loggingService))
+	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministration.NewDoguAdministrationServer(doguConfig, client, doguReg, config.CurrentNamespace, loggingService))
 	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService(client))
-	debugModeService := debug.NewDebugModeService(*doguConfig, *globalConfig, doguReg, client, config.CurrentNamespace)
+	debugModeService := debug.NewDebugModeService(doguConfig, globalConfig, doguReg, client, config.CurrentNamespace)
 	pbMaintenance.RegisterDebugModeServer(grpcServer, debugModeService)
 	watcher := debug.NewDefaultConfigMapRegistryWatcher(client.CoreV1().ConfigMaps(config.CurrentNamespace), debugModeService)
 	watcher.StartWatch(context.Background())
