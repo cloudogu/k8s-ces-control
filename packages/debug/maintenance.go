@@ -5,13 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/cloudogu/k8s-registry-lib/config"
-	"github.com/cloudogu/k8s-registry-lib/repository"
 )
 
 const maintenanceKey = "maintenance"
 
 type defaultMaintenanceModeSwitch struct {
-	globalConfig repository.GlobalConfigRepository
+	globalConfigRepo globalConfigRepository
 }
 
 type maintenanceRegistryObject struct {
@@ -20,9 +19,9 @@ type maintenanceRegistryObject struct {
 }
 
 // NewDefaultMaintenanceModeSwitch creates a new instance of defaultMaintenanceModeSwitch.
-func NewDefaultMaintenanceModeSwitch(globalConfigRepository repository.GlobalConfigRepository) *defaultMaintenanceModeSwitch {
+func NewDefaultMaintenanceModeSwitch(globalConfigRepository globalConfigRepository) *defaultMaintenanceModeSwitch {
 	return &defaultMaintenanceModeSwitch{
-		globalConfig: globalConfigRepository,
+		globalConfigRepo: globalConfigRepository,
 	}
 }
 
@@ -35,19 +34,24 @@ func (d *defaultMaintenanceModeSwitch) ActivateMaintenanceMode(ctx context.Conte
 
 	marshal, err := json.Marshal(value)
 	if err != nil {
-		return fmt.Errorf("failed to marshal maintenance globalConfig value object [%+v]: %w", value, err)
+		return fmt.Errorf("failed to marshal maintenance globalConfigRepo value object [%+v]: %w", value, err)
 	}
 
 	maintenanceJsonStr := string(marshal)
-	newConfig := config.CreateGlobalConfig(make(config.Entries))
-	newConfig.Set(maintenanceKey, config.Value(maintenanceJsonStr))
-	newGlobalConfig, err := d.globalConfig.Update(ctx, newConfig)
+
+	globalConfig, err := d.globalConfigRepo.Get(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get global config: %w", err)
 	}
-	_, err = d.globalConfig.Update(ctx, newGlobalConfig)
+
+	updatedGlobalConfig, err := globalConfig.Set(maintenanceKey, config.Value(maintenanceJsonStr))
 	if err != nil {
-		return fmt.Errorf("failed to set value [%s] with key %s: %w", maintenanceJsonStr, maintenanceKey, err)
+		return fmt.Errorf("failed to set global config key %q value %q: %w", maintenanceKey, maintenanceJsonStr, err)
+	}
+
+	_, err = d.globalConfigRepo.Update(ctx, config.GlobalConfig{Config: updatedGlobalConfig})
+	if err != nil {
+		return fmt.Errorf("failed update global config for key %q value %s: %w", maintenanceKey, maintenanceJsonStr, err)
 	}
 
 	return nil
@@ -55,20 +59,17 @@ func (d *defaultMaintenanceModeSwitch) ActivateMaintenanceMode(ctx context.Conte
 
 // DeactivateMaintenanceMode deactivates the maintenance mode.
 func (d *defaultMaintenanceModeSwitch) DeactivateMaintenanceMode(ctx context.Context) error {
-	gConfig, err := d.globalConfig.Get(ctx)
+	gConfig, err := d.globalConfigRepo.Get(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get globalConfig: %w", err)
 	}
+
 	newGlobalConfig := gConfig.Delete(maintenanceKey)
 
-	_, err = d.globalConfig.Update(ctx, config.GlobalConfig{newGlobalConfig})
+	_, err = d.globalConfigRepo.Update(ctx, config.GlobalConfig{Config: newGlobalConfig})
 	if err != nil {
-		return fmt.Errorf("failed to delete key %s: %w", maintenanceKey, err)
+		return fmt.Errorf("failed to update global config for key %q: %w", maintenanceKey, err)
 	}
 
-	_, err = d.globalConfig.Update(ctx, config.GlobalConfig{newGlobalConfig})
-	if err != nil {
-		return fmt.Errorf("failed to delete key %s: %w", maintenanceKey, err)
-	}
 	return nil
 }
