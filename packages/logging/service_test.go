@@ -719,4 +719,26 @@ func Test_loggingService_GetLogLevel(t *testing.T) {
 		require.Error(t, err)
 		assert.ErrorContains(t, err, "could not get current log level")
 	})
+
+	t.Run("should return error if the current loglevel is empty and error getting default loglevel", func(t *testing.T) {
+		// given
+		mockedLogProvider := newMockLogProvider(t)
+		mockedDoguConfigRepository := newMockDoguConfigRepository(t)
+		mockedDoguRestarter := newMockDoguRestarter(t)
+		mockedDescriptionGetter := newMockDoguDescriptionGetter(t)
+		mockedDeploymentGetter := newMockDeploymentGetter(t)
+
+		mockedDoguConfigRepository.EXPECT().Get(context.TODO(), config.SimpleDoguName("test")).Return(config.DoguConfig{}, nil)
+		mockedDescriptionGetter.EXPECT().GetCurrent(context.TODO(), "test").Return(nil, assert.AnError)
+
+		sut := NewLoggingService(mockedLogProvider, mockedDoguConfigRepository, mockedDoguRestarter, mockedDescriptionGetter, mockedDeploymentGetter)
+
+		// when
+		_, err := sut.GetLogLevel(context.TODO(), "test")
+
+		// then
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "could not get default log level from dogu description")
+		assert.ErrorIs(t, err, assert.AnError)
+	})
 }

@@ -75,6 +75,27 @@ func Test_doguLogLevelRegistry_UnMarshalFromStringToCesRegistry(t *testing.T) {
 		// then
 		require.NoError(t, err)
 	})
+
+	t.Run("should return multi error on error update configmaps", func(t *testing.T) {
+		// given
+		doguConfigRepositoryMock := newMockDoguConfigRepository(t)
+		doguConfigA := config.CreateDoguConfig("dogua", config.Entries{})
+		doguConfigB := config.CreateDoguConfig("dogub", config.Entries{})
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogua")).Return(doguConfigA, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogub")).Return(doguConfigB, nil)
+		doguConfigRepositoryMock.EXPECT().Update(context.TODO(), mock.Anything).Return(config.DoguConfig{}, assert.AnError).Times(2)
+
+		sut := &doguLogLevelYamlRegistryMap{
+			doguConfigRepository: doguConfigRepositoryMock,
+		}
+
+		// when
+		err := sut.UnMarshalFromStringToCesRegistry(context.TODO(), "dogua: ERROR\ndogub: \"\"\n")
+
+		// then
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "failed to update dogu config for dogu dogua: assert.AnError general error for testing\nfailed to update dogu config for dogu dogub: assert.AnError general error for testing")
+	})
 }
 
 func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {

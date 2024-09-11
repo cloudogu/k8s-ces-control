@@ -77,7 +77,7 @@ func (d *doguLogLevelYamlRegistryMap) restoreToCesRegistry(ctx context.Context) 
 			doguConfig.Config = newDoguConfig
 			_, err := d.doguConfigRepository.Update(ctx, doguConfig)
 			if err != nil {
-				multiError = errors.Join(multiError, err)
+				multiError = errors.Join(multiError, getDoguConfigUpdateError(dogu, err))
 			}
 			continue
 		}
@@ -89,10 +89,14 @@ func (d *doguLogLevelYamlRegistryMap) restoreToCesRegistry(ctx context.Context) 
 		doguConfig.Config = newDoguConfig
 		_, err = d.doguConfigRepository.Update(ctx, doguConfig)
 		if err != nil {
-			multiError = errors.Join(multiError, err)
+			multiError = errors.Join(multiError, getDoguConfigUpdateError(dogu, err))
 		}
 		continue
 	}
 
 	return multiError
+}
+
+func getDoguConfigUpdateError(dogu string, err error) error {
+	return fmt.Errorf("failed to update dogu config for dogu %s: %w", dogu, err)
 }

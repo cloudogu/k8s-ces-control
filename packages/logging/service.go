@@ -245,7 +245,7 @@ func (s *loggingService) getConfigLogLevel(_ context.Context, dConfig config.Dog
 func (s *loggingService) getDefaultLogLevel(ctx context.Context, doguName string) (string, error) {
 	doguDescription, err := s.doguDescriptorGetter.GetCurrent(ctx, doguName)
 	if err != nil {
-		return "", fmt.Errorf("could not get dogu description for dogu %s", doguName)
+		return "", fmt.Errorf("could not get dogu description for dogu %s: %w", doguName, err)
 	}
 
 	var defaultLevelStr string
