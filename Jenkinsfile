@@ -88,7 +88,7 @@ node('docker') {
                                          "k8s-loki":     ["version": "latest", "helmRepositoryNamespace": "k8s"],
                                          "k8s-promtail": ["version": "latest", "helmRepositoryNamespace": "k8s"],
                 ])
-                k3d.setup("0.20.0")
+                k3d.setup("2.0.1")
             }
 
             stage("Wait for Setup") {
