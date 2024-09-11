@@ -10,6 +10,7 @@ RUN go mod download
 
 ## Copy golang source code
 COPY main.go ${WORKDIR}/
+COPY interfaces.go ${WORKDIR}/
 COPY packages ${WORKDIR}/packages
 COPY .git ${WORKDIR}/.git
 
