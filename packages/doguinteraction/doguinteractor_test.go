@@ -25,7 +25,7 @@ func TestNewDefaultDoguInterActor(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// given
 		clientSetMock := newMockClusterClientSet(t)
-		doguRegistryMock := newMockDoguRegistry(t)
+		doguRegistryMock := newMockDoguDescriptorGetter(t)
 
 		// when
 		actor := NewDefaultDoguInterActor(repository.DoguConfigRepository{}, clientSetMock, testNamespace, doguRegistryMock)
@@ -266,10 +266,10 @@ func Test_defaultDoguInterActor_StopDogu(t *testing.T) {
 func Test_defaultDoguInterActor_StartAllDogus(t *testing.T) {
 	t.Run("should return error on get all dogus error", func(t *testing.T) {
 		// given
-		doguRegistryMock := newMockDoguRegistry(t)
+		doguRegistryMock := newMockDoguDescriptorGetter(t)
 		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return(nil, assert.AnError)
 		sut := defaultDoguInterActor{
-			doguRegistry: doguRegistryMock,
+			doguDescriptorGetter: doguRegistryMock,
 		}
 
 		// when
@@ -291,7 +291,7 @@ func Test_defaultDoguInterActor_StartAllDogus(t *testing.T) {
 		waitInterval = time.Second * 1
 		defer func() { waitInterval = oldWaitInterval }()
 
-		doguRegistryMock := newMockDoguRegistry(t)
+		doguRegistryMock := newMockDoguDescriptorGetter(t)
 		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine", Dependencies: []core.Dependency{{Name: "postgresql"}}}}, nil)
 
 		clientSetMock := newMockClusterClientSet(t)
@@ -316,7 +316,7 @@ func Test_defaultDoguInterActor_StartAllDogus(t *testing.T) {
 		})
 
 		sut := defaultDoguInterActor{
-			doguRegistry:         doguRegistryMock,
+			doguDescriptorGetter: doguRegistryMock,
 			doguConfigRepository: repository.DoguConfigRepository{},
 			clientSet:            clientSetMock,
 			namespace:            testNamespace,
@@ -355,11 +355,11 @@ func Test_defaultDoguInterActor_StopAllDogus(t *testing.T) {
 	t.Run("should return error on get all dogus error", func(t *testing.T) {
 		// given
 
-		doguRegistryMock := newMockDoguRegistry(t)
+		doguRegistryMock := newMockDoguDescriptorGetter(t)
 		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return(nil, assert.AnError)
 		sut := defaultDoguInterActor{
 			doguConfigRepository: repository.DoguConfigRepository{},
-			doguRegistry:         doguRegistryMock,
+			doguDescriptorGetter: doguRegistryMock,
 		}
 
 		// when
@@ -381,7 +381,7 @@ func Test_defaultDoguInterActor_StopAllDogus(t *testing.T) {
 		waitInterval = time.Second * 1
 		defer func() { waitInterval = oldWaitInterval }()
 
-		doguRegistryMock := newMockDoguRegistry(t)
+		doguRegistryMock := newMockDoguDescriptorGetter(t)
 		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine", Dependencies: []core.Dependency{{Name: "postgresql"}}}}, nil)
 
 		clientSetMock := newMockClusterClientSet(t)
@@ -407,7 +407,7 @@ func Test_defaultDoguInterActor_StopAllDogus(t *testing.T) {
 
 		sut := defaultDoguInterActor{
 			doguConfigRepository: repository.DoguConfigRepository{},
-			doguRegistry:         doguRegistryMock,
+			doguDescriptorGetter: doguRegistryMock,
 			clientSet:            clientSetMock,
 			namespace:            testNamespace,
 		}
@@ -427,7 +427,7 @@ func Test_defaultDoguInterActor_StopAllDogus(t *testing.T) {
 func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// given
-		doguRegistryMock := newMockDoguRegistry(t)
+		doguRegistryMock := newMockDoguDescriptorGetter(t)
 		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return(
 			[]*core.Dogu{
 				{Name: "official/postgresql"},
@@ -450,7 +450,7 @@ func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 
 		sut := defaultDoguInterActor{
 			doguConfigRepository: doguConfigRepositoryMock,
-			doguRegistry:         doguRegistryMock,
+			doguDescriptorGetter: doguRegistryMock,
 			namespace:            testNamespace,
 		}
 
@@ -463,7 +463,7 @@ func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 
 	t.Run("should return errors on error updating log levels", func(t *testing.T) {
 		// given
-		doguRegistryMock := newMockDoguRegistry(t)
+		doguRegistryMock := newMockDoguDescriptorGetter(t)
 		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return(
 			[]*core.Dogu{
 				{Name: "official/postgresql"},
@@ -486,7 +486,7 @@ func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 
 		sut := defaultDoguInterActor{
 			doguConfigRepository: doguConfigRepositoryMock,
-			doguRegistry:         doguRegistryMock,
+			doguDescriptorGetter: doguRegistryMock,
 			namespace:            testNamespace,
 		}
 
@@ -501,12 +501,12 @@ func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 
 	t.Run("should return errors on error getting current dogus", func(t *testing.T) {
 		// given
-		doguRegistryMock := newMockDoguRegistry(t)
+		doguRegistryMock := newMockDoguDescriptorGetter(t)
 		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return(nil, assert.AnError)
 
 		sut := defaultDoguInterActor{
 			doguConfigRepository: repository.DoguConfigRepository{},
-			doguRegistry:         doguRegistryMock,
+			doguDescriptorGetter: doguRegistryMock,
 			namespace:            testNamespace,
 		}
 

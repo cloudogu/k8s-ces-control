@@ -12,12 +12,12 @@ const keyDoguConfigLogLevel = "logging/root"
 
 type doguLogLevelYamlRegistryMap struct {
 	doguConfigRepository doguConfigRepository
-	doguReg              doguRegistry
+	doguReg              doguDescriptorGetter
 	logLevelRegistryMap  map[string]string
 }
 
 // NewDoguLogLevelRegistryMap creates an instance of doguLogLevelYamlRegistryMap.
-func NewDoguLogLevelRegistryMap(doguConfig doguConfigRepository, doguReg doguRegistry) *doguLogLevelYamlRegistryMap {
+func NewDoguLogLevelRegistryMap(doguConfig doguConfigRepository, doguReg doguDescriptorGetter) *doguLogLevelYamlRegistryMap {
 	return &doguLogLevelYamlRegistryMap{
 		doguConfigRepository: doguConfig,
 		doguReg:              doguReg,

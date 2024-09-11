@@ -35,11 +35,11 @@ type configMapDebugModeRegistry struct {
 }
 
 // NewConfigMapDebugModeRegistry creates a new instance of configMapDebugModeRegistry.
-func NewConfigMapDebugModeRegistry(doguConfigRepository doguConfigRepository, doguReg doguRegistry, clusterClientSet clusterClientSet, namespace string) *configMapDebugModeRegistry {
+func NewConfigMapDebugModeRegistry(doguConfigRepository doguConfigRepository, doguDescriptorGetter doguDescriptorGetter, clusterClientSet clusterClientSet, namespace string) *configMapDebugModeRegistry {
 	return &configMapDebugModeRegistry{
 		configMapInterface:   clusterClientSet.CoreV1().ConfigMaps(namespace),
 		namespace:            namespace,
-		doguLogLevelRegistry: NewDoguLogLevelRegistryMap(doguConfigRepository, doguReg),
+		doguLogLevelRegistry: NewDoguLogLevelRegistryMap(doguConfigRepository, doguDescriptorGetter),
 	}
 }
 

@@ -25,13 +25,13 @@ const (
 type defaultDoguInterActor struct {
 	clientSet            clusterClientSet
 	doguConfigRepository doguConfigRepository
-	doguRegistry         doguRegistry
+	doguDescriptorGetter doguDescriptorGetter
 	namespace            string
 }
 
 // NewDefaultDoguInterActor creates a new instance of defaultDoguInterActor.
-func NewDefaultDoguInterActor(doguConfigRepository doguConfigRepository, clientSet clusterClientSet, namespace string, doguRegistry doguRegistry) *defaultDoguInterActor {
-	return &defaultDoguInterActor{doguConfigRepository: doguConfigRepository, clientSet: clientSet, namespace: namespace, doguRegistry: doguRegistry}
+func NewDefaultDoguInterActor(doguConfigRepository doguConfigRepository, clientSet clusterClientSet, namespace string, doguDescriptorGetter doguDescriptorGetter) *defaultDoguInterActor {
+	return &defaultDoguInterActor{doguConfigRepository: doguConfigRepository, clientSet: clientSet, namespace: namespace, doguDescriptorGetter: doguDescriptorGetter}
 }
 
 // StartDogu starts the specified dogu.
@@ -192,7 +192,7 @@ func (ddi *defaultDoguInterActor) isDoguContainerInCrashLoop(ctx context.Context
 
 // SetLogLevelInAllDogus sets the specified log level to all dogus.
 func (ddi *defaultDoguInterActor) SetLogLevelInAllDogus(ctx context.Context, logLevel string) error {
-	allDogus, err := ddi.doguRegistry.GetCurrentOfAll(ctx)
+	allDogus, err := ddi.doguDescriptorGetter.GetCurrentOfAll(ctx)
 	if err != nil {
 		return getAllDogusError(err)
 	}
@@ -221,7 +221,7 @@ func (ddi *defaultDoguInterActor) SetLogLevelInAllDogus(ctx context.Context, log
 
 // StopAllDogus stops all dogus in the correct dependency order.
 func (ddi *defaultDoguInterActor) StopAllDogus(ctx context.Context) error {
-	allDogus, err := ddi.doguRegistry.GetCurrentOfAll(ctx)
+	allDogus, err := ddi.doguDescriptorGetter.GetCurrentOfAll(ctx)
 	if err != nil {
 		return getAllDogusError(err)
 	}
@@ -240,7 +240,7 @@ func (ddi *defaultDoguInterActor) StopAllDogus(ctx context.Context) error {
 
 // StartAllDogus starts all dogus in the correct dependency order.
 func (ddi *defaultDoguInterActor) StartAllDogus(ctx context.Context) error {
-	allDogus, err := ddi.doguRegistry.GetCurrentOfAll(ctx)
+	allDogus, err := ddi.doguDescriptorGetter.GetCurrentOfAll(ctx)
 	if err != nil {
 		return getAllDogusError(err)
 	}

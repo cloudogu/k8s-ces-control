@@ -95,25 +95,27 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 		config.CurrentLokiGatewayConfig.Password,
 	)
 
-	doguReg := debug.NewDoguRegistry(
-		dogu.NewDoguVersionRegistry(client.CoreV1().ConfigMaps(config.CurrentNamespace)),
+	configMapClient := client.CoreV1().ConfigMaps(config.CurrentNamespace)
+	doguDescriptorGetter := debug.NewDoguGetter(
+		dogu.NewDoguVersionRegistry(configMapClient),
+		dogu.NewLocalDoguDescriptorRepository(configMapClient),
 	)
-	globalConfig := repository.NewGlobalConfigRepository(client.CoreV1().ConfigMaps(config.CurrentNamespace))
-	doguConfig := repository.NewDoguConfigRepository(client.CoreV1().ConfigMaps(config.CurrentNamespace))
+	globalConfig := repository.NewGlobalConfigRepository(configMapClient)
+	doguConfig := repository.NewDoguConfigRepository(configMapClient)
 	loggingService := logging.NewLoggingService(
 		lokiLogProvider,
 		doguConfig,
-		doguinteraction.NewDefaultDoguInterActor(doguConfig, client, config.CurrentNamespace, doguReg),
-		doguReg,
+		doguinteraction.NewDefaultDoguInterActor(doguConfig, client, config.CurrentNamespace, doguDescriptorGetter),
+		doguDescriptorGetter,
 		client.AppsV1().Deployments(config.CurrentNamespace),
 	)
 
 	pbLogging.RegisterDoguLogMessagesServer(grpcServer, loggingService)
-	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministration.NewDoguAdministrationServer(doguConfig, client, doguReg, config.CurrentNamespace, loggingService))
+	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministration.NewDoguAdministrationServer(doguConfig, client, doguDescriptorGetter, config.CurrentNamespace, loggingService))
 	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService(client))
-	debugModeService := debug.NewDebugModeService(doguConfig, globalConfig, doguReg, client, config.CurrentNamespace)
+	debugModeService := debug.NewDebugModeService(doguConfig, globalConfig, doguDescriptorGetter, client, config.CurrentNamespace)
 	pbMaintenance.RegisterDebugModeServer(grpcServer, debugModeService)
-	watcher := debug.NewDefaultConfigMapRegistryWatcher(client.CoreV1().ConfigMaps(config.CurrentNamespace), debugModeService)
+	watcher := debug.NewDefaultConfigMapRegistryWatcher(configMapClient, debugModeService)
 	watcher.StartWatch(context.Background())
 
 	// health endpoint used to determine the healthiness of the app

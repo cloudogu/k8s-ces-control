@@ -111,11 +111,11 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 
 		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogua")).Return(doguConfigA, nil)
 		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogub")).Return(doguConfigB, nil)
-		doguRegistryMock := newMockDoguRegistry(t)
-		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{doguA, doguB}, nil)
+		doguDescriptionGetter := newMockDoguDescriptorGetter(t)
+		doguDescriptionGetter.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{doguA, doguB}, nil)
 
 		sut := &doguLogLevelYamlRegistryMap{
-			doguReg:              doguRegistryMock,
+			doguReg:              doguDescriptionGetter,
 			doguConfigRepository: doguConfigRepositoryMock,
 			logLevelRegistryMap:  map[string]string{},
 		}
@@ -130,11 +130,11 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 
 	t.Run("should return error on error getting all dogus", func(t *testing.T) {
 		// given
-		doguRegistryMock := newMockDoguRegistry(t)
-		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return(nil, assert.AnError)
+		descriptorGetter := newMockDoguDescriptorGetter(t)
+		descriptorGetter.EXPECT().GetCurrentOfAll(testCtx).Return(nil, assert.AnError)
 
 		sut := &doguLogLevelYamlRegistryMap{
-			doguReg:             doguRegistryMock,
+			doguReg:             descriptorGetter,
 			logLevelRegistryMap: map[string]string{},
 		}
 
@@ -159,11 +159,11 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 
 		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogua")).Return(doguConfigA, nil)
 		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogub")).Return(doguConfigB, nil)
-		doguRegistryMock := newMockDoguRegistry(t)
-		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{doguA, doguB}, nil)
+		descriptorGetter := newMockDoguDescriptorGetter(t)
+		descriptorGetter.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{doguA, doguB}, nil)
 
 		sut := &doguLogLevelYamlRegistryMap{
-			doguReg:              doguRegistryMock,
+			doguReg:              descriptorGetter,
 			doguConfigRepository: doguConfigRepositoryMock,
 			logLevelRegistryMap:  map[string]string{},
 		}

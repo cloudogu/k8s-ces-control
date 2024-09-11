@@ -40,7 +40,7 @@ type doguRestarter interface {
 	RestartDogu(ctx context.Context, doguName string) error
 }
 
-type doguDescriptionGetter interface {
+type doguDescriptorGetter interface {
 	GetCurrent(ctx context.Context, simpleDoguName string) (*core.Dogu, error)
 }
 
@@ -49,12 +49,12 @@ type deploymentGetter interface {
 }
 
 // NewLoggingService creates a new logging service.
-func NewLoggingService(provider logProvider, doguConfigRepository doguConfigRepository, restarter doguRestarter, descriptionGetter doguDescriptionGetter, deploymentGetter deploymentGetter) *loggingService {
+func NewLoggingService(provider logProvider, doguConfigRepository doguConfigRepository, restarter doguRestarter, doguDescriptorGetter doguDescriptorGetter, deploymentGetter deploymentGetter) *loggingService {
 	return &loggingService{
 		logProvider:          provider,
 		doguConfigRepository: doguConfigRepository,
 		doguRestarter:        restarter,
-		doguDescriptorGetter: descriptionGetter,
+		doguDescriptorGetter: doguDescriptorGetter,
 		deploymentGetter:     deploymentGetter,
 	}
 }
@@ -64,7 +64,7 @@ type loggingService struct {
 	logProvider          logProvider
 	doguConfigRepository doguConfigRepository
 	doguRestarter        doguRestarter
-	doguDescriptorGetter doguDescriptionGetter
+	doguDescriptorGetter doguDescriptorGetter
 	deploymentGetter     deploymentGetter
 }
 

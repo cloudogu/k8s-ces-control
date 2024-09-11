@@ -12,7 +12,7 @@ import (
 func TestNewdefaultDebugModeService(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// given
-		doguRegistryMock := newMockDoguRegistry(t)
+		doguDescriptionGetterMock := newMockDoguDescriptorGetter(t)
 
 		clientSetMock := newMockClusterClientSet(t)
 		coreV1Mock := newMockCoreV1Interface(t)
@@ -21,7 +21,7 @@ func TestNewdefaultDebugModeService(t *testing.T) {
 		coreV1Mock.EXPECT().ConfigMaps(testNamespace).Return(configMapClientMock)
 
 		// when
-		service := NewDebugModeService(repository.DoguConfigRepository{}, repository.GlobalConfigRepository{}, doguRegistryMock, clientSetMock, testNamespace)
+		service := NewDebugModeService(repository.DoguConfigRepository{}, repository.GlobalConfigRepository{}, doguDescriptionGetterMock, clientSetMock, testNamespace)
 
 		// then
 		require.NotNil(t, service)
@@ -360,7 +360,7 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 	})
 }
 
-//func Test_defaultDebugModeService_Status(t *testing.T) {
+// func Test_defaultDebugModeService_Status(t *testing.T) {
 //	t.Run("success", func(t *testing.T) {
 //		// given
 //		debugModeRegistryMock := newMockDebugModeRegistry(t)
@@ -389,4 +389,4 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 //		require.Error(t, err)
 //		assert.ErrorContains(t, err, "rpc error: code = Internal desc = failed to get status of debug mode registry")
 //	})
-//}
+// }
