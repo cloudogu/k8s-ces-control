@@ -1,5 +1,5 @@
 #!groovy
-@Library('github.com/cloudogu/ces-build-lib@2.2.1')
+@Library('github.com/cloudogu/ces-build-lib@c15248caf3b1953e471e2fd7a0291bf944997a9b')
 import com.cloudogu.ces.cesbuildlib.*
 
 // Creating necessary git objects, object cannot be named 'git' as this conflicts with the method named 'git' from the library
@@ -87,8 +87,12 @@ node('docker') {
                 k3d.configureComponents(["k8s-minio":    ["version": "latest", "helmRepositoryNamespace": "k8s"],
                                          "k8s-loki":     ["version": "latest", "helmRepositoryNamespace": "k8s"],
                                          "k8s-promtail": ["version": "latest", "helmRepositoryNamespace": "k8s"],
+                                         // TODO Delete blueprint-operator and crd null values if the component runs in multinode.
+                                         "k8s-blueprint-operator": null,
+                                         "k8s-blueprint-operator-crd": null,
                 ])
-                k3d.setup("2.0.1")
+                // TODO Delete dependencies and use default if the usermgt dogu runs in multinode.
+                k3d.setup("2.0.1", ["dependencies": ["official/ldap", "official/cas", "k8s/nginx-ingress", "k8s/nginx-static", "official/postfix"]])
             }
 
             stage("Wait for Setup") {
