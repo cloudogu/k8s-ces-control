@@ -26,7 +26,11 @@ var (
 	errMissingDoguName = errors.New("dogu name should not be empty")
 )
 
-const loggingKey = "logging/root"
+const (
+	loggingKey                = "logging/root"
+	logLevelNotFoundErrMsg    = "could not get current log level"
+	logLevelNotFoundErrMsgFmt = "%s: %w"
+)
 
 type doguLogMessagesServer interface {
 	pb.DoguLogMessages_GetForDoguServer
@@ -155,12 +159,12 @@ func (s *loggingService) ApplyLogLevelWithRestart(ctx context.Context, req *pb.L
 func (s *loggingService) setLogLevel(ctx context.Context, doguName string, l LogLevel) (bool, error) {
 	doguConfig, err := s.doguConfigRepository.Get(ctx, config.SimpleDoguName(doguName))
 	if err != nil {
-		return false, fmt.Errorf("could not get current log level: %w", err)
+		return false, logLevelNotFoundError(err)
 	}
 
 	currentLogLevel, err := s.getLogLevel(ctx, doguName, doguConfig)
 	if err != nil {
-		return false, fmt.Errorf("could not get current log level: %w", err)
+		return false, logLevelNotFoundError(err)
 	}
 
 	if currentLogLevel == l {
@@ -193,10 +197,14 @@ func (s *loggingService) setLogLevel(ctx context.Context, doguName string, l Log
 func (s *loggingService) GetLogLevel(ctx context.Context, doguName string) (LogLevel, error) {
 	doguConfig, err := s.doguConfigRepository.Get(ctx, config.SimpleDoguName(doguName))
 	if err != nil {
-		return 0, fmt.Errorf("could not get current log level: %w", err)
+		return 0, logLevelNotFoundError(err)
 	}
 
 	return s.getLogLevel(ctx, doguName, doguConfig)
+}
+
+func logLevelNotFoundError(err error) error {
+	return fmt.Errorf(logLevelNotFoundErrMsgFmt, logLevelNotFoundErrMsg, err)
 }
 
 func (s *loggingService) getLogLevel(ctx context.Context, doguName string, doguConfig config.DoguConfig) (LogLevel, error) {
