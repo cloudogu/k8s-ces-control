@@ -75,7 +75,7 @@ func (_c *mockGlobalConfigRepository_Get_Call) RunAndReturn(run func(context.Con
 	return _c
 }
 
-// Update provides a mock function with given fields: ctx, globalConfigRepo
+// Update provides a mock function with given fields: ctx, globalConfig
 func (_m *mockGlobalConfigRepository) Update(ctx context.Context, globalConfig config.GlobalConfig) (config.GlobalConfig, error) {
 	ret := _m.Called(ctx, globalConfig)
 
@@ -106,7 +106,7 @@ type mockGlobalConfigRepository_Update_Call struct {
 
 // Update is a helper method to define mock.On call
 //   - ctx context.Context
-//   - globalConfigRepo config.GlobalConfig
+//   - globalConfig config.GlobalConfig
 func (_e *mockGlobalConfigRepository_Expecter) Update(ctx interface{}, globalConfig interface{}) *mockGlobalConfigRepository_Update_Call {
 	return &mockGlobalConfigRepository_Update_Call{Call: _e.mock.On("Update", ctx, globalConfig)}
 }

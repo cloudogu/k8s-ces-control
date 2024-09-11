@@ -13,13 +13,10 @@ import (
 	"github.com/cloudogu/k8s-ces-control/packages/doguHealth"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
-	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
 	"github.com/cloudogu/k8s-registry-lib/dogu"
 	"github.com/cloudogu/k8s-registry-lib/repository"
 	"net"
 	"os"
-
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -38,12 +35,6 @@ var (
 	// Version of the application
 	Version string
 )
-
-type clusterClient interface {
-	ecoSystem.EcoSystemV1Alpha1Interface
-	doguAdministration.BlueprintLister
-	kubernetes.Interface
-}
 
 func main() {
 	err := startCesControl()
