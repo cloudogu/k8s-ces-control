@@ -13,6 +13,7 @@ import (
 	"github.com/cloudogu/k8s-ces-control/packages/doguHealth"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
+	"github.com/cloudogu/k8s-ces-control/packages/util"
 	"github.com/cloudogu/k8s-registry-lib/dogu"
 	"github.com/cloudogu/k8s-registry-lib/repository"
 	"net"
@@ -96,7 +97,7 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 	)
 
 	configMapClient := client.CoreV1().ConfigMaps(config.CurrentNamespace)
-	doguDescriptorGetter := debug.NewDoguGetter(
+	doguDescriptorGetter := util.NewDoguGetter(
 		dogu.NewDoguVersionRegistry(configMapClient),
 		dogu.NewLocalDoguDescriptorRepository(configMapClient),
 	)

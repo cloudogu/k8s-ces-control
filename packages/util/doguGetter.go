@@ -1,4 +1,4 @@
-package debug
+package util
 
 import (
 	"context"
@@ -8,11 +8,11 @@ import (
 )
 
 type doguGetter struct {
-	versionRegistry dogu.DoguVersionRegistry
-	doguRepository  dogu.LocalDoguDescriptorRepository
+	versionRegistry doguVersionRegistry
+	doguRepository  localDoguDescriptorRepository
 }
 
-func NewDoguGetter(versionRegistry dogu.DoguVersionRegistry, doguRepository dogu.LocalDoguDescriptorRepository) *doguGetter {
+func NewDoguGetter(versionRegistry doguVersionRegistry, doguRepository localDoguDescriptorRepository) *doguGetter {
 	return &doguGetter{
 		versionRegistry: versionRegistry,
 		doguRepository:  doguRepository,
