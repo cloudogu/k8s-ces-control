@@ -3,8 +3,6 @@
 Die Informationen zum Debug-Mode, wie zum Beispiel Log-Level, werden im Gegensatz zu `cesappd` anders gespeichert.
 Für diese Informationen existiert eine Registry in der Configmap `debug-mode-registry`.
 Diese wird beim Aktivieren erstellt und beim Deaktivieren wieder gelöscht.
-Es wurde von der regulären CES-Registry im ETCD abgesehen, weil im Kubernetes-Kontext noch andere Values in die Registry
-einfließen (z.B. Log-Level anderer Komponenten im Cluster).
 
 ## Werte, die in der Registry enthalten sind:
 

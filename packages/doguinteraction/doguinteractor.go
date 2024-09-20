@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cloudogu/cesapp-lib/core"
+	"github.com/cloudogu/k8s-registry-lib/config"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -22,15 +23,15 @@ const (
 )
 
 type defaultDoguInterActor struct {
-	clientSet    clusterClientSet
-	registry     cesRegistry
-	doguRegistry doguRegistry
-	namespace    string
+	clientSet            clusterClientSet
+	doguConfigRepository doguConfigRepository
+	doguDescriptorGetter doguDescriptorGetter
+	namespace            string
 }
 
 // NewDefaultDoguInterActor creates a new instance of defaultDoguInterActor.
-func NewDefaultDoguInterActor(clientSet clusterClientSet, namespace string, registry cesRegistry, doguRegistry doguRegistry) *defaultDoguInterActor {
-	return &defaultDoguInterActor{clientSet: clientSet, namespace: namespace, registry: registry, doguRegistry: doguRegistry}
+func NewDefaultDoguInterActor(doguConfigRepository doguConfigRepository, clientSet clusterClientSet, namespace string, doguDescriptorGetter doguDescriptorGetter) *defaultDoguInterActor {
+	return &defaultDoguInterActor{doguConfigRepository: doguConfigRepository, clientSet: clientSet, namespace: namespace, doguDescriptorGetter: doguDescriptorGetter}
 }
 
 // StartDogu starts the specified dogu.
@@ -191,17 +192,27 @@ func (ddi *defaultDoguInterActor) isDoguContainerInCrashLoop(ctx context.Context
 
 // SetLogLevelInAllDogus sets the specified log level to all dogus.
 func (ddi *defaultDoguInterActor) SetLogLevelInAllDogus(ctx context.Context, logLevel string) error {
-	allDogus, err := ddi.doguRegistry.GetCurrentOfAll(ctx)
+	allDogus, err := ddi.doguDescriptorGetter.GetCurrentOfAll(ctx)
 	if err != nil {
 		return getAllDogusError(err)
 	}
 
 	var multiError error
 	for _, dogu := range allDogus {
-		doguConfig := ddi.registry.DoguConfig(dogu.GetSimpleName())
-		setErr := doguConfig.Set(doguConfigKeyLogLevel, logLevel)
-		if setErr != nil {
-			multiError = errors.Join(multiError, setErr)
+		doguConfig, _ := ddi.doguConfigRepository.Get(ctx, config.SimpleDoguName(dogu.GetSimpleName()))
+		newConfig, err := doguConfig.Set(doguConfigKeyLogLevel, config.Value(logLevel))
+		if err != nil {
+			multiError = errors.Join(multiError, err)
+		}
+
+		newDoguConfig := config.DoguConfig{
+			DoguName: config.SimpleDoguName(dogu.GetSimpleName()),
+			Config:   newConfig,
+		}
+
+		_, err = ddi.doguConfigRepository.Update(ctx, newDoguConfig)
+		if err != nil {
+			multiError = errors.Join(multiError, err)
 		}
 	}
 
@@ -210,7 +221,7 @@ func (ddi *defaultDoguInterActor) SetLogLevelInAllDogus(ctx context.Context, log
 
 // StopAllDogus stops all dogus in the correct dependency order.
 func (ddi *defaultDoguInterActor) StopAllDogus(ctx context.Context) error {
-	allDogus, err := ddi.doguRegistry.GetCurrentOfAll(ctx)
+	allDogus, err := ddi.doguDescriptorGetter.GetCurrentOfAll(ctx)
 	if err != nil {
 		return getAllDogusError(err)
 	}
@@ -229,7 +240,7 @@ func (ddi *defaultDoguInterActor) StopAllDogus(ctx context.Context) error {
 
 // StartAllDogus starts all dogus in the correct dependency order.
 func (ddi *defaultDoguInterActor) StartAllDogus(ctx context.Context) error {
-	allDogus, err := ddi.doguRegistry.GetCurrentOfAll(ctx)
+	allDogus, err := ddi.doguDescriptorGetter.GetCurrentOfAll(ctx)
 	if err != nil {
 		return getAllDogusError(err)
 	}

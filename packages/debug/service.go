@@ -24,7 +24,6 @@ const (
 
 type defaultDebugModeService struct {
 	pbMaintenance.UnimplementedDebugModeServer
-	globalConfig          configurationContext
 	clientSet             clusterClientSet
 	debugModeRegistry     debugModeRegistry
 	maintenanceModeSwitch maintenanceModeSwitch
@@ -33,15 +32,14 @@ type defaultDebugModeService struct {
 }
 
 // NewDebugModeService returns an instance of debugModeService.
-func NewDebugModeService(registry cesRegistry, doguReg doguRegistry, clusterClient clusterClientSet, namespace string) *defaultDebugModeService {
-	cmDebugModeRegistry := NewConfigMapDebugModeRegistry(registry, doguReg, clusterClient, namespace)
+func NewDebugModeService(doguConfigRepository doguConfigRepository, globalConfigRepository globalConfigRepository, doguDescriptorGetter doguDescriptorGetter, clusterClient clusterClientSet, namespace string) *defaultDebugModeService {
+	cmDebugModeRegistry := NewConfigMapDebugModeRegistry(doguConfigRepository, doguDescriptorGetter, clusterClient, namespace)
 	return &defaultDebugModeService{
-		globalConfig:          registry.GlobalConfig(),
 		clientSet:             clusterClient,
 		debugModeRegistry:     cmDebugModeRegistry,
-		maintenanceModeSwitch: NewDefaultMaintenanceModeSwitch(registry.GlobalConfig()),
+		maintenanceModeSwitch: NewDefaultMaintenanceModeSwitch(globalConfigRepository),
 		namespace:             namespace,
-		doguInterActor:        doguinteraction.NewDefaultDoguInterActor(clusterClient, namespace, registry, doguReg),
+		doguInterActor:        doguinteraction.NewDefaultDoguInterActor(doguConfigRepository, clusterClient, namespace, doguDescriptorGetter),
 	}
 }
 
@@ -49,13 +47,13 @@ func NewDebugModeService(registry cesRegistry, doguReg doguRegistry, clusterClie
 func (s *defaultDebugModeService) Enable(ctx context.Context, req *pbMaintenance.ToggleDebugModeRequest) (*types.BasicResponse, error) {
 	logrus.Info("Starting to enable debug-mode...")
 
-	err := s.maintenanceModeSwitch.ActivateMaintenanceMode(maintenanceTitle, activateMaintenanceText)
+	err := s.maintenanceModeSwitch.ActivateMaintenanceMode(ctx, maintenanceTitle, activateMaintenanceText)
 	if err != nil {
 		return nil, createInternalError(fmt.Errorf("failed to activate maintenance mode: %w", err))
 	}
 
 	defer func() {
-		err = s.maintenanceModeSwitch.DeactivateMaintenanceMode()
+		err = s.maintenanceModeSwitch.DeactivateMaintenanceMode(ctx)
 		if err != nil {
 			logrus.Error(fmt.Errorf("failed to deactivate maintenance mode: %w", err), interErrMsg)
 		}
@@ -127,13 +125,13 @@ func wrapRollBackErr(err error) error {
 // Disable returns an error because the method is unimplemented.
 func (s *defaultDebugModeService) Disable(ctx context.Context, _ *pbMaintenance.ToggleDebugModeRequest) (*types.BasicResponse, error) {
 	logrus.Info("Starting to disable debug-mode...")
-	err := s.maintenanceModeSwitch.ActivateMaintenanceMode(maintenanceTitle, deactivateMaintenanceText)
+	err := s.maintenanceModeSwitch.ActivateMaintenanceMode(ctx, maintenanceTitle, deactivateMaintenanceText)
 	if err != nil {
 		return nil, createInternalError(fmt.Errorf("failed to activate maintenance mode: %w", err))
 	}
 
 	defer func() {
-		err = s.maintenanceModeSwitch.DeactivateMaintenanceMode()
+		err = s.maintenanceModeSwitch.DeactivateMaintenanceMode(ctx)
 		if err != nil {
 			logrus.Error(fmt.Errorf("failed to deactivate maintenance mode: %w", err), interErrMsg)
 		}

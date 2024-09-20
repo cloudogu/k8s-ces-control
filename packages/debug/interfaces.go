@@ -5,8 +5,8 @@ import (
 	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
 	"github.com/cloudogu/ces-control-api/generated/types"
 	"github.com/cloudogu/cesapp-lib/core"
-	"github.com/cloudogu/cesapp-lib/registry"
 	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
+	"github.com/cloudogu/k8s-registry-lib/config"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
@@ -26,19 +26,9 @@ type configMapInterface interface {
 	v1.ConfigMapInterface
 }
 
-type cesRegistry interface {
-	registry.Registry
-}
-
 //nolint:unused
 //goland:noinspection GoUnusedType
-type configurationContext interface {
-	registry.ConfigurationContext
-}
-
-//nolint:unused
-//goland:noinspection GoUnusedType
-type doguRegistry interface {
+type doguDescriptorGetter interface {
 	// GetCurrentOfAll retrieves the specs of all dogus' currently installed versions.
 	GetCurrentOfAll(ctx context.Context) ([]*core.Dogu, error)
 }
@@ -61,14 +51,14 @@ type doguLogLevelRegistry interface {
 	// MarshalFromCesRegistryToString converts the log levels from the ces registry to a string
 	MarshalFromCesRegistryToString(ctx context.Context) (string, error)
 	// UnMarshalFromStringToCesRegistry writes the log level string to the ces registry.
-	UnMarshalFromStringToCesRegistry(unmarshal string) error
+	UnMarshalFromStringToCesRegistry(ctx context.Context, unmarshal string) error
 }
 
 type maintenanceModeSwitch interface {
 	// ActivateMaintenanceMode activates the maintenance mode
-	ActivateMaintenanceMode(title, text string) error
+	ActivateMaintenanceMode(ctx context.Context, title, text string) error
 	// DeactivateMaintenanceMode deactivates the maintenance mode.
-	DeactivateMaintenanceMode() error
+	DeactivateMaintenanceMode(ctx context.Context) error
 }
 
 type doguInterActor interface {
@@ -83,4 +73,14 @@ type doguInterActor interface {
 type debugModeServer interface {
 	// Disable disables the debug mode.
 	Disable(context.Context, *pbMaintenance.ToggleDebugModeRequest) (*types.BasicResponse, error)
+}
+
+type doguConfigRepository interface {
+	Get(context.Context, config.SimpleDoguName) (config.DoguConfig, error)
+	Update(context.Context, config.DoguConfig) (config.DoguConfig, error)
+}
+
+type globalConfigRepository interface {
+	Get(ctx context.Context) (config.GlobalConfig, error)
+	Update(ctx context.Context, globalConfig config.GlobalConfig) (config.GlobalConfig, error)
 }

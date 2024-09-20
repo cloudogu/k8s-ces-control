@@ -35,18 +35,6 @@ func Test_startCesControl(tt *testing.T) {
 }
 
 func Test_registerServices(tt *testing.T) {
-	tt.Run("Should fail on error in registry", func(t *testing.T) {
-		// given
-		mockGrpcServerRegistrar := &mockServiceRegistrar{registeredServices: []string{}}
-		config.CurrentNamespace = "%31$:://:../dir%25"
-
-		// when
-		err := registerServices(nil, mockGrpcServerRegistrar)
-
-		// then
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed to create CES registry: failed to create etcd client: parse \"http://etcd.%31$:://:../dir%25.svc.cluster.local:4001\"")
-	})
 
 	tt.Run("Should success to register Services", func(t *testing.T) {
 		// given
