@@ -73,13 +73,13 @@ func (_c *mockDoguLogLevelRegistry_MarshalFromCesRegistryToString_Call) RunAndRe
 	return _c
 }
 
-// UnMarshalFromStringToCesRegistry provides a mock function with given fields: unmarshal
-func (_m *mockDoguLogLevelRegistry) UnMarshalFromStringToCesRegistry(unmarshal string) error {
-	ret := _m.Called(unmarshal)
+// UnMarshalFromStringToCesRegistry provides a mock function with given fields: ctx, unmarshal
+func (_m *mockDoguLogLevelRegistry) UnMarshalFromStringToCesRegistry(ctx context.Context, unmarshal string) error {
+	ret := _m.Called(ctx, unmarshal)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(unmarshal)
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, unmarshal)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -93,14 +93,15 @@ type mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call struct {
 }
 
 // UnMarshalFromStringToCesRegistry is a helper method to define mock.On call
+//   - ctx context.Context
 //   - unmarshal string
-func (_e *mockDoguLogLevelRegistry_Expecter) UnMarshalFromStringToCesRegistry(unmarshal interface{}) *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call {
-	return &mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call{Call: _e.mock.On("UnMarshalFromStringToCesRegistry", unmarshal)}
+func (_e *mockDoguLogLevelRegistry_Expecter) UnMarshalFromStringToCesRegistry(ctx interface{}, unmarshal interface{}) *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call {
+	return &mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call{Call: _e.mock.On("UnMarshalFromStringToCesRegistry", ctx, unmarshal)}
 }
 
-func (_c *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call) Run(run func(unmarshal string)) *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call {
+func (_c *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call) Run(run func(ctx context.Context, unmarshal string)) *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string))
+		run(args[0].(context.Context), args[1].(string))
 	})
 	return _c
 }
@@ -110,7 +111,7 @@ func (_c *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call) Return
 	return _c
 }
 
-func (_c *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call) RunAndReturn(run func(string) error) *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call {
+func (_c *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call) RunAndReturn(run func(context.Context, string) error) *mockDoguLogLevelRegistry_UnMarshalFromStringToCesRegistry_Call {
 	_c.Call.Return(run)
 	return _c
 }

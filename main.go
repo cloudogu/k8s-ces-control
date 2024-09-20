@@ -3,25 +3,21 @@ package main
 import (
 	"context"
 	"fmt"
-	"net"
-	"os"
-
 	pbDoguAdministration "github.com/cloudogu/ces-control-api/generated/doguAdministration"
 	pgHealth "github.com/cloudogu/ces-control-api/generated/health"
 	pbLogging "github.com/cloudogu/ces-control-api/generated/logging"
 	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
-	"github.com/cloudogu/cesapp-lib/core"
-	cesregistry "github.com/cloudogu/cesapp-lib/registry"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
 	"github.com/cloudogu/k8s-ces-control/packages/debug"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
 	"github.com/cloudogu/k8s-ces-control/packages/doguHealth"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
-	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
+	"github.com/cloudogu/k8s-ces-control/packages/util"
 	"github.com/cloudogu/k8s-registry-lib/dogu"
-
-	"k8s.io/client-go/kubernetes"
+	"github.com/cloudogu/k8s-registry-lib/repository"
+	"net"
+	"os"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -40,12 +36,6 @@ var (
 	// Version of the application
 	Version string
 )
-
-type clusterClient interface {
-	ecoSystem.EcoSystemV1Alpha1Interface
-	doguAdministration.BlueprintLister
-	kubernetes.Interface
-}
 
 func main() {
 	err := startCesControl()
@@ -100,35 +90,33 @@ func configureApplication(_ *cli.Context) error {
 }
 
 func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) error {
-	cesReg, err := cesregistry.New(core.Registry{
-		Type:      "etcd",
-		Endpoints: []string{fmt.Sprintf("http://etcd.%s.svc.cluster.local:4001", config.CurrentNamespace)},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create CES registry: %w", err)
-	}
-
 	lokiLogProvider := logging.NewLokiLogProvider(
 		config.CurrentLokiGatewayConfig.Url,
 		config.CurrentLokiGatewayConfig.Username,
 		config.CurrentLokiGatewayConfig.Password,
 	)
 
-	doguReg := dogu.NewLocalRegistry(client.CoreV1().ConfigMaps(config.CurrentNamespace))
+	configMapClient := client.CoreV1().ConfigMaps(config.CurrentNamespace)
+	doguDescriptorGetter := util.NewDoguGetter(
+		dogu.NewDoguVersionRegistry(configMapClient),
+		dogu.NewLocalDoguDescriptorRepository(configMapClient),
+	)
+	globalConfig := repository.NewGlobalConfigRepository(configMapClient)
+	doguConfig := repository.NewDoguConfigRepository(configMapClient)
 	loggingService := logging.NewLoggingService(
 		lokiLogProvider,
-		cesReg,
-		doguinteraction.NewDefaultDoguInterActor(client, config.CurrentNamespace, cesReg, doguReg),
-		doguReg,
+		doguConfig,
+		doguinteraction.NewDefaultDoguInterActor(doguConfig, client, config.CurrentNamespace, doguDescriptorGetter),
+		doguDescriptorGetter,
 		client.AppsV1().Deployments(config.CurrentNamespace),
 	)
 
 	pbLogging.RegisterDoguLogMessagesServer(grpcServer, loggingService)
-	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministration.NewDoguAdministrationServer(client, cesReg, doguReg, config.CurrentNamespace, loggingService))
+	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministration.NewDoguAdministrationServer(doguConfig, client, doguDescriptorGetter, config.CurrentNamespace, loggingService))
 	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService(client))
-	debugModeService := debug.NewDebugModeService(cesReg, doguReg, client, config.CurrentNamespace)
+	debugModeService := debug.NewDebugModeService(doguConfig, globalConfig, doguDescriptorGetter, client, config.CurrentNamespace)
 	pbMaintenance.RegisterDebugModeServer(grpcServer, debugModeService)
-	watcher := debug.NewDefaultConfigMapRegistryWatcher(client.CoreV1().ConfigMaps(config.CurrentNamespace), debugModeService)
+	watcher := debug.NewDefaultConfigMapRegistryWatcher(configMapClient, debugModeService)
 	watcher.StartWatch(context.Background())
 
 	// health endpoint used to determine the healthiness of the app

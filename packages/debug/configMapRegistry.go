@@ -3,7 +3,6 @@ package debug
 import (
 	"context"
 	"fmt"
-	cesregistry "github.com/cloudogu/cesapp-lib/registry"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,19 +29,17 @@ var maxThirtySecondsBackoff = wait.Backoff{
 }
 
 type configMapDebugModeRegistry struct {
-	cesRegistry          cesregistry.Registry
 	doguLogLevelRegistry doguLogLevelRegistry
 	configMapInterface   configMapInterface
 	namespace            string
 }
 
 // NewConfigMapDebugModeRegistry creates a new instance of configMapDebugModeRegistry.
-func NewConfigMapDebugModeRegistry(cesRegistry cesregistry.Registry, doguReg doguRegistry, clusterClientSet clusterClientSet, namespace string) *configMapDebugModeRegistry {
+func NewConfigMapDebugModeRegistry(doguConfigRepository doguConfigRepository, doguDescriptorGetter doguDescriptorGetter, clusterClientSet clusterClientSet, namespace string) *configMapDebugModeRegistry {
 	return &configMapDebugModeRegistry{
-		cesRegistry:          cesRegistry,
 		configMapInterface:   clusterClientSet.CoreV1().ConfigMaps(namespace),
 		namespace:            namespace,
-		doguLogLevelRegistry: NewDoguLogLevelRegistryMap(cesRegistry, doguReg),
+		doguLogLevelRegistry: NewDoguLogLevelRegistryMap(doguConfigRepository, doguDescriptorGetter),
 	}
 }
 
@@ -259,7 +256,7 @@ func (c *configMapDebugModeRegistry) RestoreDoguLogLevels(ctx context.Context) e
 		return fmt.Errorf("missing registry key %s", keyDoguLogLevel)
 	}
 
-	err = c.doguLogLevelRegistry.UnMarshalFromStringToCesRegistry(doguLogLevelData)
+	err = c.doguLogLevelRegistry.UnMarshalFromStringToCesRegistry(ctx, doguLogLevelData)
 	if err != nil {
 		return fmt.Errorf("failed to restore dogu log level [%s]: %w", doguLogLevelData, err)
 	}

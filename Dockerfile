@@ -10,6 +10,7 @@ RUN go mod download
 
 ## Copy golang source code
 COPY main.go ${WORKDIR}/
+COPY interfaces.go ${WORKDIR}/
 COPY packages ${WORKDIR}/packages
 COPY .git ${WORKDIR}/.git
 
@@ -30,7 +31,7 @@ WORKDIR ${WORKDIR}
 
 LABEL maintainer="hello@cloudogu.com" \
     NAME="k8s-ces-control" \
-    VERSION="0.10.0"
+    VERSION="0.11.0"
 
 COPY --from=backendBuilder /k8s-ces-control/target/k8s-ces-control ${WORKDIR}/k8s-ces-control
 

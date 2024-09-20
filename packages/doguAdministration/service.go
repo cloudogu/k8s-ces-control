@@ -22,17 +22,17 @@ type logService interface {
 }
 
 // NewDoguAdministrationServer returns a new administration server instance to start/stop.. etc. Dogus.
-func NewDoguAdministrationServer(client clusterClient, reg cesRegistry, doguReg doguRegistry, namespace string, logService logService) *server {
+func NewDoguAdministrationServer(doguConfigRepository doguConfigRepository, client clusterClient, doguDescriptorGetter doguDescriptorGetter, namespace string, logService logService) *server {
 	return &server{client: client,
-		doguRegistry:   doguReg,
-		doguInterActor: doguinteraction.NewDefaultDoguInterActor(client, namespace, reg, doguReg),
-		ns:             namespace,
-		loggingService: logService,
+		doguDescriptorGetter: doguDescriptorGetter,
+		doguInterActor:       doguinteraction.NewDefaultDoguInterActor(doguConfigRepository, client, namespace, doguDescriptorGetter),
+		ns:                   namespace,
+		loggingService:       logService,
 	}
 }
 
 type server struct {
-	doguRegistry doguRegistry
+	doguDescriptorGetter doguDescriptorGetter
 	pb.UnimplementedDoguAdministrationServer
 	client         clusterClient
 	doguInterActor doguInterActor
@@ -91,7 +91,7 @@ func getGRPCInternalDoguActionError(verb string, err error) error {
 
 // GetDoguList returns the list of dogus to administrate (all)
 func (s *server) GetDoguList(ctx context.Context, _ *pb.DoguListRequest) (*pb.DoguListResponse, error) {
-	doguJsonList, err := s.doguRegistry.GetCurrentOfAll(ctx)
+	doguJsonList, err := s.doguDescriptorGetter.GetCurrentOfAll(ctx)
 	if err != nil {
 		err = fmt.Errorf("failed to get dogu registry: %w", err)
 		logrus.Error(err)
