@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed
-- [#39] Fix helm dependency version constraint for loki and allow version > 2
+- [#39] Fix helm dependency version constraint for loki and allow versions >=2.9.1-0
 
 ## [v0.11.0] - 2024-09-20
 ### Changed
