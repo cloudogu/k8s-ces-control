@@ -1,7 +1,7 @@
 manager:
   image:
     repository: cloudogu/k8s-ces-control
-    tag: 0.11.0
+    tag: 0.11.1
   imagePullPolicy: IfNotPresent
   replicas: 1
   env:
