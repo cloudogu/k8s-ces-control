@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.11.1] - 2024-10-07
+### Fixed
+- [#39] Fix helm dependency version constraint for loki and allow loki versions >=2.9.1-0 and <4.0.0-0
+
 ## [v0.11.0] - 2024-09-20
 ### Changed
 - [#35] - Use k8s-registry-lib to read and write log level
