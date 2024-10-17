@@ -48,7 +48,7 @@ import (
 
 	discoveryv1beta1 "k8s.io/client-go/kubernetes/typed/discovery/v1beta1"
 
-	ecoSystem "github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
+	ecoSystem "github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
 
 	eventsv1 "k8s.io/client-go/kubernetes/typed/events/v1"
 

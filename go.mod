@@ -1,16 +1,14 @@
 module github.com/cloudogu/k8s-ces-control
 
-go 1.22.0
-
-toolchain go1.22.5
+go 1.23.2
 
 require (
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/cloudogu/ces-control-api v1.3.0
-	github.com/cloudogu/cesapp-lib v0.12.2
-	github.com/cloudogu/k8s-blueprint-operator v1.0.0
-	github.com/cloudogu/k8s-dogu-operator v1.2.0
-	github.com/cloudogu/k8s-registry-lib v0.4.0
+	github.com/cloudogu/cesapp-lib v0.14.0
+	github.com/cloudogu/k8s-blueprint-operator v0.0.0-20241004150236-4f3222c0dcf0
+	github.com/cloudogu/k8s-dogu-operator/v2 v2.0.2-0.20241017073713-08ff048a6dd8
+	github.com/cloudogu/k8s-registry-lib v0.4.1
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
@@ -18,9 +16,9 @@ require (
 	google.golang.org/grpc v1.66.1
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.31.0
-	k8s.io/apimachinery v0.31.0
-	k8s.io/client-go v0.31.0
+	k8s.io/api v0.31.1
+	k8s.io/apimachinery v0.31.1
+	k8s.io/client-go v0.31.1
 	sigs.k8s.io/controller-runtime v0.19.0
 )
 
@@ -28,7 +26,6 @@ require (
 	github.com/Masterminds/semver/v3 v3.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/eapache/go-resiliency v1.7.0 // indirect
@@ -67,9 +64,6 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
-	go.etcd.io/etcd/api/v3 v3.5.14 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.14 // indirect
-	go.etcd.io/etcd/client/v2 v2.305.14 // indirect
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
 	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
