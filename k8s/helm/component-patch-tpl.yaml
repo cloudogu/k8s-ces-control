@@ -6,5 +6,6 @@ patches:
   values.yaml:
     manager:
       image:
-        repository: "{{ registryFrom .images.cesControl }}/{{ repositoryFrom .images.cesControl }}"
+        registry: "{{ registryFrom .images.cesControl }}"
+        repository: "{{ repositoryFrom .images.cesControl }}"
         tag: "{{ tagFrom .images.cesControl }}"
