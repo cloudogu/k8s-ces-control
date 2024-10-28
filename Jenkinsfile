@@ -91,7 +91,7 @@ node('docker') {
                                          "k8s-blueprint-operator": null,
                                          "k8s-blueprint-operator-crd": null,
                 ])
-                k3d.setup()
+                k3d.setup('3.0.0')
             }
 
             stage("Wait for Setup") {
