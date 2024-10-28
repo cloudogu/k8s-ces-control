@@ -91,8 +91,7 @@ node('docker') {
                                          "k8s-blueprint-operator": null,
                                          "k8s-blueprint-operator-crd": null,
                 ])
-                // TODO Delete dependencies and use default if the usermgt dogu runs in multinode.
-                k3d.setup(["dependencies": ["official/ldap", "official/cas", "k8s/nginx-ingress", "k8s/nginx-static", "official/postfix"]])
+                k3d.setup()
             }
 
             stage("Wait for Setup") {
