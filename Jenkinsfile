@@ -1,5 +1,5 @@
 #!groovy
-@Library('github.com/cloudogu/ces-build-lib@2.4.0')
+@Library('github.com/cloudogu/ces-build-lib@3.0.0')
 import com.cloudogu.ces.cesbuildlib.*
 
 // Creating necessary git objects, object cannot be named 'git' as this conflicts with the method named 'git' from the library
@@ -12,7 +12,7 @@ changelog = new Changelog(this)
 Docker docker = new Docker(this)
 gpg = new Gpg(this, docker)
 Makefile makefile = new Makefile(this)
-goVersion = "1.22.4"
+goVersion = "1.23.2"
 
 // Configuration of repository
 repositoryOwner = "cloudogu"
@@ -92,7 +92,7 @@ node('docker') {
                                          "k8s-blueprint-operator-crd": null,
                 ])
                 // TODO Delete dependencies and use default if the usermgt dogu runs in multinode.
-                k3d.setup("2.0.1", ["dependencies": ["official/ldap", "official/cas", "k8s/nginx-ingress", "k8s/nginx-static", "official/postfix"]])
+                k3d.setup("3.0.0", ["dependencies": ["official/ldap", "official/cas", "k8s/nginx-ingress", "k8s/nginx-static", "official/postfix"]])
             }
 
             stage("Wait for Setup") {

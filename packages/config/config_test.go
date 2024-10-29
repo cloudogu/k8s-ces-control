@@ -1,6 +1,7 @@
 package config
 
 import (
+	v2 "github.com/cloudogu/k8s-dogu-operator/v2/api/v2"
 	"os"
 	"strings"
 	"testing"
@@ -9,8 +10,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd/api"
 	ctrl "sigs.k8s.io/controller-runtime"
-
-	doguApiV1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -336,13 +335,13 @@ func TestCreateClusterClient(t *testing.T) {
 		}
 		ctrl.GetConfig = dummyConfigFunc
 
-		originalAddSchemeFunc := doguApiV1.AddToScheme
-		defer func() { doguApiV1.AddToScheme = originalAddSchemeFunc }()
+		originalAddSchemeFunc := v2.AddToScheme
+		defer func() { v2.AddToScheme = originalAddSchemeFunc }()
 
 		failingAddSchemeFunc := func(s *runtime.Scheme) error {
 			return assert.AnError
 		}
-		doguApiV1.AddToScheme = failingAddSchemeFunc
+		v2.AddToScheme = failingAddSchemeFunc
 
 		// when
 		actual, err := CreateClusterClient()
@@ -369,7 +368,7 @@ func TestCreateClusterClient(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.NotNil(t, actual)
-		assert.NotNil(t, actual.EcoSystemV1Alpha1Interface)
+		assert.NotNil(t, actual.EcoSystemV2Interface)
 		assert.NotNil(t, actual.Interface)
 		assert.NotNil(t, actual.BlueprintLister)
 	})

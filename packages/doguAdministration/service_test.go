@@ -6,7 +6,7 @@ import (
 	"github.com/cloudogu/ces-control-api/generated/doguAdministration"
 	"github.com/cloudogu/ces-control-api/generated/types"
 	"github.com/cloudogu/cesapp-lib/core"
-	blueprintcrv1 "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
+	blueprintcrv1 "github.com/cloudogu/k8s-blueprint-operator/v2/pkg/adapter/kubernetes/blueprintcr/v1"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

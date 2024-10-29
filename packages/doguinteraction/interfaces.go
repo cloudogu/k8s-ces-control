@@ -3,7 +3,7 @@ package doguinteraction
 import (
 	"context"
 	"github.com/cloudogu/cesapp-lib/core"
-	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
+	"github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
 	"github.com/cloudogu/k8s-registry-lib/config"
 	"k8s.io/client-go/kubernetes"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -11,7 +11,7 @@ import (
 )
 
 type clusterClientSet interface {
-	ecoSystem.EcoSystemV1Alpha1Interface
+	ecoSystem.EcoSystemV2Interface
 	kubernetes.Interface
 }
 

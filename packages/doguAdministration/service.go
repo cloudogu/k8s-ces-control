@@ -6,7 +6,7 @@ import (
 	pb "github.com/cloudogu/ces-control-api/generated/doguAdministration"
 	"github.com/cloudogu/ces-control-api/generated/types"
 	"github.com/cloudogu/cesapp-lib/core"
-	v1bp "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
+	v1bp "github.com/cloudogu/k8s-blueprint-operator/v2/pkg/adapter/kubernetes/blueprintcr/v1"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	"github.com/sirupsen/logrus"

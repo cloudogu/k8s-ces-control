@@ -5,7 +5,7 @@ package doguAdministration
 import (
 	context "context"
 
-	blueprintcrv1 "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
+	blueprintcrv1 "github.com/cloudogu/k8s-blueprint-operator/v2/pkg/adapter/kubernetes/blueprintcr/v1"
 
 	mock "github.com/stretchr/testify/mock"
 
