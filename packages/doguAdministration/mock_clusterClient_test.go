@@ -24,7 +24,7 @@ import (
 
 	batchv1beta1 "k8s.io/client-go/kubernetes/typed/batch/v1beta1"
 
-	blueprintcrv1 "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
+	blueprintcrv1 "github.com/cloudogu/k8s-blueprint-operator/v2/pkg/adapter/kubernetes/blueprintcr/v1"
 
 	certificatesv1 "k8s.io/client-go/kubernetes/typed/certificates/v1"
 
@@ -48,7 +48,7 @@ import (
 
 	discoveryv1beta1 "k8s.io/client-go/kubernetes/typed/discovery/v1beta1"
 
-	ecoSystem "github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
+	ecoSystem "github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
 
 	eventsv1 "k8s.io/client-go/kubernetes/typed/events/v1"
 

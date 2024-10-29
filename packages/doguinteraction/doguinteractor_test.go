@@ -292,7 +292,7 @@ func Test_defaultDoguInterActor_StartAllDogus(t *testing.T) {
 		defer func() { waitInterval = oldWaitInterval }()
 
 		doguRegistryMock := newMockDoguDescriptorGetter(t)
-		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine", Dependencies: []core.Dependency{{Name: "postgresql"}}}}, nil)
+		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine", Dependencies: []core.Dependency{{Name: "postgresql", Type: core.DependencyTypeDogu}}}}, nil)
 
 		clientSetMock := newMockClusterClientSet(t)
 		appsV1Mock := newMockAppsV1Interface(t)
@@ -382,7 +382,7 @@ func Test_defaultDoguInterActor_StopAllDogus(t *testing.T) {
 		defer func() { waitInterval = oldWaitInterval }()
 
 		doguRegistryMock := newMockDoguDescriptorGetter(t)
-		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine", Dependencies: []core.Dependency{{Name: "postgresql"}}}}, nil)
+		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine", Dependencies: []core.Dependency{{Name: "postgresql", Type: core.DependencyTypeDogu}}}}, nil)
 
 		clientSetMock := newMockClusterClientSet(t)
 		appsV1Mock := newMockAppsV1Interface(t)

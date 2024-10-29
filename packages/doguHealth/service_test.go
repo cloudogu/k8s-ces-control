@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/cloudogu/ces-control-api/generated/health"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
-	doguv1 "github.com/cloudogu/k8s-dogu-operator/api/v1"
+	doguv2 "github.com/cloudogu/k8s-dogu-operator/v2/api/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/apps/v1"
@@ -387,7 +387,7 @@ func Test_server_GetAll(t *testing.T) {
 		defer func() { config.CurrentNamespace = previousNamespaceVar }()
 		config.CurrentNamespace = "ecosystem"
 
-		doguList := &doguv1.DoguList{Items: []doguv1.Dogu{}}
+		doguList := &doguv2.DoguList{Items: []doguv2.Dogu{}}
 		doguClient := newMockDoguClient(t)
 		doguClient.EXPECT().List(context.TODO(), metav1.ListOptions{}).Return(doguList, nil)
 		clientMock := newMockClusterClient(t)
@@ -423,7 +423,7 @@ func Test_server_GetAll(t *testing.T) {
 		appsMock := newMockAppsV1Client(t)
 		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
 
-		doguList := &doguv1.DoguList{Items: []doguv1.Dogu{
+		doguList := &doguv2.DoguList{Items: []doguv2.Dogu{
 			{ObjectMeta: metav1.ObjectMeta{Name: "healthy"}},
 			{ObjectMeta: metav1.ObjectMeta{Name: "unhealthy"}},
 		}}
@@ -485,7 +485,7 @@ func Test_server_GetAll(t *testing.T) {
 		appsMock := newMockAppsV1Client(t)
 		appsMock.EXPECT().Deployments("ecosystem").Return(deploymentMock)
 
-		doguList := &doguv1.DoguList{Items: []doguv1.Dogu{
+		doguList := &doguv2.DoguList{Items: []doguv2.Dogu{
 			{ObjectMeta: metav1.ObjectMeta{Name: "healthy1"}},
 			{ObjectMeta: metav1.ObjectMeta{Name: "healthy2"}},
 		}}
