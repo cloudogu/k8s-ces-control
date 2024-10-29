@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/bombsimon/logrusr/v2"
-	bpo_kubernetes "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes"
+	bpo_kubernetes "github.com/cloudogu/k8s-blueprint-operator/v2/pkg/adapter/kubernetes"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
 	ecoSystemV2 "github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
 	"os"

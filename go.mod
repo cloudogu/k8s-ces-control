@@ -5,10 +5,10 @@ go 1.23.2
 require (
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/cloudogu/ces-control-api v1.3.0
-	github.com/cloudogu/cesapp-lib v0.14.0
-	github.com/cloudogu/k8s-blueprint-operator v0.0.0-20241004150236-4f3222c0dcf0
-	github.com/cloudogu/k8s-dogu-operator/v2 v2.0.2-0.20241017073713-08ff048a6dd8
-	github.com/cloudogu/k8s-registry-lib v0.4.1
+	github.com/cloudogu/cesapp-lib v0.14.2
+	github.com/cloudogu/k8s-blueprint-operator/v2 v2.0.0
+	github.com/cloudogu/k8s-dogu-operator/v2 v2.3.0
+	github.com/cloudogu/k8s-registry-lib v0.5.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
@@ -16,10 +16,10 @@ require (
 	google.golang.org/grpc v1.66.1
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.31.1
-	k8s.io/apimachinery v0.31.1
-	k8s.io/client-go v0.31.1
-	sigs.k8s.io/controller-runtime v0.19.0
+	k8s.io/api v0.31.2
+	k8s.io/apimachinery v0.31.2
+	k8s.io/client-go v0.31.2
+	sigs.k8s.io/controller-runtime v0.19.1
 )
 
 require (
@@ -33,6 +33,7 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
+	github.com/gammazero/toposort v0.1.1 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
@@ -48,7 +49,7 @@ require (
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -64,18 +65,18 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
-	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
-	golang.org/x/net v0.29.0 // indirect
+	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c // indirect
+	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
-	golang.org/x/sys v0.25.0 // indirect
-	golang.org/x/term v0.24.0 // indirect
-	golang.org/x/text v0.18.0 // indirect
+	golang.org/x/sys v0.26.0 // indirect
+	golang.org/x/term v0.25.0 // indirect
+	golang.org/x/text v0.19.0 // indirect
 	golang.org/x/time v0.6.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/apiextensions-apiserver v0.31.0 // indirect
+	k8s.io/apiextensions-apiserver v0.31.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240903163716-9e1beecbcb38 // indirect
 	k8s.io/utils v0.0.0-20240902221715-702e33fdd3c3 // indirect

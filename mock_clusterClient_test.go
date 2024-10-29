@@ -24,7 +24,7 @@ import (
 
 	batchv1beta1 "k8s.io/client-go/kubernetes/typed/batch/v1beta1"
 
-	blueprintcrv1 "github.com/cloudogu/k8s-blueprint-operator/pkg/adapter/kubernetes/blueprintcr/v1"
+	blueprintcrv1 "github.com/cloudogu/k8s-blueprint-operator/v2/pkg/adapter/kubernetes/blueprintcr/v1"
 
 	certificatesv1 "k8s.io/client-go/kubernetes/typed/certificates/v1"
 
