@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- [#43] Make imagePullSecrets configurable via helm values and use `ces-container-registries` as default.
 - [#41] Use dogu v2 api
 - [#41] Update go version to 1.23.2
 

@@ -2,6 +2,8 @@ module github.com/cloudogu/k8s-ces-control
 
 go 1.23.2
 
+replace github.com/cloudogu/cesapp-lib => github.com/cloudogu/cesapp-lib v0.0.0-20241029151530-f7281943e1fc
+
 require (
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/cloudogu/ces-control-api v1.3.0

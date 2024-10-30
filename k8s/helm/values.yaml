@@ -1,5 +1,9 @@
+global:
+  imagePullSecrets:
+    - name: "ces-container-registries"
 manager:
   image:
+    registry: docker.io
     repository: cloudogu/k8s-ces-control
     tag: 0.11.1
   imagePullPolicy: IfNotPresent
