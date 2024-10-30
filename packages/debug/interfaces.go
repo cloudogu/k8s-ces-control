@@ -5,14 +5,14 @@ import (
 	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
 	"github.com/cloudogu/ces-control-api/generated/types"
 	"github.com/cloudogu/cesapp-lib/core"
-	"github.com/cloudogu/k8s-dogu-operator/api/ecoSystem"
+	ecoSystemV2 "github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
 	"github.com/cloudogu/k8s-registry-lib/config"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 type clusterClientSet interface {
-	ecoSystem.EcoSystemV1Alpha1Interface
+	ecoSystemV2.EcoSystemV2Interface
 	kubernetes.Interface
 }
 

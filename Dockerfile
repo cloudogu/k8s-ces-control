@@ -1,4 +1,4 @@
-FROM golang:1.22.4-alpine AS backendBuilder
+FROM golang:1.23.2-alpine AS backendBuilder
 RUN apk add --no-cache build-base git bash
 
 ENV WORKDIR=/k8s-ces-control
@@ -31,7 +31,7 @@ WORKDIR ${WORKDIR}
 
 LABEL maintainer="hello@cloudogu.com" \
     NAME="k8s-ces-control" \
-    VERSION="0.11.1"
+    VERSION="1.0.0"
 
 COPY --from=backendBuilder /k8s-ces-control/target/k8s-ces-control ${WORKDIR}/k8s-ces-control
 

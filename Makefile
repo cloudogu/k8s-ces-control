@@ -1,8 +1,7 @@
 # Set these to the desired values
 ARTIFACT_ID=k8s-ces-control
-VERSION=0.11.1
-GOTAG=1.22.4
-LINT_VERSION=v1.58.2
+VERSION=1.0.0
+GOTAG=1.23.2
 STAGE?=production
 LOG_LEVEL?=info
 
@@ -13,7 +12,7 @@ SHELL = /usr/bin/env bash -o pipefail
 ## Image URL to use all building/pushing image targets
 IMAGE?=cloudogu/${ARTIFACT_ID}:${VERSION}
 
-MAKEFILES_VERSION=9.2.1
+MAKEFILES_VERSION=9.3.2
 .DEFAULT_GOAL:=default
 GENERATION_TARGET_DIR=generated
 GENERATION_SOURCE_DIR=grpc-protobuf
@@ -68,7 +67,8 @@ helm-values-update-image-version: $(BINARY_YQ)
 helm-values-replace-image-repo: $(BINARY_YQ)
 	@if [[ ${STAGE} == "development" ]]; then \
       		echo "Setting dev image repo in target values.yaml!" ;\
-    		$(BINARY_YQ) -i e ".manager.image.repository=\"${IMAGE_DEV}\"" "${K8S_COMPONENT_TARGET_VALUES}" ;\
+    		$(BINARY_YQ) -i e ".manager.image.registry=\"$(shell echo '${IMAGE_DEV}' | sed 's/\([^\/]*\)\/\(.*\)/\1/')\"" ${K8S_COMPONENT_TARGET_VALUES} ;\
+    		$(BINARY_YQ) -i e ".manager.image.repository=\"$(shell echo '${IMAGE_DEV}' | sed 's/\([^\/]*\)\/\(.*\)/\2/')\"" ${K8S_COMPONENT_TARGET_VALUES} ;\
     	fi
 
 .PHONY: template-stage
