@@ -58,7 +58,7 @@ func (s *defaultDebugModeService) Enable(ctx context.Context, req *pbMaintenance
 	defer func() {
 		err = s.maintenanceModeSwitch.DeactivateMaintenanceMode(noInheritedCtx)
 		if err != nil {
-			logrus.Error(fmt.Errorf("failed to deactivate maintenance mode: %w", err), interErrMsg)
+			logrus.Error(fmt.Errorf("failed to deactivate maintenance mode: %s, %w", interErrMsg, err))
 		}
 		logrus.Info("...Finished enabling debug-mode.")
 		cancel()
@@ -136,7 +136,7 @@ func (s *defaultDebugModeService) Disable(ctx context.Context, _ *pbMaintenance.
 	defer func() {
 		err = s.maintenanceModeSwitch.DeactivateMaintenanceMode(noInheritedCtx)
 		if err != nil {
-			logrus.Error(fmt.Errorf("failed to deactivate maintenance mode: %w", err), interErrMsg)
+			logrus.Error(fmt.Errorf("failed to deactivate maintenance mode: %s: %w", interErrMsg, err))
 		}
 		logrus.Info("...Finished disabling debug-mode.")
 		cancel()
