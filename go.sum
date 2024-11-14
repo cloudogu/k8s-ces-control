@@ -22,8 +22,8 @@ github.com/cloudogu/k8s-blueprint-operator/v2 v2.0.0 h1:VgpqizAI6cYFwubiikd8LNN1
 github.com/cloudogu/k8s-blueprint-operator/v2 v2.0.0/go.mod h1:4LGyNcpFUQAzaDPUt9otPRZqC+QTwUGA2oPoonhuSTY=
 github.com/cloudogu/k8s-dogu-operator/v2 v2.3.0 h1:U2VHM9QwHArm5AYmcfSgzzAbTdgxrk+TqcgTublhNZA=
 github.com/cloudogu/k8s-dogu-operator/v2 v2.3.0/go.mod h1:yfvaFn951pWxFMapJmEz2ZPpT5unEOcTwEhspGehNYQ=
-github.com/cloudogu/k8s-registry-lib v0.5.0 h1:mdo8+0cSLicCNyymc8GbTl8ku5sMGA3IR/n5ga2WIvI=
-github.com/cloudogu/k8s-registry-lib v0.5.0/go.mod h1:OHIrWCAOcc4nlmBK8G+vdHHJ8vo5QQvKCKIGTiFwYBo=
+github.com/cloudogu/k8s-registry-lib v0.2.2-0.20241113150229-4c4bdb411730 h1:8k1sCZ3q1lxSt4Q9w0gpVWZX70NxvPUHR2aktbBYaoQ=
+github.com/cloudogu/k8s-registry-lib v0.2.2-0.20241113150229-4c4bdb411730/go.mod h1:OHIrWCAOcc4nlmBK8G+vdHHJ8vo5QQvKCKIGTiFwYBo=
 github.com/containerd/log v0.1.0 h1:TCJt7ioM2cr/tfR8GPbGf9/VRAX8D2B4PjzCpfX540I=
 github.com/containerd/log v0.1.0/go.mod h1:VRRf09a7mHDIRezVKTRCrOq78v577GXq3bSa3EhrzVo=
 github.com/containerd/platforms v0.2.1 h1:zvwtM3rz2YHPQsF2CHYM8+KtB5dvhISiXh5ZpSBQv6A=

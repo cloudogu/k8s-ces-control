@@ -4,6 +4,8 @@ go 1.23.2
 
 replace github.com/cloudogu/cesapp-lib => github.com/cloudogu/cesapp-lib v0.0.0-20241029151530-f7281943e1fc
 
+replace github.com/cloudogu/k8s-registry-lib => github.com/cloudogu/k8s-registry-lib v0.2.2-0.20241113150229-4c4bdb411730
+
 require (
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/cloudogu/ces-control-api v1.3.0
