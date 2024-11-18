@@ -1,3 +1,4 @@
+# This handles all permissions necessary to start/stop/restart dogus in admin dogu
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
