@@ -6,9 +6,19 @@ metadata:
   labels:
     {{- include "k8s-ces-control.labels" . | nindent 4 }}
 rules:
-  - apiGroups: [""]
-    resources: ["pods"]
-    verbs: ["list"]
-  - apiGroups: ["apps"]
-    resources: ["deployments", "deployments/scale"]
-    verbs: ["watch", "update", "list", "get"]
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - list
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - deployments/scale
+    verbs:
+      - watch
+      - update
+      - list
+      - get

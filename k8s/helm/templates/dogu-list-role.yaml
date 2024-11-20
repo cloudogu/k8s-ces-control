@@ -6,9 +6,19 @@ metadata:
   labels:
     {{- include "k8s-ces-control.labels" . | nindent 4 }}
 rules:
-  - apiGroups: [""]
-    resources: ["configmaps"]
-    verbs: ["list", "get"]
-  - apiGroups: ["apps"]
-    resources: ["deployments", "deployments/scale"]
-    verbs: ["list", "get"]
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - list
+      - get
+  # allow dogu deployments to be listed/inspected and to be scaled for stopping/starting/restarting
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - deployments/scale
+    verbs:
+      - list
+      - get

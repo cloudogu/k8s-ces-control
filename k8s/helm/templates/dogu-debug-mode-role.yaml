@@ -6,12 +6,30 @@ metadata:
   labels:
     {{- include "k8s-ces-control.labels" . | nindent 4 }}
 rules:
-  - apiGroups: [""]
-    resources: ["pods"]
-    verbs: ["list"]
-  - apiGroups: [""]
-    resources: ["configmaps"]
-    verbs: ["update", "create", "get", "list", "delete"]
-  - apiGroups: ["apps"]
-    resources: ["deployments", "deployments/scale"]
-    verbs: ["watch", "update", "list", "get"]
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - list
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - update
+      - create
+      - get
+      - list
+      - delete
+  # allow dogu deployments to be listed/inspected and to be scaled for stopping/starting/restarting during debug mode
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - deployments/scale
+    verbs:
+      - watch
+      - update
+      - list
+      - get
