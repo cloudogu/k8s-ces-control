@@ -52,7 +52,7 @@ func (s *defaultDebugModeService) Enable(ctx context.Context, req *pbMaintenance
 		return nil, createInternalError(fmt.Errorf("failed to activate maintenance mode: %w", err))
 	}
 
-	// Create new context because the admin dogu itself will be canceled
+	// Create new context otherwise the cancellation of this context (f. i. by time-out) the admin dogu's request would be canceled as consequence.
 	noInheritedCtx, cancel := noInheritCancel(ctx)
 
 	defer func() {
