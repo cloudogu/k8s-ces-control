@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#48] Fix not applying development values to helm values
 
 ### Changed
-- [#47] drastically reduce rbac permissions
+- [#47] drastically reduce RBAC permissions
 
 ## [v1.0.0] - 2024-10-30
 ### Changed
