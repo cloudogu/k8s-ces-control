@@ -27,9 +27,15 @@ rules:
       - apps
     resources:
       - deployments
-      - deployments/scale
     verbs:
       - watch
       - update
       - list
+      - get
+  - apiGroups:
+      - apps
+    resources:
+      - deployments/scale
+    verbs:
+      - update
       - get

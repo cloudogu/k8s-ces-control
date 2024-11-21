@@ -16,9 +16,13 @@ rules:
       - apps
     resources:
       - deployments
+    verbs:
+      - get
+  - apiGroups:
+      - apps
+    resources:
       - deployments/scale
     verbs:
-      - watch
       - update
-      - list
       - get
+
