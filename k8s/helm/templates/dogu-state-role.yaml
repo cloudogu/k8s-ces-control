@@ -25,4 +25,10 @@ rules:
     verbs:
       - update
       - get
+  - apiGroups:
+      - k8s.cloudogu.com
+    resources:
+      - dogus
+    verbs:
+      - list
 
