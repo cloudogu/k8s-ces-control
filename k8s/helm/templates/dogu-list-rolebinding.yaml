@@ -11,3 +11,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: {{ include "k8s-ces-control.name" . }}
+    namespace: '{{ .Release.Namespace }}'
