@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.1.0] - 2024-11-25
+### Fixed
+- [#48] Fix not applying development values to helm values
+
+### Changed
+- [#47] drastically reduce RBAC permissions
+
 ## [v1.0.0] - 2024-10-30
 ### Changed
 - [#43] Make imagePullSecrets configurable via helm values and use `ces-container-registries` as default.

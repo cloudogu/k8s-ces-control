@@ -1,6 +1,6 @@
 # Set these to the desired values
 ARTIFACT_ID=k8s-ces-control
-VERSION=1.0.0
+VERSION=1.1.0
 GOTAG=1.23.2
 STAGE?=production
 LOG_LEVEL?=info
@@ -35,9 +35,8 @@ include build/make/bats.mk
 
 K8S_COMPONENT_SOURCE_VALUES = ${HELM_SOURCE_DIR}/values.yaml
 K8S_COMPONENT_TARGET_VALUES = ${HELM_TARGET_DIR}/values.yaml
-HELM_PRE_APPLY_TARGETS=template-stage template-log-level template-image-pull-policy
 HELM_PRE_GENERATE_TARGETS = helm-values-update-image-version
-HELM_POST_GENERATE_TARGETS = helm-values-replace-image-repo
+HELM_POST_GENERATE_TARGETS = helm-values-replace-image-repo template-stage template-log-level template-image-pull-policy
 CHECK_VAR_TARGETS=check-all-vars
 IMAGE_IMPORT_TARGET=image-import
 include build/make/k8s-component.mk
