@@ -31,7 +31,7 @@ WORKDIR ${WORKDIR}
 
 LABEL maintainer="hello@cloudogu.com" \
     NAME="k8s-ces-control" \
-    VERSION="1.0.0"
+    VERSION="1.1.0"
 
 COPY --from=backendbuilder /k8s-ces-control/target/k8s-ces-control ${WORKDIR}/k8s-ces-control
 
