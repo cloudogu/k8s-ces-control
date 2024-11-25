@@ -52,12 +52,16 @@ func (s *defaultDebugModeService) Enable(ctx context.Context, req *pbMaintenance
 		return nil, createInternalError(fmt.Errorf("failed to activate maintenance mode: %w", err))
 	}
 
+	// Create new context otherwise the cancellation of this context (f. i. by time-out) the admin dogu's request would be canceled as consequence.
+	noInheritedCtx, cancel := noInheritCancel(ctx)
+
 	defer func() {
-		err = s.maintenanceModeSwitch.DeactivateMaintenanceMode(ctx)
+		err = s.maintenanceModeSwitch.DeactivateMaintenanceMode(noInheritedCtx)
 		if err != nil {
-			logrus.Error(fmt.Errorf("failed to deactivate maintenance mode: %w", err), interErrMsg)
+			logrus.Error(fmt.Errorf("failed to deactivate maintenance mode: %s, %w", interErrMsg, err))
 		}
 		logrus.Info("...Finished enabling debug-mode.")
+		cancel()
 	}()
 
 	err = s.debugModeRegistry.Enable(ctx, req.Timer)
@@ -74,10 +78,6 @@ func (s *defaultDebugModeService) Enable(ctx context.Context, req *pbMaintenance
 	if err != nil {
 		return nil, s.rollbackRestoreDisable(ctx, createInternalError(fmt.Errorf("failed to set dogu log levels to debug: %w", err)))
 	}
-
-	// Create new context because the admin dogu itself will be canceled
-	noInheritedCtx, cancel := noInheritCancel(ctx)
-	defer cancel()
 
 	err = s.doguInterActor.StopAllDogus(noInheritedCtx)
 	if err != nil {
@@ -130,22 +130,22 @@ func (s *defaultDebugModeService) Disable(ctx context.Context, _ *pbMaintenance.
 		return nil, createInternalError(fmt.Errorf("failed to activate maintenance mode: %w", err))
 	}
 
+	// Create new context because the admin dogu itself will be canceled
+	noInheritedCtx, cancel := noInheritCancel(ctx)
+
 	defer func() {
-		err = s.maintenanceModeSwitch.DeactivateMaintenanceMode(ctx)
+		err = s.maintenanceModeSwitch.DeactivateMaintenanceMode(noInheritedCtx)
 		if err != nil {
-			logrus.Error(fmt.Errorf("failed to deactivate maintenance mode: %w", err), interErrMsg)
+			logrus.Error(fmt.Errorf("failed to deactivate maintenance mode: %s: %w", interErrMsg, err))
 		}
 		logrus.Info("...Finished disabling debug-mode.")
+		cancel()
 	}()
 
 	err = s.debugModeRegistry.RestoreDoguLogLevels(ctx)
 	if err != nil {
 		return nil, createInternalError(fmt.Errorf("failed to restore log levels to ces registry: %w", err))
 	}
-
-	// Create new context because the admin dogu itself will be canceled
-	noInheritedCtx, cancel := noInheritCancel(ctx)
-	defer cancel()
 
 	err = s.doguInterActor.StopAllDogus(noInheritedCtx)
 	if err != nil {

@@ -1,13 +1,14 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "k8s-ces-control.name" . }}
+  name: {{ include "k8s-ces-control.name" . }}-dogu-state-role-binding
   labels:
     {{- include "k8s-ces-control.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: {{ include "k8s-ces-control.name" . }}
+  name: {{ include "k8s-ces-control.name" . }}-dogu-state-role
 subjects:
   - kind: ServiceAccount
     name: {{ include "k8s-ces-control.name" . }}
+    namespace: '{{ .Release.Namespace }}'

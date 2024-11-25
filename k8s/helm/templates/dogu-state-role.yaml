@@ -1,0 +1,34 @@
+# This handles all permissions necessary to start/stop/restart dogus in admin dogu
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "k8s-ces-control.name" . }}-dogu-state-role
+  labels:
+    {{- include "k8s-ces-control.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - list
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+    verbs:
+      - get
+  - apiGroups:
+      - apps
+    resources:
+      - deployments/scale
+    verbs:
+      - update
+      - get
+  - apiGroups:
+      - k8s.cloudogu.com
+    resources:
+      - dogus
+    verbs:
+      - list
+
