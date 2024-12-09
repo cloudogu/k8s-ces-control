@@ -12,7 +12,7 @@ spec:
     matchLabels:
       app: ces
       app.kubernetes.io/name: k8s-loki
-      k8s.cloudogu.com/component: gateway
+      app.kubernetes.io/component: gateway
   policyTypes:
     - Ingress
   ingress:
