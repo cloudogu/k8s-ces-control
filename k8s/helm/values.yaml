@@ -1,4 +1,7 @@
 global:
+  networkPolicies:
+    enabled: true
+    denyIngress: false
   imagePullSecrets:
     - name: "ces-container-registries"
 manager:

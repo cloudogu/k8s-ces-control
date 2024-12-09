@@ -1,0 +1,44 @@
+{{- if .Values.global.networkPolicies.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ printf "%s-loki-ingress" (include "k8s-ces-control.name" .) | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "k8s-ces-control.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app: ces
+      app.kubernetes.io/name: k8s-loki
+      k8s.cloudogu.com/component: gateway
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ces
+              {{- include "k8s-ces-control.selectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 8080
+{{- if .Values.global.networkPolicies.denyIngress }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ printf "%s-deny-ingress" (include "k8s-ces-control.name" .) | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "k8s-ces-control.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app: ces
+      {{- include "k8s-ces-control.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+{{- end}}
+{{- end }}
