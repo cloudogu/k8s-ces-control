@@ -1,5 +1,6 @@
 {{- if .Values.global.networkPolicies.enabled }}
 ---
+# This NetworkPolicy allows ingress to the Loki gateway from k8s-ces-control.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -26,6 +27,8 @@ spec:
           port: 8080
 {{- if .Values.global.networkPolicies.denyIngress }}
 ---
+# This NetworkPolicy denies all ingress to k8s-ces-control.
+# Dependent Dogus and Components must bring their own NetworkPolicy to access k8s-ces-control.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
