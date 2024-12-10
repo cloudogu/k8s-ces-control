@@ -1,0 +1,47 @@
+{{- if .Values.global.networkPolicies.enabled }}
+---
+# This NetworkPolicy allows ingress to the Loki gateway from k8s-ces-control.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ printf "%s-loki-ingress" (include "k8s-ces-control.name" .) | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "k8s-ces-control.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app: ces
+      app.kubernetes.io/name: k8s-loki
+      app.kubernetes.io/component: gateway
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ces
+              {{- include "k8s-ces-control.selectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 8080
+{{- if .Values.global.networkPolicies.denyIngress }}
+---
+# This NetworkPolicy denies all ingress to k8s-ces-control.
+# Dependent Dogus and Components must bring their own NetworkPolicy to access k8s-ces-control.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ printf "%s-deny-ingress" (include "k8s-ces-control.name" .) | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "k8s-ces-control.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app: ces
+      {{- include "k8s-ces-control.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+{{- end}}
+{{- end }}
