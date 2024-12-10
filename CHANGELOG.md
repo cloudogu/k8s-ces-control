@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- [#51] NetworkPolicy to block all ingress traffic
+  - Dependent Dogus and Components must bring their own NetworkPolicy to access k8s-ces-control
+- [#51] Ingress Network Policy for Loki-gateway so that k8s-ces-control can access it
 
 ## [v1.1.0] - 2024-11-25
 ### Fixed
