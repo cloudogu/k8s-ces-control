@@ -36,7 +36,7 @@ LABEL maintainer="hello@cloudogu.com" \
 COPY --from=backendbuilder /k8s-ces-control/target/k8s-ces-control ${WORKDIR}/k8s-ces-control
 
 ENV USER=k8s-ces-control \
-    GRPC_HEALTH_PROBE_VERSION=0.4.14
+    GRPC_HEALTH_PROBE_VERSION=0.4.36
 
 RUN set -eux -o pipefail \
     && apk update \
