@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.2.1] - 2024-12-19
+### Fixed
+- [#53] Fix critical CVEs by updating grpc_health_probe to 0.4.36
+
 ## [v1.2.0] - 2024-12-10
 ### Added
 - [#51] NetworkPolicy to block all ingress traffic
