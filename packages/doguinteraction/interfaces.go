@@ -5,15 +5,18 @@ import (
 	"github.com/cloudogu/cesapp-lib/core"
 	"github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
 	"github.com/cloudogu/k8s-registry-lib/config"
-	"k8s.io/client-go/kubernetes"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-type clusterClientSet interface {
-	ecoSystem.EcoSystemV2Interface
-	kubernetes.Interface
+type DoguInterface interface {
+	ecoSystem.DoguInterface
 }
+
+//type clusterClientSet interface {
+//	ecoSystem.EcoSystemV2Interface
+//	kubernetes.Interface
+//}
 
 //nolint:unused
 //goland:noinspection GoUnusedType
