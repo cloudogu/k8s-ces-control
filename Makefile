@@ -12,7 +12,7 @@ SHELL = /usr/bin/env bash -o pipefail
 ## Image URL to use all building/pushing image targets
 IMAGE?=cloudogu/${ARTIFACT_ID}:${VERSION}
 
-MAKEFILES_VERSION=9.3.2
+MAKEFILES_VERSION=9.5.3
 .DEFAULT_GOAL:=default
 GENERATION_TARGET_DIR=generated
 GENERATION_SOURCE_DIR=grpc-protobuf
