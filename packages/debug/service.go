@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
 	"github.com/sirupsen/logrus"
 
 	"google.golang.org/grpc/codes"
@@ -24,22 +23,18 @@ const (
 
 type defaultDebugModeService struct {
 	pbMaintenance.UnimplementedDebugModeServer
-	clientSet             clusterClientSet
 	debugModeRegistry     debugModeRegistry
 	maintenanceModeSwitch maintenanceModeSwitch
-	namespace             string
 	doguInterActor        doguInterActor
 }
 
 // NewDebugModeService returns an instance of debugModeService.
-func NewDebugModeService(doguConfigRepository doguConfigRepository, globalConfigRepository globalConfigRepository, doguDescriptorGetter doguDescriptorGetter, clusterClient clusterClientSet, namespace string) *defaultDebugModeService {
+func NewDebugModeService(doguInterActor doguInterActor, doguConfigRepository doguConfigRepository, globalConfigRepository globalConfigRepository, doguDescriptorGetter doguDescriptorGetter, clusterClient clusterClientSet, namespace string) *defaultDebugModeService {
 	cmDebugModeRegistry := NewConfigMapDebugModeRegistry(doguConfigRepository, doguDescriptorGetter, clusterClient, namespace)
 	return &defaultDebugModeService{
-		clientSet:             clusterClient,
 		debugModeRegistry:     cmDebugModeRegistry,
 		maintenanceModeSwitch: NewDefaultMaintenanceModeSwitch(globalConfigRepository),
-		namespace:             namespace,
-		doguInterActor:        doguinteraction.NewDefaultDoguInterActor(doguConfigRepository, clusterClient, namespace, doguDescriptorGetter),
+		doguInterActor:        doguInterActor,
 	}
 }
 

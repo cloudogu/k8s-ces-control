@@ -13,11 +13,11 @@ rules:
     verbs:
       - list
       - get
-  # allow dogu deployments to be listed/inspected and to be scaled for stopping/starting/restarting
+  # allow dogus to be listed/inspected
   - apiGroups:
-      - apps
+      - k8s.cloudogu.com
     resources:
-      - deployments
+      - dogus
     verbs:
       - list
       - get

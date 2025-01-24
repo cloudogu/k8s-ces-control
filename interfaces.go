@@ -16,12 +16,6 @@ type configMapInterface interface {
 
 //nolint:unused
 //goland:noinspection GoUnusedType
-type deploymentInterface interface {
-	appsV1.DeploymentInterface
-}
-
-//nolint:unused
-//goland:noinspection GoUnusedType
 type coreV1Interface interface {
 	coreV1.CoreV1Interface
 }

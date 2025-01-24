@@ -7,7 +7,6 @@ import (
 	"github.com/cloudogu/ces-control-api/generated/types"
 	"github.com/cloudogu/cesapp-lib/core"
 	v1bp "github.com/cloudogu/k8s-blueprint-operator/v2/pkg/adapter/kubernetes/blueprintcr/v1"
-	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -22,11 +21,11 @@ type logService interface {
 }
 
 // NewDoguAdministrationServer returns a new administration server instance to start/stop.. etc. Dogus.
-func NewDoguAdministrationServer(doguConfigRepository doguConfigRepository, client clusterClient, doguDescriptorGetter doguDescriptorGetter, namespace string, logService logService) *server {
-	return &server{client: client,
+func NewDoguAdministrationServer(blueprintLister BlueprintLister, doguDescriptorGetter doguDescriptorGetter, doguInterActor doguInterActor, logService logService) *server {
+	return &server{
+		blueprintLister:      blueprintLister,
 		doguDescriptorGetter: doguDescriptorGetter,
-		doguInterActor:       doguinteraction.NewDefaultDoguInterActor(doguConfigRepository, client, namespace, doguDescriptorGetter),
-		ns:                   namespace,
+		doguInterActor:       doguInterActor,
 		loggingService:       logService,
 	}
 }
@@ -34,10 +33,9 @@ func NewDoguAdministrationServer(doguConfigRepository doguConfigRepository, clie
 type server struct {
 	doguDescriptorGetter doguDescriptorGetter
 	pb.UnimplementedDoguAdministrationServer
-	client         clusterClient
-	doguInterActor doguInterActor
-	ns             string
-	loggingService logService
+	blueprintLister BlueprintLister
+	doguInterActor  doguInterActor
+	loggingService  logService
 }
 
 // StartDogu starts the specified dogu
@@ -127,7 +125,7 @@ func (s *server) createDoguListResponse(ctx context.Context, dogus []*core.Dogu)
 }
 
 func (s *server) GetBlueprintId(ctx context.Context, _ *pb.DoguBlueprinitIdRequest) (*pb.DoguBlueprintIdResponse, error) {
-	bpList, err := s.client.List(ctx, metav1.ListOptions{})
+	bpList, err := s.blueprintLister.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not get blueprint list")
 	}
