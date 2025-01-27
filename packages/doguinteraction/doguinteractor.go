@@ -111,7 +111,7 @@ func (ddi *defaultDoguInterActor) startStopDogu(ctx context.Context, doguName st
 
 	dogu.Spec.Stopped = shouldStop
 
-	dogu, err = ddi.doguClient.UpdateSpecWithRetry(ctx, dogu, func(spec v2.DoguSpec) v2.DoguSpec {
+	_, err = ddi.doguClient.UpdateSpecWithRetry(ctx, dogu, func(spec v2.DoguSpec) v2.DoguSpec {
 		spec.Stopped = shouldStop
 		return spec
 	}, metav1.UpdateOptions{})

@@ -149,11 +149,11 @@ testDoguAdministration_StartStopDogus() {
   ${GRPCURL_BIN_PATH} -plaintext -d '{"doguName": "postfix"}' localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.StartDogu >/dev/null 2>&1
 
   # Wait for dogu to be started
-  sleep 5s
+  sleep 10s
 
-  local replicas=""
-  replicas="$(${KUBECTL_BIN_PATH} get deployment/postfix -o json | ${JQ_BIN_PATH} '.spec.replicas')"
-  if [[ "${replicas}" == 1 ]]; then
+  local healthStatus=""
+  healthStatus="$(${KUBECTL_BIN_PATH} get dogu/postfix -o json | ${JQ_BIN_PATH} -r '.status.health')"
+  if [[ "${healthStatus}" == "available" ]]; then
     echo "Test: Postfix started? Success!"
     addSuccessTestCase "Dogu-Administration-StartDogu-Postfix" "k8s-ces-control successfully started the Postfix dogu."
   else
@@ -168,7 +168,7 @@ testDoguAdministration_RestartDogus() {
   ${GRPCURL_BIN_PATH} -plaintext -d '{"doguName": "postfix"}' localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.RestartDogu >/dev/null 2>&1
 
   # Wait for dogu to be restarted
-  sleep 5s
+  sleep 15s
 
   local postfixAfterPodName=""
   postfixAfterPodName="$(${KUBECTL_BIN_PATH} get pods -o name | grep postfix)"

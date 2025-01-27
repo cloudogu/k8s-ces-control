@@ -1,5 +1,5 @@
 #!groovy
-@Library('github.com/cloudogu/ces-build-lib@3.0.0')
+@Library('github.com/cloudogu/ces-build-lib@4.0.1')
 import com.cloudogu.ces.cesbuildlib.*
 
 // Creating necessary git objects, object cannot be named 'git' as this conflicts with the method named 'git' from the library
@@ -35,6 +35,10 @@ node('docker') {
                 buildDiscarder(logRotator(numToKeepStr: '10')),
                 // Don't run concurrent builds for a branch, because they use the same workspace directory
                 disableConcurrentBuilds(),
+                parameters([
+                    choice(name: 'TrivySeverityLevels', choices: [TrivySeverityLevel.CRITICAL, TrivySeverityLevel.HIGH_AND_ABOVE, TrivySeverityLevel.MEDIUM_AND_ABOVE, TrivySeverityLevel.ALL], description: 'The levels to scan with trivy'),
+                    choice(name: 'TrivyStrategy', choices: [TrivyScanStrategy.UNSTABLE, TrivyScanStrategy.FAIL, TrivyScanStrategy.IGNORE], description: 'Define whether the build should be unstable, fail or whether the error should be ignored if any vulnerability was found.'),
+                ])
         ])
 
         stage('Checkout') {
@@ -114,6 +118,14 @@ node('docker') {
 
             stage('Deploy k8s-ces-control') {
                 k3d.helm("install ${repositoryName} ${helmChartDir}")
+            }
+
+            stage('Trivy scan') {
+                Trivy trivy = new Trivy(this)
+                trivy.scanImage(imageName, params.TrivySeverityLevels, params.TrivyStrategy)
+                trivy.saveFormattedTrivyReport(TrivyScanFormat.TABLE)
+                trivy.saveFormattedTrivyReport(TrivyScanFormat.JSON)
+                trivy.saveFormattedTrivyReport(TrivyScanFormat.HTML)
             }
 
             stage("Wait for k8s-ces-control") {
