@@ -149,7 +149,7 @@ testDoguAdministration_StartStopDogus() {
   ${GRPCURL_BIN_PATH} -plaintext -d '{"doguName": "postfix"}' localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.StartDogu >/dev/null 2>&1
 
   # Wait for dogu to be started
-  sleep 10s
+  sleep 15s
 
   local healthStatus=""
   healthStatus="$(${KUBECTL_BIN_PATH} get dogu/postfix -o json | ${JQ_BIN_PATH} -r '.status.health')"
@@ -158,7 +158,7 @@ testDoguAdministration_StartStopDogus() {
     addSuccessTestCase "Dogu-Administration-StartDogu-Postfix" "k8s-ces-control successfully started the Postfix dogu."
   else
     echo "Test: Postfix started? Failed!"
-    addFailingTestCase "Dogu-Administration-StartDogu-Postfix" "Expected the replicas of postfix to be 1 but got: ${replicas}"
+    addFailingTestCase "Dogu-Administration-StartDogu-Postfix" "Expected the healthStatus of postfix to be 'available' but got: ${healthStatus}"
   fi
 }
 testDoguAdministration_RestartDogus() {

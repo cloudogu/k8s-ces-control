@@ -102,9 +102,11 @@ node('docker') {
                 k3d.waitForDeploymentRollout("postfix", 300, 10)
             }
 
+            String version = makefile.getVersion()
+            String localImageName = "cloudogu/${repositoryName}:${version}"
             String imageName = ""
             stage('Build & Push Image') {
-                imageName = k3d.buildAndPushToLocalRegistry("cloudogu/${repositoryName}", makefile.getVersion())
+                imageName = k3d.buildAndPushToLocalRegistry("cloudogu/${repositoryName}", version)
             }
 
             stage('Update development resources') {
@@ -122,7 +124,7 @@ node('docker') {
 
             stage('Trivy scan') {
                 Trivy trivy = new Trivy(this)
-                trivy.scanImage(imageName, params.TrivySeverityLevels, params.TrivyStrategy)
+                trivy.scanImage(localImageName, params.TrivySeverityLevels, params.TrivyStrategy)
                 trivy.saveFormattedTrivyReport(TrivyScanFormat.TABLE)
                 trivy.saveFormattedTrivyReport(TrivyScanFormat.JSON)
                 trivy.saveFormattedTrivyReport(TrivyScanFormat.HTML)
