@@ -104,7 +104,7 @@ func (s *server) getDoguHealthResponse(ctx context.Context, doguName string) (*p
 	}
 
 	// When dogu.spec.stopped=false it indicates that the dogu is not stopped.
-	// The admin dogu notices that there is a Dogu which is not healthy but not and assumes: Dogu is starting
+	// The admin dogu notices that there is a Dogu which is not healthy but not  stopped and assumes: Dogu is starting
 	containerStatusResult := &pbHealth.DoguHealthCheck{
 		Type:     checkTypeContainer,
 		Success:  !dogu.Spec.Stopped,
