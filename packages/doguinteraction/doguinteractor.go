@@ -9,11 +9,11 @@ import (
 	"github.com/cloudogu/k8s-registry-lib/config"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"time"
 )
 
 var waitTimeout = time.Minute * 10
-var waitInterval = time.Second * 5
 
 const (
 	doguConfigKeyLogLevel = "logging/root"
@@ -128,33 +128,49 @@ func (ddi *defaultDoguInterActor) startStopDogu(ctx context.Context, doguName st
 }
 
 func (ddi *defaultDoguInterActor) waitForDoguStartStop(ctx context.Context, doguName string) error {
-	timeoutTimer := time.NewTimer(waitTimeout)
-	// Use a ticker instead of a kubernetes watch because the watch does not notify on status changes.
-	ticker := time.NewTicker(waitInterval)
-	for {
-		select {
-		case <-ticker.C:
-			rolledOut, stopWait, err := ddi.doWaitForDoguStartStop(ctx, doguName)
-			if err != nil {
-				stopWaitChannels(timeoutTimer, ticker)
-				return err
+	timeoutCtx, cancelTimeout := context.WithTimeoutCause(ctx, waitTimeout, fmt.Errorf("timout reached waiting for dogu %s. Timeout was %v", doguName, waitTimeout))
+
+	watchOptions := metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("metadata.name=%s", doguName),
+	}
+	watcher, err := ddi.doguClient.Watch(timeoutCtx, watchOptions)
+	if err != nil {
+		cancelTimeout()
+		return fmt.Errorf("error starting watch for dogu %s: %w", doguName, err)
+	}
+
+	for event := range watcher.ResultChan() {
+		switch event.Type {
+		case watch.Error:
+			watcher.Stop()
+			cancelTimeout()
+			return fmt.Errorf("error in watch while waiting for start/stop: %v", event.Object)
+		default:
+			isInDesiredState, cErr := ddi.checkIfDoguInDesiredStopState(timeoutCtx, doguName)
+			if cErr != nil {
+				watcher.Stop()
+				cancelTimeout()
+				return fmt.Errorf("error checking dogu-state while waiting for start/stop: %w", cErr)
 			}
 
-			if stopWait || rolledOut {
-				stopWaitChannels(timeoutTimer, ticker)
+			if isInDesiredState {
+				watcher.Stop()
+				cancelTimeout()
 				return nil
 			}
-		case <-timeoutTimer.C:
-			ticker.Stop()
-			return fmt.Errorf("failed to wait for dogu %s start/stop: timeout reached", doguName)
 		}
 	}
+
+	cancelTimeout()
+	watcher.Stop()
+
+	return fmt.Errorf("watch for dogu %s stopped: timeout reached: %v", doguName, context.Cause(timeoutCtx))
 }
 
-func (ddi *defaultDoguInterActor) doWaitForDoguStartStop(ctx context.Context, doguName string) (rolledOut bool, stopWait bool, err error) {
+func (ddi *defaultDoguInterActor) checkIfDoguInDesiredStopState(ctx context.Context, doguName string) (isInDesiredState bool, err error) {
 	dogu, getErr := ddi.doguClient.Get(ctx, doguName, metav1.GetOptions{})
 	if getErr != nil {
-		return false, true, fmt.Errorf("failed to get dogu %s: %w", doguName, getErr)
+		return false, fmt.Errorf("failed to get dogu %s: %w", doguName, getErr)
 	}
 
 	desiredState := stateStarted
@@ -167,16 +183,12 @@ func (ddi *defaultDoguInterActor) doWaitForDoguStartStop(ctx context.Context, do
 	}
 
 	if dogu.Spec.Stopped != dogu.Status.Stopped {
-		logrus.Info(fmt.Sprintf("waiting for dogu %q start/stop to finish. Desired state is %s; Current state is %s", doguName, desiredState, currentState))
-		return false, false, nil
+		logrus.Debug(fmt.Sprintf("dogu %q has NOT reached desired start/stop state. Desired state is %s; Current state is %s", doguName, desiredState, currentState))
+		return false, nil
 	}
 
-	return true, true, nil
-}
-
-func stopWaitChannels(timer *time.Timer, ticker *time.Ticker) {
-	timer.Stop()
-	ticker.Stop()
+	logrus.Debug(fmt.Sprintf("dogu %q has reached desired start/stop state: %s", doguName, desiredState))
+	return true, nil
 }
 
 // SetLogLevelInAllDogus sets the specified log level to all dogus.

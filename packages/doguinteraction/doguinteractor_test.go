@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"testing"
 	"time"
 )
@@ -74,10 +75,6 @@ func Test_defaultDoguInterActor_RestartDoguWithWait(t *testing.T) {
 		waitTimeout = time.Second * 10
 		defer func() { waitTimeout = oldWaitTimeout }()
 
-		oldWaitInterval := waitInterval
-		waitInterval = time.Second * 1
-		defer func() { waitInterval = oldWaitInterval }()
-
 		expectedDoguRestartToCreate := &v2.DoguRestart{ObjectMeta: metav1.ObjectMeta{GenerateName: "redmine-"}, Spec: v2.DoguRestartSpec{DoguName: "redmine"}}
 		dogu := &v2.Dogu{
 			Spec: v2.DoguSpec{
@@ -88,10 +85,18 @@ func Test_defaultDoguInterActor_RestartDoguWithWait(t *testing.T) {
 
 		doguClientMock := NewMockDoguInterface(t)
 
-		doguClientMock.EXPECT().Get(testCtx, "redmine", metav1.GetOptions{}).Return(dogu, nil)
+		doguClientMock.EXPECT().Get(mock.Anything, "redmine", metav1.GetOptions{}).Return(dogu, nil)
 
 		doguRestartClientMock := NewMockDoguRestartInterface(t)
 		doguRestartClientMock.EXPECT().Create(testCtx, expectedDoguRestartToCreate, metav1.CreateOptions{}).Return(expectedDoguRestartToCreate, nil)
+
+		watcher := watch.NewFake()
+		doguClientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{FieldSelector: "metadata.name=redmine"}).Return(watcher, nil)
+
+		go func() {
+			time.Sleep(1 * time.Second)
+			watcher.Action(watch.Modified, expectedDoguRestartToCreate)
+		}()
 
 		sut := defaultDoguInterActor{
 			doguClient:        doguClientMock,
@@ -131,10 +136,6 @@ func Test_defaultDoguInterActor_RestartDoguWithWait(t *testing.T) {
 		waitTimeout = time.Second * 10
 		defer func() { waitTimeout = oldWaitTimeout }()
 
-		oldWaitInterval := waitInterval
-		waitInterval = time.Second * 1
-		defer func() { waitInterval = oldWaitInterval }()
-
 		expectedDoguRestartToCreate := &v2.DoguRestart{ObjectMeta: metav1.ObjectMeta{GenerateName: "redmine-"}, Spec: v2.DoguRestartSpec{DoguName: "redmine"}}
 		dogu := &v2.Dogu{
 			Spec: v2.DoguSpec{
@@ -145,10 +146,18 @@ func Test_defaultDoguInterActor_RestartDoguWithWait(t *testing.T) {
 
 		doguClientMock := NewMockDoguInterface(t)
 
-		doguClientMock.EXPECT().Get(testCtx, "redmine", metav1.GetOptions{}).Return(dogu, assert.AnError)
+		doguClientMock.EXPECT().Get(mock.Anything, "redmine", metav1.GetOptions{}).Return(dogu, assert.AnError)
 
 		doguRestartClientMock := NewMockDoguRestartInterface(t)
 		doguRestartClientMock.EXPECT().Create(testCtx, expectedDoguRestartToCreate, metav1.CreateOptions{}).Return(expectedDoguRestartToCreate, nil)
+
+		watcher := watch.NewFake()
+		doguClientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{FieldSelector: "metadata.name=redmine"}).Return(watcher, nil)
+
+		go func() {
+			time.Sleep(1 * time.Second)
+			watcher.Action(watch.Modified, expectedDoguRestartToCreate)
+		}()
 
 		sut := defaultDoguInterActor{
 			doguClient:        doguClientMock,
@@ -161,7 +170,7 @@ func Test_defaultDoguInterActor_RestartDoguWithWait(t *testing.T) {
 		// then
 		require.Error(t, err)
 		assert.ErrorIs(t, err, assert.AnError)
-		assert.ErrorContains(t, err, "error waiting for dogu redmine while restarting: failed to get dogu redmine:")
+		assert.ErrorContains(t, err, "error waiting for dogu redmine while restarting: error checking dogu-state while waiting for start/stop: failed to get dogu redmine")
 	})
 }
 
@@ -264,15 +273,11 @@ func Test_defaultDoguInterActor_StartDoguWithWait(t *testing.T) {
 		assert.ErrorContains(t, err, "dogu name must not be empty")
 	})
 
-	t.Run("error wait-timeout reached", func(t *testing.T) {
+	t.Run("error starting watch", func(t *testing.T) {
 		// given
 		oldWaitTimeout := waitTimeout
 		waitTimeout = time.Second * 3
 		defer func() { waitTimeout = oldWaitTimeout }()
-
-		oldWaitInterval := waitInterval
-		waitInterval = time.Second * 1
-		defer func() { waitInterval = oldWaitInterval }()
 
 		dogu := &v2.Dogu{
 			Spec: v2.DoguSpec{
@@ -291,8 +296,9 @@ func Test_defaultDoguInterActor_StartDoguWithWait(t *testing.T) {
 		}
 
 		doguClientMock := NewMockDoguInterface(t)
-		doguClientMock.EXPECT().Get(testCtx, "postgresql", metav1.GetOptions{}).Return(dogu, nil)
-		doguClientMock.EXPECT().UpdateSpecWithRetry(testCtx, expectedUpdateDogu, mock.Anything, metav1.UpdateOptions{}).Return(dogu, nil)
+		doguClientMock.EXPECT().Get(mock.Anything, "postgresql", metav1.GetOptions{}).Return(dogu, nil)
+		doguClientMock.EXPECT().UpdateSpecWithRetry(mock.Anything, expectedUpdateDogu, mock.Anything, metav1.UpdateOptions{}).Return(dogu, nil)
+		doguClientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{FieldSelector: "metadata.name=postgresql"}).Return(nil, assert.AnError)
 
 		sut := defaultDoguInterActor{
 			doguClient: doguClientMock,
@@ -303,7 +309,106 @@ func Test_defaultDoguInterActor_StartDoguWithWait(t *testing.T) {
 
 		// then
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "failed to wait for dogu postgresql start/stop: timeout reached")
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "error starting watch for dogu postgresql")
+	})
+
+	t.Run("error in watch for dogu", func(t *testing.T) {
+		// given
+		oldWaitTimeout := waitTimeout
+		waitTimeout = time.Second * 3
+		defer func() { waitTimeout = oldWaitTimeout }()
+
+		dogu := &v2.Dogu{
+			Spec: v2.DoguSpec{
+				Name:    "postgresql",
+				Stopped: false,
+			},
+			Status: v2.DoguStatus{Stopped: true},
+		}
+
+		expectedUpdateDogu := &v2.Dogu{
+			Spec: v2.DoguSpec{
+				Name:    "postgresql",
+				Stopped: false,
+			},
+			Status: v2.DoguStatus{Stopped: true},
+		}
+
+		doguClientMock := NewMockDoguInterface(t)
+		doguClientMock.EXPECT().Get(mock.Anything, "postgresql", metav1.GetOptions{}).Return(dogu, nil)
+		doguClientMock.EXPECT().UpdateSpecWithRetry(mock.Anything, expectedUpdateDogu, mock.Anything, metav1.UpdateOptions{}).Return(dogu, nil)
+
+		watcher := watch.NewFakeWithChanSize(5, false)
+		doguClientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{FieldSelector: "metadata.name=postgresql"}).Return(watcher, nil)
+
+		go func() {
+			time.Sleep(1 * time.Second)
+			watcher.Action(watch.Error, expectedUpdateDogu)
+		}()
+
+		sut := defaultDoguInterActor{
+			doguClient: doguClientMock,
+		}
+
+		// when
+		err := sut.StartDoguWithWait(testCtx, "postgresql", true)
+
+		// then
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "error in watch while waiting for start/stop:")
+	})
+
+	t.Run("error wait-timeout reached", func(t *testing.T) {
+		// given
+		oldWaitTimeout := waitTimeout
+		waitTimeout = time.Second * 3
+		defer func() { waitTimeout = oldWaitTimeout }()
+
+		dogu := &v2.Dogu{
+			Spec: v2.DoguSpec{
+				Name:    "postgresql",
+				Stopped: false,
+			},
+			Status: v2.DoguStatus{Stopped: true},
+		}
+
+		expectedUpdateDogu := &v2.Dogu{
+			Spec: v2.DoguSpec{
+				Name:    "postgresql",
+				Stopped: false,
+			},
+			Status: v2.DoguStatus{Stopped: true},
+		}
+
+		doguClientMock := NewMockDoguInterface(t)
+		doguClientMock.EXPECT().Get(mock.Anything, "postgresql", metav1.GetOptions{}).Return(dogu, nil)
+		doguClientMock.EXPECT().UpdateSpecWithRetry(mock.Anything, expectedUpdateDogu, mock.Anything, metav1.UpdateOptions{}).Return(dogu, nil)
+
+		watcher := watch.NewFakeWithChanSize(5, false)
+		doguClientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{FieldSelector: "metadata.name=postgresql"}).Return(watcher, nil).Run(
+			func(watchCtx context.Context, opts metav1.ListOptions) {
+				go func() {
+					time.Sleep(waitTimeout)
+					watcher.Stop()
+				}()
+			})
+
+		go func() {
+			time.Sleep(1 * time.Second)
+			watcher.Action(watch.Modified, expectedUpdateDogu)
+		}()
+
+		sut := defaultDoguInterActor{
+			doguClient: doguClientMock,
+		}
+
+		// when
+		err := sut.StartDoguWithWait(testCtx, "postgresql", true)
+
+		// then
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "watch for dogu postgresql stopped: timeout reached: context canceled")
 	})
 
 }
@@ -377,10 +482,6 @@ func Test_defaultDoguInterActor_StartAllDogus(t *testing.T) {
 		waitTimeout = time.Second * 10
 		defer func() { waitTimeout = oldWaitTimeout }()
 
-		oldWaitInterval := waitInterval
-		waitInterval = time.Second * 1
-		defer func() { waitInterval = oldWaitInterval }()
-
 		doguRegistryMock := newMockDoguDescriptorGetter(t)
 		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine", Dependencies: []core.Dependency{{Name: "postgresql", Type: core.DependencyTypeDogu}}}}, nil)
 
@@ -388,12 +489,26 @@ func Test_defaultDoguInterActor_StartAllDogus(t *testing.T) {
 		redmineDogu := &v2.Dogu{Spec: v2.DoguSpec{Name: "redmine", Stopped: true}}
 
 		doguClientMock := NewMockDoguInterface(t)
-		doguClientMock.EXPECT().Get(testCtx, "postgresql", metav1.GetOptions{}).Return(postgresqlDogu, nil)
-		doguClientMock.EXPECT().UpdateSpecWithRetry(testCtx, postgresqlDogu, mock.Anything, metav1.UpdateOptions{}).Return(postgresqlDogu, nil).Run(func(ctx context.Context, dogu *v2.Dogu, modifySpecFn func(v2.DoguSpec) v2.DoguSpec, opts metav1.UpdateOptions) {
+		doguClientMock.EXPECT().Get(mock.Anything, "postgresql", metav1.GetOptions{}).Return(postgresqlDogu, nil)
+		doguClientMock.EXPECT().UpdateSpecWithRetry(mock.Anything, postgresqlDogu, mock.Anything, metav1.UpdateOptions{}).Return(postgresqlDogu, nil).Run(func(ctx context.Context, dogu *v2.Dogu, modifySpecFn func(v2.DoguSpec) v2.DoguSpec, opts metav1.UpdateOptions) {
 			// This ensures the start order.
-			doguClientMock.EXPECT().Get(testCtx, "redmine", metav1.GetOptions{}).Return(redmineDogu, nil)
-			doguClientMock.EXPECT().UpdateSpecWithRetry(testCtx, redmineDogu, mock.Anything, metav1.UpdateOptions{}).Return(redmineDogu, nil)
+			doguClientMock.EXPECT().Get(mock.Anything, "redmine", metav1.GetOptions{}).Return(redmineDogu, nil)
+			doguClientMock.EXPECT().UpdateSpecWithRetry(mock.Anything, redmineDogu, mock.Anything, metav1.UpdateOptions{}).Return(redmineDogu, nil)
+			redmineWatcher := watch.NewFake()
+			doguClientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{FieldSelector: "metadata.name=redmine"}).Return(redmineWatcher, nil)
+			go func() {
+				time.Sleep(1 * time.Second)
+				redmineWatcher.Action(watch.Modified, redmineDogu)
+			}()
 		})
+
+		postgresqlWatcher := watch.NewFake()
+		doguClientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{FieldSelector: "metadata.name=postgresql"}).Return(postgresqlWatcher, nil)
+
+		go func() {
+			time.Sleep(1 * time.Second)
+			postgresqlWatcher.Action(watch.Modified, postgresqlDogu)
+		}()
 
 		sut := defaultDoguInterActor{
 			doguDescriptorGetter: doguRegistryMock,
@@ -435,10 +550,6 @@ func Test_defaultDoguInterActor_StopAllDogus(t *testing.T) {
 		waitTimeout = time.Second * 10
 		defer func() { waitTimeout = oldWaitTimeout }()
 
-		oldWaitInterval := waitInterval
-		waitInterval = time.Second * 1
-		defer func() { waitInterval = oldWaitInterval }()
-
 		doguRegistryMock := newMockDoguDescriptorGetter(t)
 		doguRegistryMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{{Name: "official/postgresql"}, {Name: "official/redmine", Dependencies: []core.Dependency{{Name: "postgresql", Type: core.DependencyTypeDogu}}}}, nil)
 
@@ -446,12 +557,25 @@ func Test_defaultDoguInterActor_StopAllDogus(t *testing.T) {
 		redmineDoguStopped := &v2.Dogu{Spec: v2.DoguSpec{Name: "redmine", Stopped: true}, Status: v2.DoguStatus{Stopped: true}}
 
 		doguClientMock := NewMockDoguInterface(t)
-		doguClientMock.EXPECT().Get(testCtx, "redmine", metav1.GetOptions{}).Return(redmineDoguStopped, nil)
-		doguClientMock.EXPECT().UpdateSpecWithRetry(testCtx, redmineDoguStopped, mock.Anything, metav1.UpdateOptions{}).Return(redmineDoguStopped, nil).Run(func(ctx context.Context, dogu *v2.Dogu, modifySpecFn func(v2.DoguSpec) v2.DoguSpec, opts metav1.UpdateOptions) {
+		doguClientMock.EXPECT().Get(mock.Anything, "redmine", metav1.GetOptions{}).Return(redmineDoguStopped, nil)
+		doguClientMock.EXPECT().UpdateSpecWithRetry(mock.Anything, redmineDoguStopped, mock.Anything, metav1.UpdateOptions{}).Return(redmineDoguStopped, nil).Run(func(ctx context.Context, dogu *v2.Dogu, modifySpecFn func(v2.DoguSpec) v2.DoguSpec, opts metav1.UpdateOptions) {
 			// This ensures the stop order.
-			doguClientMock.EXPECT().Get(testCtx, "postgresql", metav1.GetOptions{}).Return(postgresqlDoguStopped, nil)
-			doguClientMock.EXPECT().UpdateSpecWithRetry(testCtx, postgresqlDoguStopped, mock.Anything, metav1.UpdateOptions{}).Return(postgresqlDoguStopped, nil)
+			doguClientMock.EXPECT().Get(mock.Anything, "postgresql", metav1.GetOptions{}).Return(postgresqlDoguStopped, nil)
+			doguClientMock.EXPECT().UpdateSpecWithRetry(mock.Anything, postgresqlDoguStopped, mock.Anything, metav1.UpdateOptions{}).Return(postgresqlDoguStopped, nil)
+			postgresqlWatcher := watch.NewFake()
+			doguClientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{FieldSelector: "metadata.name=postgresql"}).Return(postgresqlWatcher, nil)
+			go func() {
+				time.Sleep(1 * time.Second)
+				postgresqlWatcher.Action(watch.Modified, redmineDoguStopped)
+			}()
 		})
+
+		redmineWatcher := watch.NewFake()
+		doguClientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{FieldSelector: "metadata.name=redmine"}).Return(redmineWatcher, nil)
+		go func() {
+			time.Sleep(1 * time.Second)
+			redmineWatcher.Action(watch.Modified, redmineDoguStopped)
+		}()
 
 		sut := defaultDoguInterActor{
 			doguConfigRepository: repository.DoguConfigRepository{},
@@ -560,7 +684,7 @@ func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 	})
 }
 
-func Test_defaultDoguInterActor_doWaitForDoguStartStop(t *testing.T) {
+func Test_defaultDoguInterActor_checkIfDoguInDesiredStopState(t *testing.T) {
 	t.Run("should return error on dogu get error", func(t *testing.T) {
 		// given
 		doguClientMock := NewMockDoguInterface(t)
@@ -571,7 +695,7 @@ func Test_defaultDoguInterActor_doWaitForDoguStartStop(t *testing.T) {
 		}
 
 		// when
-		_, _, err := sut.doWaitForDoguStartStop(testCtx, "redmine")
+		_, err := sut.checkIfDoguInDesiredStopState(testCtx, "redmine")
 
 		// then
 		require.Error(t, err)
@@ -592,12 +716,11 @@ func Test_defaultDoguInterActor_doWaitForDoguStartStop(t *testing.T) {
 		}
 
 		// when
-		rolledOut, stopWait, err := sut.doWaitForDoguStartStop(testCtx, "redmine")
+		isInDesiredState, err := sut.checkIfDoguInDesiredStopState(testCtx, "redmine")
 
 		// then
 		require.NoError(t, err)
-		assert.True(t, rolledOut)
-		assert.True(t, stopWait)
+		assert.True(t, isInDesiredState)
 	})
 
 	t.Run("should not stop if dogu is NOT in desired state", func(t *testing.T) {
@@ -613,11 +736,10 @@ func Test_defaultDoguInterActor_doWaitForDoguStartStop(t *testing.T) {
 		}
 
 		// when
-		rolledOut, stopWait, err := sut.doWaitForDoguStartStop(testCtx, "redmine")
+		isInDesiredState, err := sut.checkIfDoguInDesiredStopState(testCtx, "redmine")
 
 		// then
 		require.NoError(t, err)
-		assert.False(t, rolledOut)
-		assert.False(t, stopWait)
+		assert.False(t, isInDesiredState)
 	})
 }

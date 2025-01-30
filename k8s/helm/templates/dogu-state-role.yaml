@@ -14,6 +14,7 @@ rules:
       - list
       - get
       - update
+      - watch
   - apiGroups:
       - k8s.cloudogu.com
     resources:
