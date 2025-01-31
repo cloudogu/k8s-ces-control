@@ -128,7 +128,7 @@ func (ddi *defaultDoguInterActor) startStopDogu(ctx context.Context, doguName st
 }
 
 func (ddi *defaultDoguInterActor) waitForDoguStartStop(ctx context.Context, doguName string) error {
-	timeoutCtx, cancelTimeout := context.WithTimeoutCause(ctx, waitTimeout, fmt.Errorf("timout reached waiting for dogu %s. Timeout was %v", doguName, waitTimeout))
+	timeoutCtx, cancelTimeout := context.WithTimeoutCause(ctx, waitTimeout, fmt.Errorf("timout (%v) reached waiting for dogu %s", waitTimeout, doguName))
 
 	watchOptions := metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", doguName),
@@ -164,7 +164,7 @@ func (ddi *defaultDoguInterActor) waitForDoguStartStop(ctx context.Context, dogu
 	cancelTimeout()
 	watcher.Stop()
 
-	return fmt.Errorf("watch for dogu %s stopped: timeout reached: %v", doguName, context.Cause(timeoutCtx))
+	return fmt.Errorf("watch for dogu %s stopped: %v", doguName, context.Cause(timeoutCtx))
 }
 
 func (ddi *defaultDoguInterActor) checkIfDoguInDesiredStopState(ctx context.Context, doguName string) (isInDesiredState bool, err error) {
