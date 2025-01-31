@@ -3,7 +3,7 @@ package doguHealth
 import (
 	"context"
 	pbHealth "github.com/cloudogu/ces-control-api/generated/health"
-	"github.com/cloudogu/k8s-ces-control/packages/config"
+	v2 "github.com/cloudogu/k8s-dogu-operator/v2/api/v2"
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -15,13 +15,13 @@ const checkTypeContainer = "container"
 const responseMessageMissingDoguname = "dogu name is empty"
 
 // NewDoguHealthService return a new health server to retrieve health information from Dogus.
-func NewDoguHealthService(client clusterClient) *server {
+func NewDoguHealthService(client doguClient) *server {
 	return &server{client: client}
 }
 
 type server struct {
 	pbHealth.UnimplementedDoguHealthServer
-	client clusterClient
+	client doguClient
 }
 
 // GetByName retrieves the health information about a given dogu if it is installed.
@@ -43,7 +43,7 @@ func (s *server) GetByNames(ctx context.Context, request *pbHealth.DoguHealthLis
 // GetAll retrieves health information about all installed dogus.
 func (s *server) GetAll(ctx context.Context, _ *pbHealth.DoguHealthAllRequest) (*pbHealth.DoguHealthMapResponse, error) {
 	logrus.Debugf("Check healthy state of all dogus")
-	doguList, err := s.client.Dogus(config.CurrentNamespace).List(ctx, metav1.ListOptions{})
+	doguList, err := s.client.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
@@ -82,7 +82,7 @@ func (s *server) getDoguListHealthResponse(ctx context.Context, doguNameList []s
 }
 
 func (s *server) getDoguHealthResponse(ctx context.Context, doguName string) (*pbHealth.DoguHealthResponse, error) {
-	doguDeployment, err := s.client.AppsV1().Deployments(config.CurrentNamespace).Get(ctx, doguName, metav1.GetOptions{})
+	dogu, err := s.client.Get(ctx, doguName, metav1.GetOptions{})
 	if err != nil {
 		errResponse := &pbHealth.DoguHealthResponse{
 			FullName:    doguName,
@@ -94,7 +94,7 @@ func (s *server) getDoguHealthResponse(ctx context.Context, doguName string) (*p
 		return errResponse, err
 	}
 
-	isHealthy := doguDeployment.Status.ReadyReplicas > 0
+	isHealthy := dogu.Status.Health == v2.AvailableHealthStatus
 	response := &pbHealth.DoguHealthResponse{
 		FullName:    doguName,
 		ShortName:   doguName,
@@ -103,14 +103,12 @@ func (s *server) getDoguHealthResponse(ctx context.Context, doguName string) (*p
 		Results:     []*pbHealth.DoguHealthCheck{},
 	}
 
-	// When replicas is > 0 it indicates that the dogu is not stopped.
-	// The admin dogu notices that there is a Dogu which is not healthy with a deployment > 0 and assumes: Dogu is starting
-	hasReplica := *doguDeployment.Spec.Replicas > 0
-
+	// When dogu.spec.stopped=false it indicates that the dogu is not stopped.
+	// The admin dogu notices that there is a Dogu which is not healthy but not  stopped and assumes: Dogu is starting
 	containerStatusResult := &pbHealth.DoguHealthCheck{
 		Type:     checkTypeContainer,
-		Success:  hasReplica,
-		Message:  "Check whether a deployment has at least one replica, ready or not.",
+		Success:  !dogu.Spec.Stopped,
+		Message:  "Check whether a dogu is not stopped (ready or not).",
 		Critical: false,
 	}
 

@@ -23,38 +23,42 @@ var testCtx = context.TODO()
 func TestNewDoguAdministrationServer(t *testing.T) {
 	t.Run("server should not be empty", func(t *testing.T) {
 		// given
-		doguConfigRepositoryMock := newMockDoguConfigRepository(t)
-		clientMock := newMockClusterClient(t)
 		descriptorGetter := newMockDoguDescriptorGetter(t)
+		bluePrintListerMock := NewMockBlueprintLister(t)
+		doguInterActorMock := newMockDoguInterActor(t)
 		loggingMock := newMockLogService(t)
 
 		// when
 		actual := NewDoguAdministrationServer(
-			doguConfigRepositoryMock,
-			clientMock,
+			bluePrintListerMock,
 			descriptorGetter,
-			"testNamespace",
+			doguInterActorMock,
 			loggingMock,
 		)
 
 		// then
 		assert.NotEmpty(t, actual)
-		assert.Equal(t, clientMock, actual.client)
+		assert.Equal(t, bluePrintListerMock, actual.blueprintLister)
 		assert.Equal(t, descriptorGetter, actual.doguDescriptorGetter)
+		assert.Equal(t, doguInterActorMock, actual.doguInterActor)
+		assert.Equal(t, loggingMock, actual.loggingService)
 	})
 }
 
 func Test_server_GetDoguList(t *testing.T) {
 	t.Run("should return empty response for empty dogu list", func(t *testing.T) {
 		// given
-		clientMock := newMockClusterClient(t)
-		doguRegMock := newMockDoguDescriptorGetter(t)
-		doguRegMock.EXPECT().GetCurrentOfAll(testCtx).Return(make([]*core.Dogu, 0), nil)
+		descriptorGetter := newMockDoguDescriptorGetter(t)
+		bluePrintListerMock := NewMockBlueprintLister(t)
+		doguInterActorMock := newMockDoguInterActor(t)
 		loggingMock := newMockLogService(t)
+
+		descriptorGetter.EXPECT().GetCurrentOfAll(testCtx).Return(make([]*core.Dogu, 0), nil)
+
 		sut := &server{
-			doguDescriptorGetter: doguRegMock,
-			client:               clientMock,
-			ns:                   "ecosystem",
+			blueprintLister:      bluePrintListerMock,
+			doguDescriptorGetter: descriptorGetter,
+			doguInterActor:       doguInterActorMock,
 			loggingService:       loggingMock,
 		}
 
@@ -67,14 +71,17 @@ func Test_server_GetDoguList(t *testing.T) {
 	})
 	t.Run("should fail to get dogu.jsons from registry", func(t *testing.T) {
 		// given
-		clientMock := newMockClusterClient(t)
-		doguRegMock := newMockDoguDescriptorGetter(t)
-		doguRegMock.EXPECT().GetCurrentOfAll(testCtx).Return(nil, assert.AnError)
+		descriptorGetter := newMockDoguDescriptorGetter(t)
+		bluePrintListerMock := NewMockBlueprintLister(t)
+		doguInterActorMock := newMockDoguInterActor(t)
 		loggingMock := newMockLogService(t)
+
+		descriptorGetter.EXPECT().GetCurrentOfAll(testCtx).Return(nil, assert.AnError)
+
 		sut := &server{
-			doguDescriptorGetter: doguRegMock,
-			client:               clientMock,
-			ns:                   "ecosystem",
+			blueprintLister:      bluePrintListerMock,
+			doguDescriptorGetter: descriptorGetter,
+			doguInterActor:       doguInterActorMock,
 			loggingService:       loggingMock,
 		}
 
@@ -89,9 +96,12 @@ func Test_server_GetDoguList(t *testing.T) {
 	})
 	t.Run("should succeed", func(t *testing.T) {
 		// given
-		clientMock := newMockClusterClient(t)
-		doguRegMock := newMockDoguDescriptorGetter(t)
-		doguRegMock.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{
+		descriptorGetter := newMockDoguDescriptorGetter(t)
+		bluePrintListerMock := NewMockBlueprintLister(t)
+		doguInterActorMock := newMockDoguInterActor(t)
+		loggingMock := newMockLogService(t)
+
+		descriptorGetter.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{
 			{
 				Name:        "ns1/will-succeed",
 				DisplayName: "WillSucceed",
@@ -107,12 +117,13 @@ func Test_server_GetDoguList(t *testing.T) {
 				Tags:        []string{"example", "banana"},
 			},
 		}, nil)
-		loggingMock := newMockLogService(t)
+
 		loggingMock.EXPECT().GetLogLevel(mock.Anything, mock.Anything).Return(logging.LevelDebug, nil)
+
 		sut := &server{
-			doguDescriptorGetter: doguRegMock,
-			client:               clientMock,
-			ns:                   "ecosystem",
+			blueprintLister:      bluePrintListerMock,
+			doguDescriptorGetter: descriptorGetter,
+			doguInterActor:       doguInterActorMock,
 			loggingService:       loggingMock,
 		}
 
@@ -147,12 +158,12 @@ func Test_server_GetDoguList(t *testing.T) {
 func Test_server_StartDogu(t *testing.T) {
 	t.Run("should fail if dogu name is empty", func(t *testing.T) {
 		// given
-		clientMock := newMockClusterClient(t)
-		doguRegMock := newMockDoguDescriptorGetter(t)
+		descriptorGetter := newMockDoguDescriptorGetter(t)
+		bluePrintListerMock := NewMockBlueprintLister(t)
+
 		sut := &server{
-			doguDescriptorGetter: doguRegMock,
-			client:               clientMock,
-			ns:                   "ecosystem",
+			doguDescriptorGetter: descriptorGetter,
+			blueprintLister:      bluePrintListerMock,
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: ""}
 
@@ -172,7 +183,6 @@ func Test_server_StartDogu(t *testing.T) {
 
 		sut := &server{
 			doguInterActor: doguInterActorMock,
-			ns:             "ecosystem",
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
 
@@ -192,7 +202,6 @@ func Test_server_StartDogu(t *testing.T) {
 
 		sut := &server{
 			doguInterActor: doguInterActorMock,
-			ns:             "ecosystem",
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
 
@@ -208,12 +217,11 @@ func Test_server_StartDogu(t *testing.T) {
 func Test_server_StopDogu(t *testing.T) {
 	t.Run("should fail if dogu name is empty", func(t *testing.T) {
 		// given
-		clientMock := newMockClusterClient(t)
-		doguRegMock := newMockDoguDescriptorGetter(t)
+		bluePrintListerMock := NewMockBlueprintLister(t)
+		descriptorGetter := newMockDoguDescriptorGetter(t)
 		sut := &server{
-			doguDescriptorGetter: doguRegMock,
-			client:               clientMock,
-			ns:                   "ecosystem",
+			doguDescriptorGetter: descriptorGetter,
+			blueprintLister:      bluePrintListerMock,
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: ""}
 
@@ -233,7 +241,6 @@ func Test_server_StopDogu(t *testing.T) {
 
 		sut := &server{
 			doguInterActor: doguInterActorMock,
-			ns:             "ecosystem",
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
 
@@ -253,7 +260,6 @@ func Test_server_StopDogu(t *testing.T) {
 
 		sut := &server{
 			doguInterActor: doguInterActorMock,
-			ns:             "ecosystem",
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
 
@@ -269,12 +275,11 @@ func Test_server_StopDogu(t *testing.T) {
 func Test_server_RestartDogu(t *testing.T) {
 	t.Run("should fail if dogu name is empty", func(t *testing.T) {
 		// given
-		clientMock := newMockClusterClient(t)
-		doguRegMock := newMockDoguDescriptorGetter(t)
+		bluePrintListerMock := NewMockBlueprintLister(t)
+		descriptorGetter := newMockDoguDescriptorGetter(t)
 		sut := &server{
-			doguDescriptorGetter: doguRegMock,
-			client:               clientMock,
-			ns:                   "ecosystem",
+			doguDescriptorGetter: descriptorGetter,
+			blueprintLister:      bluePrintListerMock,
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: ""}
 
@@ -294,7 +299,6 @@ func Test_server_RestartDogu(t *testing.T) {
 
 		sut := &server{
 			doguInterActor: doguInterActorMock,
-			ns:             "ecosystem",
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
 
@@ -314,7 +318,6 @@ func Test_server_RestartDogu(t *testing.T) {
 
 		sut := &server{
 			doguInterActor: doguInterActorMock,
-			ns:             "ecosystem",
 		}
 		request := &doguAdministration.DoguAdministrationRequest{DoguName: "my-dogu"}
 
@@ -331,14 +334,13 @@ func Test_server_GetBlueprintId(t *testing.T) {
 	ctx := context.TODO()
 
 	t.Run("client List returns error", func(t *testing.T) {
-		clusterClientMock := newMockClusterClient(t)
-		clusterClientMock.EXPECT().List(ctx, metav1.ListOptions{}).Return(nil, errors.New("testError"))
+		bluePrintListerMock := NewMockBlueprintLister(t)
+		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).Return(nil, errors.New("testError"))
 
 		sut := &server{
 			doguDescriptorGetter: newMockDoguDescriptorGetter(t),
-			client:               clusterClientMock,
+			blueprintLister:      bluePrintListerMock,
 			doguInterActor:       newMockDoguInterActor(t),
-			ns:                   "ecosystem",
 		}
 
 		request := &doguAdministration.DoguBlueprinitIdRequest{}
@@ -352,15 +354,14 @@ func Test_server_GetBlueprintId(t *testing.T) {
 	})
 
 	t.Run("client List returns empty list", func(t *testing.T) {
-		clusterClientMock := newMockClusterClient(t)
-		clusterClientMock.EXPECT().List(ctx, metav1.ListOptions{}).
+		bluePrintListerMock := NewMockBlueprintLister(t)
+		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
 			Return(&blueprintcrv1.BlueprintList{Items: make([]blueprintcrv1.Blueprint, 0)}, nil)
 
 		sut := &server{
 			doguDescriptorGetter: newMockDoguDescriptorGetter(t),
-			client:               clusterClientMock,
+			blueprintLister:      bluePrintListerMock,
 			doguInterActor:       newMockDoguInterActor(t),
-			ns:                   "ecosystem",
 		}
 
 		request := &doguAdministration.DoguBlueprinitIdRequest{}
@@ -374,8 +375,8 @@ func Test_server_GetBlueprintId(t *testing.T) {
 	})
 
 	t.Run("client List returns list with one element", func(t *testing.T) {
-		clusterClientMock := newMockClusterClient(t)
-		clusterClientMock.EXPECT().List(ctx, metav1.ListOptions{}).
+		bluePrintListerMock := NewMockBlueprintLister(t)
+		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
 			Return(&blueprintcrv1.BlueprintList{Items: []blueprintcrv1.Blueprint{
 				{ObjectMeta: metav1.ObjectMeta{
 					Name:              "SIV1",
@@ -385,9 +386,8 @@ func Test_server_GetBlueprintId(t *testing.T) {
 
 		sut := &server{
 			doguDescriptorGetter: newMockDoguDescriptorGetter(t),
-			client:               clusterClientMock,
+			blueprintLister:      bluePrintListerMock,
 			doguInterActor:       newMockDoguInterActor(t),
-			ns:                   "ecosystem",
 		}
 
 		request := &doguAdministration.DoguBlueprinitIdRequest{}
@@ -400,8 +400,8 @@ func Test_server_GetBlueprintId(t *testing.T) {
 	})
 
 	t.Run("client List returns list with two elements", func(t *testing.T) {
-		clusterClientMock := newMockClusterClient(t)
-		clusterClientMock.EXPECT().List(ctx, metav1.ListOptions{}).
+		bluePrintListerMock := NewMockBlueprintLister(t)
+		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
 			Return(&blueprintcrv1.BlueprintList{Items: []blueprintcrv1.Blueprint{
 				{ObjectMeta: metav1.ObjectMeta{
 					Name:              "SIV1",
@@ -415,9 +415,8 @@ func Test_server_GetBlueprintId(t *testing.T) {
 
 		sut := &server{
 			doguDescriptorGetter: newMockDoguDescriptorGetter(t),
-			client:               clusterClientMock,
+			blueprintLister:      bluePrintListerMock,
 			doguInterActor:       newMockDoguInterActor(t),
-			ns:                   "ecosystem",
 		}
 
 		request := &doguAdministration.DoguBlueprinitIdRequest{}
@@ -430,8 +429,8 @@ func Test_server_GetBlueprintId(t *testing.T) {
 	})
 
 	t.Run("client List returns list with two elements (replace order)", func(t *testing.T) {
-		clusterClientMock := newMockClusterClient(t)
-		clusterClientMock.EXPECT().List(ctx, metav1.ListOptions{}).
+		bluePrintListerMock := NewMockBlueprintLister(t)
+		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
 			Return(&blueprintcrv1.BlueprintList{Items: []blueprintcrv1.Blueprint{
 				{ObjectMeta: metav1.ObjectMeta{
 					Name:              "SIV1",
@@ -445,9 +444,8 @@ func Test_server_GetBlueprintId(t *testing.T) {
 
 		sut := &server{
 			doguDescriptorGetter: newMockDoguDescriptorGetter(t),
-			client:               clusterClientMock,
+			blueprintLister:      bluePrintListerMock,
 			doguInterActor:       newMockDoguInterActor(t),
-			ns:                   "ecosystem",
 		}
 
 		request := &doguAdministration.DoguBlueprinitIdRequest{}

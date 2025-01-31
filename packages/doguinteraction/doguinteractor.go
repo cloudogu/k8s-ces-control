@@ -5,33 +5,38 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cloudogu/cesapp-lib/core"
+	v2 "github.com/cloudogu/k8s-dogu-operator/v2/api/v2"
 	"github.com/cloudogu/k8s-registry-lib/config"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	scalingv1 "k8s.io/api/autoscaling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"time"
 )
 
 var waitTimeout = time.Minute * 10
-var waitInterval = time.Second * 5
 
 const (
-	doguConfigKeyLogLevel   = "logging/root"
-	containerStateCrashLoop = "CrashLoopBackOff"
+	doguConfigKeyLogLevel = "logging/root"
+
+	stateStarted = "started"
+	stateStopped = "stopped"
 )
 
 type defaultDoguInterActor struct {
-	clientSet            clusterClientSet
+	doguClient           DoguInterface
+	doguRestartClient    DoguRestartInterface
 	doguConfigRepository doguConfigRepository
 	doguDescriptorGetter doguDescriptorGetter
-	namespace            string
 }
 
 // NewDefaultDoguInterActor creates a new instance of defaultDoguInterActor.
-func NewDefaultDoguInterActor(doguConfigRepository doguConfigRepository, clientSet clusterClientSet, namespace string, doguDescriptorGetter doguDescriptorGetter) *defaultDoguInterActor {
-	return &defaultDoguInterActor{doguConfigRepository: doguConfigRepository, clientSet: clientSet, namespace: namespace, doguDescriptorGetter: doguDescriptorGetter}
+func NewDefaultDoguInterActor(doguConfigRepository doguConfigRepository, doguClient DoguInterface, doguRestartClient DoguRestartInterface, doguDescriptorGetter doguDescriptorGetter) *defaultDoguInterActor {
+	return &defaultDoguInterActor{
+		doguConfigRepository: doguConfigRepository,
+		doguClient:           doguClient,
+		doguRestartClient:    doguRestartClient,
+		doguDescriptorGetter: doguDescriptorGetter,
+	}
 }
 
 // StartDogu starts the specified dogu.
@@ -39,13 +44,13 @@ func (ddi *defaultDoguInterActor) StartDogu(ctx context.Context, doguName string
 	return ddi.StartDoguWithWait(ctx, doguName, false)
 }
 
-// StartDoguWithWait starts the specified dogu and wait for the deployment rollout if specified.
+// StartDoguWithWait starts the specified dogu and waits until started if specified.
 func (ddi *defaultDoguInterActor) StartDoguWithWait(ctx context.Context, doguName string, waitForRollout bool) error {
 	if doguName == "" {
 		return emptyDoguNameError()
 	}
 
-	return ddi.scaleDeployment(ctx, doguName, 1, waitForRollout)
+	return ddi.startStopDogu(ctx, doguName, false, waitForRollout)
 }
 
 // StopDogu stops the specified dogu.
@@ -53,37 +58,40 @@ func (ddi *defaultDoguInterActor) StopDogu(ctx context.Context, doguName string)
 	return ddi.StopDoguWithWait(ctx, doguName, false)
 }
 
-// StopDoguWithWait stops the specified dogu and waits for the deployment rollout if specified.
+// StopDoguWithWait stops the specified dogu and waits until stopped if specified.
 func (ddi *defaultDoguInterActor) StopDoguWithWait(ctx context.Context, doguName string, waitForRollout bool) error {
 	if doguName == "" {
 		return emptyDoguNameError()
 	}
 
-	return ddi.scaleDeployment(ctx, doguName, 0, waitForRollout)
+	return ddi.startStopDogu(ctx, doguName, true, waitForRollout)
 }
 
-// RestartDoguWithWait restarts the specified dogu waits for the deployment rollouts if specified.
+// RestartDoguWithWait restarts the specified dogu waits until restarted if specified.
 func (ddi *defaultDoguInterActor) RestartDoguWithWait(ctx context.Context, doguName string, waitForRollout bool) error {
 	if doguName == "" {
 		return emptyDoguNameError()
 	}
 
-	scale, err := ddi.clientSet.AppsV1().Deployments(ddi.namespace).GetScale(ctx, doguName, metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to get deployment scale for dogu %s: %w", doguName, err)
+	doguRestart := &v2.DoguRestart{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: fmt.Sprintf("%s-", doguName),
+		},
+		Spec: v2.DoguRestartSpec{
+			DoguName: doguName,
+		},
+	}
+	if _, err := ddi.doguRestartClient.Create(ctx, doguRestart, metav1.CreateOptions{}); err != nil {
+		return fmt.Errorf("failed to restart dogu %s: %w", doguName, err)
 	}
 
-	zeroReplicas := int32(0)
-	if scale.Spec.Replicas == zeroReplicas {
-		return ddi.scaleDeployment(ctx, doguName, 1, waitForRollout)
+	if waitForRollout {
+		if err := ddi.waitForDoguStartStop(ctx, doguName); err != nil {
+			return fmt.Errorf("error waiting for dogu %s while restarting: %w", doguName, err)
+		}
 	}
 
-	err = ddi.scaleDeployment(ctx, doguName, 0, true)
-	if err != nil {
-		return err
-	}
-
-	return ddi.scaleDeployment(ctx, doguName, 1, waitForRollout)
+	return nil
 }
 
 // RestartDogu restarts the specified dogu.
@@ -95,106 +103,91 @@ func emptyDoguNameError() error {
 	return fmt.Errorf("dogu name must not be empty")
 }
 
-func (ddi *defaultDoguInterActor) scaleDeployment(ctx context.Context, doguName string, replicas int32, waitForRollout bool) error {
-	scale := &scalingv1.Scale{ObjectMeta: metav1.ObjectMeta{Name: doguName, Namespace: ddi.namespace}, Spec: scalingv1.ScaleSpec{Replicas: replicas}}
-	_, err := ddi.clientSet.AppsV1().Deployments(ddi.namespace).UpdateScale(ctx, doguName, scale, metav1.UpdateOptions{})
+func (ddi *defaultDoguInterActor) startStopDogu(ctx context.Context, doguName string, shouldStop bool, waitForRollout bool) error {
+	dogu, err := ddi.doguClient.Get(ctx, doguName, metav1.GetOptions{})
 	if err != nil {
-		return status.Errorf(codes.Unknown, "failed to scale deployment %s to %d: %s", doguName, replicas, err.Error())
+		return fmt.Errorf("failed to get dogu %s: %w", doguName, err)
+	}
+
+	dogu.Spec.Stopped = shouldStop
+
+	_, err = ddi.doguClient.UpdateSpecWithRetry(ctx, dogu, func(spec v2.DoguSpec) v2.DoguSpec {
+		spec.Stopped = shouldStop
+		return spec
+	}, metav1.UpdateOptions{})
+
+	if err != nil {
+		return fmt.Errorf("failed to start/stop dogu %s: %w", doguName, err)
 	}
 
 	if waitForRollout {
-		return ddi.waitForDeploymentRollout(ctx, doguName)
+		return ddi.waitForDoguStartStop(ctx, doguName)
 	}
 
 	return nil
 }
 
-func (ddi *defaultDoguInterActor) waitForDeploymentRollout(ctx context.Context, doguName string) error {
-	timeoutTimer := time.NewTimer(waitTimeout)
-	// Use a ticker instead of a kubernetes watch because the watch does not notify on status changes.
-	ticker := time.NewTicker(waitInterval)
-	for {
-		select {
-		case <-ticker.C:
-			rolledOut, stopWait, err := ddi.doWaitForDeploymentRollout(ctx, doguName)
-			if err != nil {
-				stopWaitChannels(timeoutTimer, ticker)
-				return err
+func (ddi *defaultDoguInterActor) waitForDoguStartStop(ctx context.Context, doguName string) error {
+	timeoutCtx, cancelTimeoutCtx := context.WithTimeoutCause(ctx, waitTimeout, fmt.Errorf("timout (%v) reached waiting for dogu %s", waitTimeout, doguName))
+	defer cancelTimeoutCtx()
+
+	watchOptions := metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("metadata.name=%s", doguName),
+	}
+	watcher, err := ddi.doguClient.Watch(timeoutCtx, watchOptions)
+	if err != nil {
+		return fmt.Errorf("error starting watch for dogu %s: %w", doguName, err)
+	}
+	defer watcher.Stop()
+
+	for event := range watcher.ResultChan() {
+		switch event.Type {
+		case watch.Error:
+			return fmt.Errorf("error in watch while waiting for start/stop: %v", event.Object)
+		default:
+			isInDesiredState, cErr := ddi.checkIfDoguInDesiredStopState(timeoutCtx, doguName)
+			if cErr != nil {
+				return fmt.Errorf("error checking dogu-state while waiting for start/stop: %w", cErr)
 			}
 
-			if stopWait || rolledOut {
-				stopWaitChannels(timeoutTimer, ticker)
+			if isInDesiredState {
 				return nil
 			}
-		case <-timeoutTimer.C:
-			ticker.Stop()
-			return fmt.Errorf("failed to wait for deployment %s rollout: timeout reached", doguName)
-		}
-	}
-}
-
-func (ddi *defaultDoguInterActor) doWaitForDeploymentRollout(ctx context.Context, doguName string) (rolledOut bool, stopWait bool, err error) {
-	logrus.Info(fmt.Sprintf("check rollout status for deployment %s", doguName))
-	deployment, getErr := ddi.clientSet.AppsV1().Deployments(ddi.namespace).Get(ctx, doguName, metav1.GetOptions{})
-	if getErr != nil {
-		return false, true, fmt.Errorf("failed to get deployment %s: %w", doguName, getErr)
-	}
-
-	isInCrashLoop, err := ddi.isDoguContainerInCrashLoop(ctx, doguName)
-	if err != nil || isInCrashLoop {
-		return false, true, err
-	}
-
-	if deployment.Spec.Replicas != nil && deployment.Status.UpdatedReplicas < *deployment.Spec.Replicas {
-		logrus.Info(fmt.Sprintf("waiting for deployment %q rollout to finish: %d out of %d new replicas have been updated", deployment.Name, deployment.Status.UpdatedReplicas, *deployment.Spec.Replicas))
-		return false, false, nil
-	}
-	if deployment.Status.Replicas > deployment.Status.UpdatedReplicas {
-		logrus.Info(fmt.Sprintf("waiting for deployment %q rollout to finish: %d old replicas are pending termination", deployment.Name, deployment.Status.Replicas-deployment.Status.UpdatedReplicas))
-		return false, false, nil
-	}
-	if deployment.Status.AvailableReplicas < deployment.Status.UpdatedReplicas {
-		logrus.Info(fmt.Sprintf("waiting for deployment %q rollout to finish: %d of %d updated replicas are available", deployment.Name, deployment.Status.AvailableReplicas, deployment.Status.UpdatedReplicas))
-		return false, false, nil
-	}
-	logrus.Info(fmt.Sprintf("deployment %q successfully rolled out", deployment.Name))
-	return true, true, nil
-}
-
-func stopWaitChannels(timer *time.Timer, ticker *time.Ticker) {
-	timer.Stop()
-	ticker.Stop()
-}
-
-func (ddi *defaultDoguInterActor) isDoguContainerInCrashLoop(ctx context.Context, doguName string) (bool, error) {
-	list, getErr := ddi.clientSet.CoreV1().Pods(ddi.namespace).List(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("dogu.name=%s", doguName)})
-	if getErr != nil {
-		return false, fmt.Errorf("failed to get pods of deployment %s", doguName)
-	}
-
-	for _, pod := range list.Items {
-		for _, containerStatus := range pod.Status.ContainerStatuses {
-			if containerStatus.Name != doguName {
-				continue
-			}
-
-			containerWaitState := containerStatus.State.Waiting
-
-			if containerWaitState != nil && containerWaitState.Reason == containerStateCrashLoop {
-				logrus.Error(fmt.Errorf("some containers are in a crash loop"), fmt.Sprintf("skip waiting rollout for deployment %s", doguName))
-				return true, nil
-			}
 		}
 	}
 
-	return false, nil
+	return fmt.Errorf("watch for dogu %s stopped: %v", doguName, context.Cause(timeoutCtx))
+}
+
+func (ddi *defaultDoguInterActor) checkIfDoguInDesiredStopState(ctx context.Context, doguName string) (isInDesiredState bool, err error) {
+	dogu, getErr := ddi.doguClient.Get(ctx, doguName, metav1.GetOptions{})
+	if getErr != nil {
+		return false, fmt.Errorf("failed to get dogu %s: %w", doguName, getErr)
+	}
+
+	desiredState := stateStarted
+	if dogu.Spec.Stopped {
+		desiredState = stateStopped
+	}
+	currentState := stateStarted
+	if dogu.Status.Stopped {
+		currentState = stateStopped
+	}
+
+	if dogu.Spec.Stopped != dogu.Status.Stopped {
+		logrus.Debug(fmt.Sprintf("dogu %q has NOT reached desired start/stop state. Desired state is %s; Current state is %s", doguName, desiredState, currentState))
+		return false, nil
+	}
+
+	logrus.Debug(fmt.Sprintf("dogu %q has reached desired start/stop state: %s", doguName, desiredState))
+	return true, nil
 }
 
 // SetLogLevelInAllDogus sets the specified log level to all dogus.
 func (ddi *defaultDoguInterActor) SetLogLevelInAllDogus(ctx context.Context, logLevel string) error {
 	allDogus, err := ddi.doguDescriptorGetter.GetCurrentOfAll(ctx)
 	if err != nil {
-		return getAllDogusError(err)
+		return fmt.Errorf("error getting all dogus while setting log-level: %w", err)
 	}
 
 	var multiError error
@@ -223,10 +216,14 @@ func (ddi *defaultDoguInterActor) SetLogLevelInAllDogus(ctx context.Context, log
 func (ddi *defaultDoguInterActor) StopAllDogus(ctx context.Context) error {
 	allDogus, err := ddi.doguDescriptorGetter.GetCurrentOfAll(ctx)
 	if err != nil {
-		return getAllDogusError(err)
+		return fmt.Errorf("error getting all dogus while stopping: %w", err)
 	}
 
-	sortedDogus := core.SortDogusByInvertedDependency(allDogus)
+	sortedDogus, err := core.SortDogusByInvertedDependencyWithError(allDogus)
+	if err != nil {
+		return fmt.Errorf("error sorting dogus while stopping: %w", err)
+	}
+
 	var multiError error
 	for _, dogu := range sortedDogus {
 		stopErr := ddi.StopDoguWithWait(ctx, dogu.GetSimpleName(), true)
@@ -242,10 +239,14 @@ func (ddi *defaultDoguInterActor) StopAllDogus(ctx context.Context) error {
 func (ddi *defaultDoguInterActor) StartAllDogus(ctx context.Context) error {
 	allDogus, err := ddi.doguDescriptorGetter.GetCurrentOfAll(ctx)
 	if err != nil {
-		return getAllDogusError(err)
+		return fmt.Errorf("error getting all dogus while starting: %w", err)
 	}
 
-	sortedDogus := core.SortDogusByDependency(allDogus)
+	sortedDogus, err := core.SortDogusByDependencyWithError(allDogus)
+	if err != nil {
+		return fmt.Errorf("error sorting dogus while starting: %w", err)
+	}
+
 	var multiError error
 	for _, dogu := range sortedDogus {
 		startErr := ddi.StartDoguWithWait(ctx, dogu.GetSimpleName(), true)
@@ -255,8 +256,4 @@ func (ddi *defaultDoguInterActor) StartAllDogus(ctx context.Context) error {
 	}
 
 	return multiError
-}
-
-func getAllDogusError(err error) error {
-	return fmt.Errorf("failed to get all dogus: %w", err)
 }
