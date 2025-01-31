@@ -362,7 +362,7 @@ func Test_defaultDoguInterActor_StartDoguWithWait(t *testing.T) {
 	t.Run("error wait-timeout reached", func(t *testing.T) {
 		// given
 		oldWaitTimeout := waitTimeout
-		waitTimeout = time.Second * 3
+		waitTimeout = 0
 		defer func() { waitTimeout = oldWaitTimeout }()
 
 		dogu := &v2.Dogu{
@@ -386,16 +386,16 @@ func Test_defaultDoguInterActor_StartDoguWithWait(t *testing.T) {
 		doguClientMock.EXPECT().UpdateSpecWithRetry(mock.Anything, expectedUpdateDogu, mock.Anything, metav1.UpdateOptions{}).Return(dogu, nil)
 
 		watcher := watch.NewFakeWithChanSize(5, false)
+
+		var callCtx context.Context
+
 		doguClientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{FieldSelector: "metadata.name=postgresql"}).Return(watcher, nil).Run(
 			func(watchCtx context.Context, opts metav1.ListOptions) {
-				go func() {
-					time.Sleep(waitTimeout)
-					watcher.Stop()
-				}()
+				callCtx = watchCtx
+				watcher.Stop()
 			})
 
 		go func() {
-			time.Sleep(1 * time.Second)
 			watcher.Action(watch.Modified, expectedUpdateDogu)
 		}()
 
@@ -406,9 +406,11 @@ func Test_defaultDoguInterActor_StartDoguWithWait(t *testing.T) {
 		// when
 		err := sut.StartDoguWithWait(testCtx, "postgresql", true)
 
+		expectedTimeoutErr := context.Cause(callCtx).Error()
+
 		// then
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "watch for dogu postgresql stopped: timeout reached: context canceled")
+		assert.ErrorContains(t, err, expectedTimeoutErr)
 	})
 
 }
