@@ -1,7 +1,7 @@
 # Set these to the desired values
 ARTIFACT_ID=k8s-ces-control
-VERSION=1.2.1
-GOTAG=1.23.2
+VERSION=1.3.0
+GOTAG=1.23.5
 STAGE?=production
 LOG_LEVEL?=info
 
@@ -12,7 +12,7 @@ SHELL = /usr/bin/env bash -o pipefail
 ## Image URL to use all building/pushing image targets
 IMAGE?=cloudogu/${ARTIFACT_ID}:${VERSION}
 
-MAKEFILES_VERSION=9.3.2
+MAKEFILES_VERSION=9.5.3
 .DEFAULT_GOAL:=default
 GENERATION_TARGET_DIR=generated
 GENERATION_SOURCE_DIR=grpc-protobuf

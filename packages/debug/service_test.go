@@ -15,6 +15,7 @@ func TestNewdefaultDebugModeService(t *testing.T) {
 		// given
 		doguDescriptionGetterMock := newMockDoguDescriptorGetter(t)
 
+		doguInterActorMock := newMockDoguInterActor(t)
 		clientSetMock := newMockClusterClientSet(t)
 		coreV1Mock := newMockCoreV1Interface(t)
 		clientSetMock.EXPECT().CoreV1().Return(coreV1Mock)
@@ -22,7 +23,7 @@ func TestNewdefaultDebugModeService(t *testing.T) {
 		coreV1Mock.EXPECT().ConfigMaps(testNamespace).Return(configMapClientMock)
 
 		// when
-		service := NewDebugModeService(repository.DoguConfigRepository{}, repository.GlobalConfigRepository{}, doguDescriptionGetterMock, clientSetMock, testNamespace)
+		service := NewDebugModeService(doguInterActorMock, repository.DoguConfigRepository{}, repository.GlobalConfigRepository{}, doguDescriptionGetterMock, clientSetMock, testNamespace)
 
 		// then
 		require.NotNil(t, service)

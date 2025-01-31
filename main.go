@@ -101,20 +101,29 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 		dogu.NewDoguVersionRegistry(configMapClient),
 		dogu.NewLocalDoguDescriptorRepository(configMapClient),
 	)
+
 	globalConfig := repository.NewGlobalConfigRepository(configMapClient)
 	doguConfig := repository.NewDoguConfigRepository(configMapClient)
+
+	doguClient := client.Dogus(config.CurrentNamespace)
+	doguRestartClient := client.DoguRestarts(config.CurrentNamespace)
+
+	doguInterActor := doguinteraction.NewDefaultDoguInterActor(doguConfig, doguClient, doguRestartClient, doguDescriptorGetter)
+
 	loggingService := logging.NewLoggingService(
 		lokiLogProvider,
 		doguConfig,
-		doguinteraction.NewDefaultDoguInterActor(doguConfig, client, config.CurrentNamespace, doguDescriptorGetter),
+		doguInterActor,
 		doguDescriptorGetter,
-		client.AppsV1().Deployments(config.CurrentNamespace),
+		client.Dogus(config.CurrentNamespace),
 	)
 
+	doguAdministrationServer := doguAdministration.NewDoguAdministrationServer(client, doguDescriptorGetter, doguInterActor, loggingService)
+
 	pbLogging.RegisterDoguLogMessagesServer(grpcServer, loggingService)
-	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministration.NewDoguAdministrationServer(doguConfig, client, doguDescriptorGetter, config.CurrentNamespace, loggingService))
-	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService(client))
-	debugModeService := debug.NewDebugModeService(doguConfig, globalConfig, doguDescriptorGetter, client, config.CurrentNamespace)
+	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministrationServer)
+	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService(client.Dogus(config.CurrentNamespace)))
+	debugModeService := debug.NewDebugModeService(doguInterActor, doguConfig, globalConfig, doguDescriptorGetter, client, config.CurrentNamespace)
 	pbMaintenance.RegisterDebugModeServer(grpcServer, debugModeService)
 	watcher := debug.NewDefaultConfigMapRegistryWatcher(configMapClient, debugModeService)
 	watcher.StartWatch(context.Background())

@@ -4,20 +4,12 @@ import (
 	"context"
 	"github.com/cloudogu/cesapp-lib/core"
 	v1 "github.com/cloudogu/k8s-blueprint-operator/v2/pkg/adapter/kubernetes/blueprintcr/v1"
-	"github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
 	"github.com/cloudogu/k8s-registry-lib/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 type BlueprintLister interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*v1.BlueprintList, error)
-}
-
-type clusterClient interface {
-	ecoSystem.EcoSystemV2Interface
-	BlueprintLister
-	kubernetes.Interface
 }
 
 type doguDescriptorGetter interface {

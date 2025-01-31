@@ -9,12 +9,6 @@ rules:
   - apiGroups:
       - ""
     resources:
-      - pods
-    verbs:
-      - list
-  - apiGroups:
-      - ""
-    resources:
       - configmaps
     verbs:
       - update
@@ -22,20 +16,19 @@ rules:
       - get
       - list
       - delete
-  # allow dogu deployments to be listed/inspected and to be scaled for stopping/starting/restarting during debug mode
+  # allow dogus to be listed/inspected and to be scaled for stopping/starting/restarting during debug mode
   - apiGroups:
-      - apps
+      - k8s.cloudogu.com
     resources:
-      - deployments
+      - dogus
     verbs:
-      - watch
       - update
       - list
       - get
+      - watch
   - apiGroups:
-      - apps
+      - k8s.cloudogu.com
     resources:
-      - deployments/scale
+      - dogurestarts
     verbs:
-      - update
-      - get
+      - create
