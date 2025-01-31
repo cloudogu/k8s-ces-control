@@ -128,41 +128,33 @@ func (ddi *defaultDoguInterActor) startStopDogu(ctx context.Context, doguName st
 }
 
 func (ddi *defaultDoguInterActor) waitForDoguStartStop(ctx context.Context, doguName string) error {
-	timeoutCtx, cancelTimeout := context.WithTimeoutCause(ctx, waitTimeout, fmt.Errorf("timout (%v) reached waiting for dogu %s", waitTimeout, doguName))
+	timeoutCtx, cancelTimeoutCtx := context.WithTimeoutCause(ctx, waitTimeout, fmt.Errorf("timout (%v) reached waiting for dogu %s", waitTimeout, doguName))
+	defer cancelTimeoutCtx()
 
 	watchOptions := metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", doguName),
 	}
 	watcher, err := ddi.doguClient.Watch(timeoutCtx, watchOptions)
 	if err != nil {
-		cancelTimeout()
 		return fmt.Errorf("error starting watch for dogu %s: %w", doguName, err)
 	}
+	defer watcher.Stop()
 
 	for event := range watcher.ResultChan() {
 		switch event.Type {
 		case watch.Error:
-			watcher.Stop()
-			cancelTimeout()
 			return fmt.Errorf("error in watch while waiting for start/stop: %v", event.Object)
 		default:
 			isInDesiredState, cErr := ddi.checkIfDoguInDesiredStopState(timeoutCtx, doguName)
 			if cErr != nil {
-				watcher.Stop()
-				cancelTimeout()
 				return fmt.Errorf("error checking dogu-state while waiting for start/stop: %w", cErr)
 			}
 
 			if isInDesiredState {
-				watcher.Stop()
-				cancelTimeout()
 				return nil
 			}
 		}
 	}
-
-	cancelTimeout()
-	watcher.Stop()
 
 	return fmt.Errorf("watch for dogu %s stopped: %v", doguName, context.Cause(timeoutCtx))
 }

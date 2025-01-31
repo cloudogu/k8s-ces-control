@@ -389,7 +389,7 @@ func Test_defaultDoguInterActor_StartDoguWithWait(t *testing.T) {
 		doguClientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{FieldSelector: "metadata.name=postgresql"}).Return(watcher, nil).Run(
 			func(watchCtx context.Context, opts metav1.ListOptions) {
 				go func() {
-					time.Sleep(waitTimeout)
+					time.Sleep(waitTimeout + 1*time.Second)
 					watcher.Stop()
 				}()
 			})
@@ -408,7 +408,7 @@ func Test_defaultDoguInterActor_StartDoguWithWait(t *testing.T) {
 
 		// then
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "watch for dogu postgresql stopped: timeout reached: context canceled")
+		assert.ErrorContains(t, err, "watch for dogu postgresql stopped: timout (3s) reached waiting for dogu postgresql")
 	})
 
 }
