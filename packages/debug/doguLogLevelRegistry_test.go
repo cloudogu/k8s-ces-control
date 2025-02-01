@@ -94,7 +94,8 @@ func Test_doguLogLevelRegistry_UnMarshalFromStringToCesRegistry(t *testing.T) {
 
 		// then
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "failed to update dogu config for dogu dogua: assert.AnError general error for testing\nfailed to update dogu config for dogu dogub: assert.AnError general error for testing")
+		assert.ErrorContains(t, err, "failed to update dogu config for dogu dogua: assert.AnError general error for testing")
+		assert.ErrorContains(t, err, "failed to update dogu config for dogu dogub: assert.AnError general error for testing")
 	})
 }
 
