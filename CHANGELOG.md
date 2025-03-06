@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.3.1] - 2025-03-06
+### Fixed
+- [#45] Fixed sporadically failing test
+- [#57] Fix missing RBAC role to list blueprints
+
 ## [v1.3.0] - 2025-01-31
 ### Changed
 - [#55] Use Dogu-CR & DoguRestart-CR to administer dogus instead of deployments
