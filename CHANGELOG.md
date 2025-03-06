@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed
+- [#45] Fixed sporadically failing test
 - [#57] Fix missing RBAC role to list blueprints
 
 ## [v1.3.0] - 2025-01-31
