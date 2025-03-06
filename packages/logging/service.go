@@ -7,10 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cloudogu/cesapp-lib/core"
+	v2 "github.com/cloudogu/k8s-dogu-operator/v2/api/v2"
 	"github.com/cloudogu/k8s-registry-lib/config"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strings"
 	"time"
@@ -44,18 +44,18 @@ type doguDescriptorGetter interface {
 	GetCurrent(ctx context.Context, simpleDoguName string) (*core.Dogu, error)
 }
 
-type deploymentGetter interface {
-	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.Deployment, error)
+type doguGetter interface {
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v2.Dogu, error)
 }
 
 // NewLoggingService creates a new logging service.
-func NewLoggingService(provider logProvider, doguConfigRepository doguConfigRepository, restarter doguRestarter, doguDescriptorGetter doguDescriptorGetter, deploymentGetter deploymentGetter) *loggingService {
+func NewLoggingService(provider logProvider, doguConfigRepository doguConfigRepository, restarter doguRestarter, doguDescriptorGetter doguDescriptorGetter, doguGetter doguGetter) *loggingService {
 	return &loggingService{
 		logProvider:          provider,
 		doguConfigRepository: doguConfigRepository,
 		doguRestarter:        restarter,
 		doguDescriptorGetter: doguDescriptorGetter,
-		deploymentGetter:     deploymentGetter,
+		doguGetter:           doguGetter,
 	}
 }
 
@@ -65,7 +65,7 @@ type loggingService struct {
 	doguConfigRepository doguConfigRepository
 	doguRestarter        doguRestarter
 	doguDescriptorGetter doguDescriptorGetter
-	deploymentGetter     deploymentGetter
+	doguGetter           doguGetter
 }
 
 // QueryForDogu writes dogu log messages into the stream of the given server.
@@ -177,13 +177,13 @@ func (s *loggingService) setLogLevel(ctx context.Context, doguName string, l Log
 
 	logrus.Debugf("written new log level %s for dogu %s", l.String(), doguName)
 
-	deployment, err := s.deploymentGetter.Get(ctx, doguName, metav1.GetOptions{})
+	dogu, err := s.doguGetter.Get(ctx, doguName, metav1.GetOptions{})
 	if err != nil {
-		return false, fmt.Errorf("could not get deployment to check status of dogu: %w", err)
+		return false, fmt.Errorf("could not get dogu to check status: %w", err)
 	}
 
-	if deployment.Spec.Replicas == nil || *deployment.Spec.Replicas == 0 {
-		logrus.Debugf("No replicas found for dogu %s, dogu is stopped", doguName)
+	if dogu.Spec.Stopped {
+		logrus.Debugf("dogu %s dogu is stopped", doguName)
 		return false, nil
 	}
 

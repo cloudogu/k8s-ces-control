@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - [#45] Fixed sporadically failing test
 
+## [v1.3.0] - 2025-01-31
+### Changed
+- [#55] Use Dogu-CR & DoguRestart-CR to administer dogus instead of deployments
+- [#55] Update go version to 1.23.2
+
+## [v1.2.1] - 2024-12-19
+### Fixed
+- [#53] Fix critical CVEs by updating grpc_health_probe to 0.4.36
+
+## [v1.2.0] - 2024-12-10
+### Added
+- [#51] NetworkPolicy to block all ingress traffic
+  - Dependent Dogus and Components must bring their own NetworkPolicy to access k8s-ces-control
+- [#51] Ingress Network Policy for Loki-gateway so that k8s-ces-control can access it
+
+## [v1.1.0] - 2024-11-25
+### Fixed
+- [#48] Fix not applying development values to helm values
+
+### Changed
+- [#47] drastically reduce RBAC permissions
+
 ## [v1.0.0] - 2024-10-30
 ### Changed
 - [#43] Make imagePullSecrets configurable via helm values and use `ces-container-registries` as default.
