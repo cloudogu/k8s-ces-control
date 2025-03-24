@@ -6,6 +6,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	appsV1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	coreV1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 //nolint:unused
@@ -32,4 +33,5 @@ type clusterClient interface {
 	ecoSystemV2.EcoSystemV2Interface
 	doguAdministration.BlueprintLister
 	kubernetes.Interface
+	LegacyClient() client.Client
 }

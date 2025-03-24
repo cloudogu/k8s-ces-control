@@ -7,6 +7,7 @@ import (
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
 	ecoSystemV2 "github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/sirupsen/logrus"
@@ -32,6 +33,11 @@ type clusterClient struct {
 	ecoSystemV2.EcoSystemV2Interface
 	doguAdministration.BlueprintLister
 	kubernetes.Interface
+	legacyClient client.Client
+}
+
+func (c *clusterClient) LegacyClient() client.Client {
+	return c.legacyClient
 }
 
 var currentStage = stageProduction
@@ -60,7 +66,12 @@ func CreateClusterClient() (*clusterClient, error) {
 		return nil, fmt.Errorf("failed to create dogu client: %w", err)
 	}
 
-	return &clusterClient{EcoSystemV2Interface: doguClient, BlueprintLister: bluePrintLister, Interface: k8sClient}, nil
+	legacyClient, err := client.New(clusterConfig, client.Options{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create legacy client: %w", err)
+	}
+
+	return &clusterClient{EcoSystemV2Interface: doguClient, BlueprintLister: bluePrintLister, Interface: k8sClient, legacyClient: legacyClient}, nil
 }
 
 // ConfigureApplication performs the default configuration for the control app including configuring the logging and

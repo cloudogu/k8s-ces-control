@@ -2,12 +2,12 @@ module github.com/cloudogu/k8s-ces-control
 
 go 1.23.5
 
-replace github.com/cloudogu/cesapp-lib => github.com/cloudogu/cesapp-lib v0.0.0-20241029151530-f7281943e1fc
+replace github.com/cloudogu/ces-control-api => github.com/cloudogu/ces-control-api v0.0.0-20250324123111-577fd23bb1c0
 
 require (
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/cloudogu/ces-control-api v1.3.0
-	github.com/cloudogu/cesapp-lib v0.14.2
+	github.com/cloudogu/cesapp-lib v0.18.1
 	github.com/cloudogu/k8s-blueprint-operator/v2 v2.0.0
 	github.com/cloudogu/k8s-dogu-operator/v2 v2.3.0
 	github.com/cloudogu/k8s-registry-lib v0.5.0
