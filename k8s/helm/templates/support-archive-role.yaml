@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "k8s-ces-control.name" . }}-dogu-list-role
+  name: {{ include "k8s-ces-control.name" . }}-support-archive-role
   labels:
     {{- include "k8s-ces-control.labels" . | nindent 4 }}
 rules:
