@@ -49,7 +49,7 @@ func (rc *resourceCollector) Collect(ctx context.Context, labelSelector *metav1.
 	}
 
 	if len(errs) != 0 {
-		return nil, fmt.Errorf("failed to delete api resources with label selector %q: %w", selector, errors.Join(errs...))
+		return nil, fmt.Errorf("failed to list api resources with label selector %q: %w", selector, errors.Join(errs...))
 	}
 
 	return resources, nil
@@ -62,8 +62,7 @@ func (rc *resourceCollector) listApiResourcesByLabelSelector(ctx context.Context
 
 	gv, err := schema.ParseGroupVersion(list.GroupVersion)
 	if err != nil {
-		log.FromContext(ctx).Error(err, fmt.Sprintf("failed to delete api resources with group version: %s", list.GroupVersion))
-		return nil, nil
+		return nil, []error{fmt.Errorf("failed to list api resources with group version %q: %w", list.GroupVersion, err)}
 	}
 
 	var errs []error
@@ -74,8 +73,11 @@ func (rc *resourceCollector) listApiResourcesByLabelSelector(ctx context.Context
 			resource.Version = gv.Version
 
 			resourcesByLabelSelector, listErr := rc.listByLabelSelector(ctx, resource, selector, excludedGVKs)
-			resources = append(resources, resourcesByLabelSelector...)
-			errs = append(errs, listErr)
+			if listErr != nil {
+				errs = append(errs, listErr)
+			} else {
+				resources = append(resources, resourcesByLabelSelector...)
+			}
 		}
 	}
 
