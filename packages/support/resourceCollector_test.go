@@ -328,7 +328,7 @@ func Test_resourceCollector_Collect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rc := &resourceCollector{
+			rc := &defaultResourceCollector{
 				client:          tt.fields.clientFn(t),
 				discoveryClient: tt.fields.discoveryClientFn(t),
 			}

@@ -16,9 +16,15 @@ import (
 
 const listVerb = "list"
 
-type resourceCollector struct {
+type defaultResourceCollector struct {
 	client          k8sClient
 	discoveryClient discoveryInterface
+}
+
+type resourceCollector interface {
+	Collect(ctx context.Context, labelSelector *metav1.LabelSelector, excludedGVKs []gvkMatcher) ([]*unstructured.Unstructured, error)
+	listApiResourcesByLabelSelector(ctx context.Context, list *metav1.APIResourceList, selector labels.Selector, excludedGVKs []gvkMatcher) ([]*unstructured.Unstructured, []error)
+	listByLabelSelector(ctx context.Context, resource metav1.APIResource, labelSelector labels.Selector, excludedGVKs []gvkMatcher) ([]*unstructured.Unstructured, error)
 }
 
 type gvkMatcher schema.GroupVersionKind
@@ -29,7 +35,7 @@ func (m gvkMatcher) Matches(gvk schema.GroupVersionKind) bool {
 		(gvk.Kind == m.Kind || m.Kind == "*")
 }
 
-func (rc *resourceCollector) Collect(ctx context.Context, labelSelector *metav1.LabelSelector, excludedGVKs []gvkMatcher) ([]*unstructured.Unstructured, error) {
+func (rc *defaultResourceCollector) Collect(ctx context.Context, labelSelector *metav1.LabelSelector, excludedGVKs []gvkMatcher) ([]*unstructured.Unstructured, error) {
 	resourceKindLists, err := rc.discoveryClient.ServerPreferredResources()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get resource kind lists from server: %w", err)
@@ -55,7 +61,7 @@ func (rc *resourceCollector) Collect(ctx context.Context, labelSelector *metav1.
 	return resources, nil
 }
 
-func (rc *resourceCollector) listApiResourcesByLabelSelector(ctx context.Context, list *metav1.APIResourceList, selector labels.Selector, excludedGVKs []gvkMatcher) ([]*unstructured.Unstructured, []error) {
+func (rc *defaultResourceCollector) listApiResourcesByLabelSelector(ctx context.Context, list *metav1.APIResourceList, selector labels.Selector, excludedGVKs []gvkMatcher) ([]*unstructured.Unstructured, []error) {
 	if len(list.APIResources) == 0 {
 		return nil, nil
 	}
@@ -84,7 +90,7 @@ func (rc *resourceCollector) listApiResourcesByLabelSelector(ctx context.Context
 	return resources, errs
 }
 
-func (rc *resourceCollector) listByLabelSelector(ctx context.Context, resource metav1.APIResource, labelSelector labels.Selector, excludedGVKs []gvkMatcher) ([]*unstructured.Unstructured, error) {
+func (rc *defaultResourceCollector) listByLabelSelector(ctx context.Context, resource metav1.APIResource, labelSelector labels.Selector, excludedGVKs []gvkMatcher) ([]*unstructured.Unstructured, error) {
 	logger := log.FromContext(ctx)
 
 	gvk := groupVersionKind(resource)
