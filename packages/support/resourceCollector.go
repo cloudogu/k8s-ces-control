@@ -29,12 +29,16 @@ type resourceCollector interface {
 
 type gvkMatcher schema.GroupVersionKind
 
+// Matches checks if the fields of the supplied schema.GroupVersionKind equal those of the gvkMatcher.
+// Particular fields can be ignored by using the star-notation (*) in the matcher.
 func (m gvkMatcher) Matches(gvk schema.GroupVersionKind) bool {
 	return (gvk.Group == m.Group || m.Group == "*") &&
 		(gvk.Version == m.Version || m.Version == "*") &&
 		(gvk.Kind == m.Kind || m.Kind == "*")
 }
 
+// Collect fetches all resources in the cluster that match the supplied label selector,
+// skipping resources matched by the excluded GVKs.
 func (rc *defaultResourceCollector) Collect(ctx context.Context, labelSelector *metav1.LabelSelector, excludedGVKs []gvkMatcher) ([]*unstructured.Unstructured, error) {
 	resourceKindLists, err := rc.discoveryClient.ServerPreferredResources()
 	if err != nil {
