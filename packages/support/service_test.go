@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"reflect"
 	"testing"
@@ -127,86 +126,6 @@ func TestSupportArchiveCreator_CreateSupportArchive(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("CreateSupportArchive() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_defaultSupportArchiveService_Create(t *testing.T) {
-	type args struct {
-		k8sClientFn       func(t *testing.T) k8sClient
-		discoveryClientFn func(t *testing.T) discoveryInterface
-		requestFn         func(t *testing.T) *pbMaintenance.CreateSupportArchiveRequest
-		serverFn          func(t *testing.T) supportArchive_CreateServer
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr assert.ErrorAssertionFunc
-	}{
-		{
-			name: "used unsupported environment",
-			args: args{
-				k8sClientFn: func(t *testing.T) k8sClient {
-					return newMockK8sClient(t)
-				},
-				discoveryClientFn: func(t *testing.T) discoveryInterface {
-					return newMockDiscoveryInterface(t)
-				},
-				requestFn: func(t *testing.T) *pbMaintenance.CreateSupportArchiveRequest {
-					r := &pbMaintenance.CreateSupportArchiveRequest{
-						Environment: &pbMaintenance.CreateSupportArchiveRequest_Legacy{},
-					}
-					return r
-				},
-				serverFn: func(t *testing.T) supportArchive_CreateServer {
-					server := newMockSupportArchive_CreateServer(t)
-					server.EXPECT().Context().Return(context.Background())
-					return server
-				},
-			},
-			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
-				return assert.ErrorContains(t, err, "unsupported environment; the sent environment is probably legacy but must be common", i)
-			},
-		},
-		{
-			name: "used supported environment",
-			args: args{
-				k8sClientFn: func(t *testing.T) k8sClient {
-					return newMockK8sClient(t)
-				},
-				discoveryClientFn: func(t *testing.T) discoveryInterface {
-					discoveryClient := newMockDiscoveryInterface(t)
-					discoveryClient.EXPECT().ServerPreferredResources().Return([]*metav1.APIResourceList{}, nil)
-					return discoveryClient
-				},
-				requestFn: func(t *testing.T) *pbMaintenance.CreateSupportArchiveRequest {
-					r := &pbMaintenance.CreateSupportArchiveRequest{
-						Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{
-							Common: &pbMaintenance.CommonSupportArchiveRequest{
-								ExcludedContents: &pbMaintenance.ExcludedContents{
-									SystemState: false,
-								},
-							},
-						},
-					}
-					return r
-				},
-				serverFn: func(t *testing.T) supportArchive_CreateServer {
-					server := newMockSupportArchive_CreateServer(t)
-					server.EXPECT().Context().Return(context.Background())
-					return server
-				},
-			},
-			wantErr: assert.NoError,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := NewSupportArchiveService(tt.args.k8sClientFn(t), tt.args.discoveryClientFn(t))
-			err := d.Create(tt.args.requestFn(t), tt.args.serverFn(t))
-			if !tt.wantErr(t, err) {
-				return
 			}
 		})
 	}

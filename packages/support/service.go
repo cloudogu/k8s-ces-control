@@ -3,7 +3,6 @@ package support
 import (
 	"context"
 	"fmt"
-	"github.com/cloudogu/ces-control-api/generated/types"
 	"time"
 
 	"gopkg.in/yaml.v2"
@@ -28,12 +27,8 @@ type archiveManager interface {
 	SaveArchiveAsFile(archivePath string) error
 	Close() error
 }
-type supportArchive_CreateServer interface {
-	Context() context.Context
-	Send(response *types.ChunkedDataResponse) error
-}
 
-func (d *defaultSupportArchiveService) Create(request *pbMaintenance.CreateSupportArchiveRequest, server supportArchive_CreateServer) error {
+func (d *defaultSupportArchiveService) Create(request *pbMaintenance.CreateSupportArchiveRequest, server pbMaintenance.SupportArchive_CreateServer) error {
 
 	dataToStream, err := d.createArchive(server.Context(), request)
 	if err != nil {
