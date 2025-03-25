@@ -3,6 +3,8 @@ package support
 import (
 	"context"
 	"fmt"
+	"github.com/cloudogu/ces-control-api/generated/types"
+	"time"
 
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +19,21 @@ type defaultSupportArchiveService struct {
 	createArchive func(ctx context.Context, environment *pbMaintenance.CreateSupportArchiveRequest) ([]byte, error)
 }
 
-func (d *defaultSupportArchiveService) Create(request *pbMaintenance.CreateSupportArchiveRequest, server pbMaintenance.SupportArchive_CreateServer) error {
+type archiveManager interface {
+	GetContent() []byte
+	AddContentAsFile(content string, fileNameInArchive string) error
+	AddContentAsFileWithModifiedDate(content string, fileNameInArchive string, modified time.Time) error
+	AddFileToArchive(file archive.File) error
+	AddFilesToArchive(files []archive.File, closeAfterFinish bool) error
+	SaveArchiveAsFile(archivePath string) error
+	Close() error
+}
+type supportArchive_CreateServer interface {
+	Context() context.Context
+	Send(response *types.ChunkedDataResponse) error
+}
+
+func (d *defaultSupportArchiveService) Create(request *pbMaintenance.CreateSupportArchiveRequest, server supportArchive_CreateServer) error {
 
 	dataToStream, err := d.createArchive(server.Context(), request)
 	if err != nil {
@@ -29,14 +45,14 @@ func (d *defaultSupportArchiveService) Create(request *pbMaintenance.CreateSuppo
 
 type SupportArchiveCreator struct {
 	environment       *pbMaintenance.CreateSupportArchiveRequest_Common
-	ArchiveManager    archive.Manager
+	ArchiveManager    archiveManager
 	resourceCollector resourceCollector
 }
 
 func (sac *SupportArchiveCreator) CreateSupportArchive(ctx context.Context) ([]byte, error) {
 	manager, err := sac.collectArchiveData(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to collect support archive data: %w", err)
 	}
 	return manager.GetContent(), nil
 }
@@ -55,15 +71,15 @@ func (sac *SupportArchiveCreator) collectArchiveData(ctx context.Context) (archi
 		}}
 		resources, err := sac.resourceCollector.Collect(ctx, labelSelector, excludedGVKs)
 		if err != nil {
-			fmt.Errorf("collect resources failed: %w", err)
+			return archive.Manager{}, fmt.Errorf("collect resources failed: %w", err)
 		}
 		for _, item := range resources {
 			gvk := item.GroupVersionKind()
-			//k8s/k8s.cloudogu.com/backups/MyBackup.yaml
 			resource, err := yaml.Marshal(item)
 			if err != nil {
-				return sac.ArchiveManager, fmt.Errorf("failed to marshal resource to yaml: %w", err)
+				return archive.Manager{}, fmt.Errorf("failed to marshal resource to yaml: %w", err)
 			}
+			// File name should be like this k8s/k8s.cloudogu.com/backups/MyBackup.yaml
 			err = sac.ArchiveManager.AddContentAsFile(string(resource), fmt.Sprintf("k8s/%s/%s/%s.yaml", gvk.Group, gvk.Kind, item.GetName()))
 			if err != nil {
 				return archive.Manager{}, fmt.Errorf("failed to add resource to archive: %w", err)
@@ -75,7 +91,7 @@ func (sac *SupportArchiveCreator) collectArchiveData(ctx context.Context) (archi
 	return *archive.NewManager(), nil
 }
 
-func NewSupportArchiveService(client k8sClient, discoveryClient discoveryInterface) pbMaintenance.SupportArchiveServer {
+func NewSupportArchiveService(client k8sClient, discoveryClient discoveryInterface) *defaultSupportArchiveService {
 	createArchiveFunc := func(ctx context.Context, request *pbMaintenance.CreateSupportArchiveRequest) ([]byte, error) {
 		environment, ok := request.GetEnvironment().(*pbMaintenance.CreateSupportArchiveRequest_Common)
 		if !ok {
@@ -84,7 +100,7 @@ func NewSupportArchiveService(client k8sClient, discoveryClient discoveryInterfa
 		archiveCreator := &SupportArchiveCreator{
 			environment:    environment,
 			ArchiveManager: *archive.NewManager(),
-			resourceCollector: resourceCollector{
+			resourceCollector: &defaultResourceCollector{
 				client:          client,
 				discoveryClient: discoveryClient,
 			},
