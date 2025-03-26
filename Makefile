@@ -2,6 +2,7 @@
 ARTIFACT_ID=k8s-ces-control
 VERSION=1.3.1
 GOTAG=1.24.1
+LINT_VERSION=v2.0.1
 STAGE?=production
 LOG_LEVEL?=info
 
