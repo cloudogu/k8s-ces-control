@@ -2,6 +2,7 @@ package debug
 
 import (
 	"context"
+	"github.com/cloudogu/ces-commons-lib/dogu"
 	"github.com/cloudogu/cesapp-lib/core"
 	"github.com/cloudogu/k8s-registry-lib/config"
 	"github.com/cloudogu/k8s-registry-lib/repository"
@@ -28,8 +29,8 @@ func Test_doguLogLevelRegistry_UnMarshalFromStringToCesRegistry(t *testing.T) {
 		doguConfigRepositoryMock := newMockDoguConfigRepository(t)
 		doguConfigA := config.CreateDoguConfig("dogua", config.Entries{})
 		doguConfigB := config.CreateDoguConfig("dogub", config.Entries{})
-		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogua")).Return(doguConfigA, nil)
-		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogub")).Return(doguConfigB, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), dogu.SimpleName("dogua")).Return(doguConfigA, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), dogu.SimpleName("dogub")).Return(doguConfigB, nil)
 		doguConfigRepositoryMock.EXPECT().Update(context.TODO(), mock.Anything).Return(config.DoguConfig{}, nil)
 
 		sut := &doguLogLevelYamlRegistryMap{
@@ -61,8 +62,8 @@ func Test_doguLogLevelRegistry_UnMarshalFromStringToCesRegistry(t *testing.T) {
 		doguConfigRepositoryMock := newMockDoguConfigRepository(t)
 		doguConfigA := config.CreateDoguConfig("dogua", config.Entries{})
 		doguConfigB := config.CreateDoguConfig("dogub", config.Entries{})
-		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogua")).Return(doguConfigA, nil)
-		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogub")).Return(doguConfigB, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), dogu.SimpleName("dogua")).Return(doguConfigA, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), dogu.SimpleName("dogub")).Return(doguConfigB, nil)
 		doguConfigRepositoryMock.EXPECT().Update(context.TODO(), mock.Anything).Return(config.DoguConfig{}, nil)
 
 		sut := &doguLogLevelYamlRegistryMap{
@@ -81,8 +82,8 @@ func Test_doguLogLevelRegistry_UnMarshalFromStringToCesRegistry(t *testing.T) {
 		doguConfigRepositoryMock := newMockDoguConfigRepository(t)
 		doguConfigA := config.CreateDoguConfig("dogua", config.Entries{})
 		doguConfigB := config.CreateDoguConfig("dogub", config.Entries{})
-		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogua")).Return(doguConfigA, nil)
-		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogub")).Return(doguConfigB, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), dogu.SimpleName("dogua")).Return(doguConfigA, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), dogu.SimpleName("dogub")).Return(doguConfigB, nil)
 		doguConfigRepositoryMock.EXPECT().Update(context.TODO(), mock.Anything).Return(config.DoguConfig{}, assert.AnError).Times(2)
 
 		sut := &doguLogLevelYamlRegistryMap{
@@ -110,8 +111,8 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 		doguConfigA := config.CreateDoguConfig("dogua", config.Entries{"logging/root": "ERROR"})
 		doguConfigB := config.CreateDoguConfig("dogub", config.Entries{"logging/root": "INFO"})
 
-		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogua")).Return(doguConfigA, nil)
-		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogub")).Return(doguConfigB, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), dogu.SimpleName("dogua")).Return(doguConfigA, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), dogu.SimpleName("dogub")).Return(doguConfigB, nil)
 		doguDescriptionGetter := newMockDoguDescriptorGetter(t)
 		doguDescriptionGetter.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{doguA, doguB}, nil)
 
@@ -158,8 +159,8 @@ func Test_doguLogLevelRegistry_MarshalFromCesRegistryToString(t *testing.T) {
 		doguConfigA := config.CreateDoguConfig("dogua", config.Entries{})
 		doguConfigB := config.CreateDoguConfig("dogub", config.Entries{"logging/root": "INFO"})
 
-		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogua")).Return(doguConfigA, nil)
-		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("dogub")).Return(doguConfigB, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), dogu.SimpleName("dogua")).Return(doguConfigA, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), dogu.SimpleName("dogub")).Return(doguConfigB, nil)
 		descriptorGetter := newMockDoguDescriptorGetter(t)
 		descriptorGetter.EXPECT().GetCurrentOfAll(testCtx).Return([]*core.Dogu{doguA, doguB}, nil)
 

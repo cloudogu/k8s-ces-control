@@ -14,10 +14,10 @@ func TestCreateLogLevelFromProto(t *testing.T) {
 		input    pbLogging.LogLevel
 		err      error
 	}{
-		{"Debug", LevelDebug, pbLogging.LogLevel_DEBUG, nil},
-		{"Info", LevelInfo, pbLogging.LogLevel_INFO, nil},
-		{"Warn", LevelWarn, pbLogging.LogLevel_WARN, nil},
-		{"Error", LevelError, pbLogging.LogLevel_ERROR, nil},
+		{"Debug", LevelDebug, pbLogging.LogLevel_LOG_LEVEL_DEBUG, nil},
+		{"Info", LevelInfo, pbLogging.LogLevel_LOG_LEVEL_INFO, nil},
+		{"Warn", LevelWarn, pbLogging.LogLevel_LOG_LEVEL_WARN, nil},
+		{"Error", LevelError, pbLogging.LogLevel_LOG_LEVEL_ERROR_UNSPECIFIED, nil},
 		{"Unknown", LevelUnknown, 100, fmt.Errorf("unknown log level UNKNOWN")},
 	}
 

@@ -2,6 +2,7 @@ package debug
 
 import (
 	"context"
+	"github.com/cloudogu/ces-commons-lib/dogu"
 	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
 	"github.com/cloudogu/ces-control-api/generated/types"
 	"github.com/cloudogu/cesapp-lib/core"
@@ -76,7 +77,7 @@ type debugModeServer interface {
 }
 
 type doguConfigRepository interface {
-	Get(context.Context, config.SimpleDoguName) (config.DoguConfig, error)
+	Get(context.Context, dogu.SimpleName) (config.DoguConfig, error)
 	Update(context.Context, config.DoguConfig) (config.DoguConfig, error)
 }
 

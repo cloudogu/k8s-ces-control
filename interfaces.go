@@ -35,3 +35,9 @@ type clusterClient interface {
 	kubernetes.Interface
 	LegacyClient() client.Client
 }
+
+//nolint:unused
+//goland:noinspection GoUnusedType
+type legacyClient interface {
+	client.Client
+}

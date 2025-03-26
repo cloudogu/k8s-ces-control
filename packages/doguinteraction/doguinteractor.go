@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	dogu2 "github.com/cloudogu/ces-commons-lib/dogu"
 	"github.com/cloudogu/cesapp-lib/core"
 	v2 "github.com/cloudogu/k8s-dogu-operator/v2/api/v2"
 	"github.com/cloudogu/k8s-registry-lib/config"
@@ -192,14 +193,14 @@ func (ddi *defaultDoguInterActor) SetLogLevelInAllDogus(ctx context.Context, log
 
 	var multiError error
 	for _, dogu := range allDogus {
-		doguConfig, _ := ddi.doguConfigRepository.Get(ctx, config.SimpleDoguName(dogu.GetSimpleName()))
+		doguConfig, _ := ddi.doguConfigRepository.Get(ctx, dogu2.SimpleName(dogu.GetSimpleName()))
 		newConfig, err := doguConfig.Set(doguConfigKeyLogLevel, config.Value(logLevel))
 		if err != nil {
 			multiError = errors.Join(multiError, err)
 		}
 
 		newDoguConfig := config.DoguConfig{
-			DoguName: config.SimpleDoguName(dogu.GetSimpleName()),
+			DoguName: dogu2.SimpleName(dogu.GetSimpleName()),
 			Config:   newConfig,
 		}
 

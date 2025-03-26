@@ -1,7 +1,7 @@
 # Set these to the desired values
 ARTIFACT_ID=k8s-ces-control
 VERSION=1.3.1
-GOTAG=1.23.5
+GOTAG=1.24.1
 STAGE?=production
 LOG_LEVEL?=info
 
@@ -41,6 +41,7 @@ CHECK_VAR_TARGETS=check-all-vars
 IMAGE_IMPORT_TARGET=image-import
 include build/make/k8s-component.mk
 
+MOCKERY_VERSION=v2.53.3
 MOCKERY_IGNORED=vendor,build,docs,generated
 include build/make/mocks.mk
 include build/make/clean.mk

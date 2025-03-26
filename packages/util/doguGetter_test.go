@@ -2,8 +2,8 @@ package util
 
 import (
 	"context"
+	"github.com/cloudogu/ces-commons-lib/dogu"
 	"github.com/cloudogu/cesapp-lib/core"
-	"github.com/cloudogu/k8s-registry-lib/dogu"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"reflect"
@@ -31,7 +31,7 @@ func TestNewDoguGetter(t *testing.T) {
 func Test_doguGetter_GetCurrent(t *testing.T) {
 	ldapVersion, err := core.ParseVersion("1.0.0")
 	require.NoError(t, err)
-	ldapDoguVersion := dogu.DoguVersion{Name: "ldap", Version: ldapVersion}
+	ldapDoguVersion := dogu.SimpleNameVersion{Name: "ldap", Version: ldapVersion}
 	ldapDogu := &core.Dogu{Name: "ldap", Version: "1.0.0"}
 
 	type args struct {
@@ -43,18 +43,18 @@ func Test_doguGetter_GetCurrent(t *testing.T) {
 		args    args
 		want    *core.Dogu
 		wantErr bool
-		mockFn  func() (dogu.DoguVersionRegistry, dogu.LocalDoguDescriptorRepository)
+		mockFn  func() (dogu.VersionRegistry, dogu.LocalDoguDescriptorRepository)
 	}{
 		{
 			name:    "success",
 			args:    args{ctx: testCtx, simpleDoguName: "ldap"},
 			want:    ldapDogu,
 			wantErr: false,
-			mockFn: func() (dogu.DoguVersionRegistry, dogu.LocalDoguDescriptorRepository) {
+			mockFn: func() (dogu.VersionRegistry, dogu.LocalDoguDescriptorRepository) {
 				versionRegistryMock := newMockDoguVersionRegistry(t)
 				localDoguDescriptorRepositoryMock := newMockLocalDoguDescriptorRepository(t)
 
-				versionRegistryMock.EXPECT().GetCurrent(testCtx, dogu.SimpleDoguName("ldap")).Return(ldapDoguVersion, nil)
+				versionRegistryMock.EXPECT().GetCurrent(testCtx, dogu.SimpleName("ldap")).Return(ldapDoguVersion, nil)
 				localDoguDescriptorRepositoryMock.EXPECT().Get(testCtx, ldapDoguVersion).Return(ldapDogu, nil)
 
 				return versionRegistryMock, localDoguDescriptorRepositoryMock
@@ -65,11 +65,11 @@ func Test_doguGetter_GetCurrent(t *testing.T) {
 			args:    args{ctx: testCtx, simpleDoguName: "ldap"},
 			want:    nil,
 			wantErr: true,
-			mockFn: func() (dogu.DoguVersionRegistry, dogu.LocalDoguDescriptorRepository) {
+			mockFn: func() (dogu.VersionRegistry, dogu.LocalDoguDescriptorRepository) {
 				versionRegistryMock := newMockDoguVersionRegistry(t)
 				localDoguDescriptorRepositoryMock := newMockLocalDoguDescriptorRepository(t)
 
-				versionRegistryMock.EXPECT().GetCurrent(testCtx, dogu.SimpleDoguName("ldap")).Return(ldapDoguVersion, assert.AnError)
+				versionRegistryMock.EXPECT().GetCurrent(testCtx, dogu.SimpleName("ldap")).Return(ldapDoguVersion, assert.AnError)
 
 				return versionRegistryMock, localDoguDescriptorRepositoryMock
 			},
@@ -79,11 +79,11 @@ func Test_doguGetter_GetCurrent(t *testing.T) {
 			args:    args{ctx: testCtx, simpleDoguName: "ldap"},
 			want:    nil,
 			wantErr: true,
-			mockFn: func() (dogu.DoguVersionRegistry, dogu.LocalDoguDescriptorRepository) {
+			mockFn: func() (dogu.VersionRegistry, dogu.LocalDoguDescriptorRepository) {
 				versionRegistryMock := newMockDoguVersionRegistry(t)
 				localDoguDescriptorRepositoryMock := newMockLocalDoguDescriptorRepository(t)
 
-				versionRegistryMock.EXPECT().GetCurrent(testCtx, dogu.SimpleDoguName("ldap")).Return(ldapDoguVersion, nil)
+				versionRegistryMock.EXPECT().GetCurrent(testCtx, dogu.SimpleName("ldap")).Return(ldapDoguVersion, nil)
 				localDoguDescriptorRepositoryMock.EXPECT().Get(testCtx, ldapDoguVersion).Return(nil, assert.AnError)
 
 				return versionRegistryMock, localDoguDescriptorRepositoryMock
@@ -113,16 +113,16 @@ func Test_doguGetter_GetCurrent(t *testing.T) {
 func Test_doguGetter_GetCurrentOfAll(t *testing.T) {
 	ldapVersion, err := core.ParseVersion("1.0.0")
 	require.NoError(t, err)
-	ldapDoguVersion := dogu.DoguVersion{Name: "ldap", Version: ldapVersion}
+	ldapDoguVersion := dogu.SimpleNameVersion{Name: "ldap", Version: ldapVersion}
 	ldapDogu := &core.Dogu{Name: "ldap", Version: "1.0.0"}
 
 	casVersion, err := core.ParseVersion("1.0.0")
 	require.NoError(t, err)
-	casDoguVersion := dogu.DoguVersion{Name: "cas", Version: casVersion}
+	casDoguVersion := dogu.SimpleNameVersion{Name: "cas", Version: casVersion}
 	casDogu := &core.Dogu{Name: "cas", Version: "1.0.0"}
 
-	doguVersions := []dogu.DoguVersion{ldapDoguVersion, casDoguVersion}
-	dogusMap := map[dogu.DoguVersion]*core.Dogu{ldapDoguVersion: ldapDogu, casDoguVersion: casDogu}
+	doguVersions := []dogu.SimpleNameVersion{ldapDoguVersion, casDoguVersion}
+	dogusMap := map[dogu.SimpleNameVersion]*core.Dogu{ldapDoguVersion: ldapDogu, casDoguVersion: casDogu}
 	dogus := []*core.Dogu{ldapDogu, casDogu}
 
 	type args struct {
@@ -133,14 +133,14 @@ func Test_doguGetter_GetCurrentOfAll(t *testing.T) {
 		args    args
 		want    []*core.Dogu
 		wantErr bool
-		mockFn  func() (dogu.DoguVersionRegistry, dogu.LocalDoguDescriptorRepository)
+		mockFn  func() (dogu.VersionRegistry, dogu.LocalDoguDescriptorRepository)
 	}{
 		{
 			name:    "success",
 			args:    args{ctx: testCtx},
 			want:    dogus,
 			wantErr: false,
-			mockFn: func() (dogu.DoguVersionRegistry, dogu.LocalDoguDescriptorRepository) {
+			mockFn: func() (dogu.VersionRegistry, dogu.LocalDoguDescriptorRepository) {
 				versionRegistryMock := newMockDoguVersionRegistry(t)
 				localDoguDescriptorRepositoryMock := newMockLocalDoguDescriptorRepository(t)
 
@@ -155,7 +155,7 @@ func Test_doguGetter_GetCurrentOfAll(t *testing.T) {
 			args:    args{ctx: testCtx},
 			want:    nil,
 			wantErr: true,
-			mockFn: func() (dogu.DoguVersionRegistry, dogu.LocalDoguDescriptorRepository) {
+			mockFn: func() (dogu.VersionRegistry, dogu.LocalDoguDescriptorRepository) {
 				versionRegistryMock := newMockDoguVersionRegistry(t)
 				localDoguDescriptorRepositoryMock := newMockLocalDoguDescriptorRepository(t)
 
@@ -169,7 +169,7 @@ func Test_doguGetter_GetCurrentOfAll(t *testing.T) {
 			args:    args{ctx: testCtx},
 			want:    nil,
 			wantErr: true,
-			mockFn: func() (dogu.DoguVersionRegistry, dogu.LocalDoguDescriptorRepository) {
+			mockFn: func() (dogu.VersionRegistry, dogu.LocalDoguDescriptorRepository) {
 				versionRegistryMock := newMockDoguVersionRegistry(t)
 				localDoguDescriptorRepositoryMock := newMockLocalDoguDescriptorRepository(t)
 

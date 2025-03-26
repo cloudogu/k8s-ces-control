@@ -42,20 +42,22 @@ func Test_registerServices(tt *testing.T) {
 		config.CurrentNamespace = "ecosystem"
 		clientSetMock := newMockClusterClient(t)
 		coreV1Mock := newMockCoreV1Interface(t)
-		clientSetMock.EXPECT().CoreV1().Return(coreV1Mock)
-		clientSetMock.EXPECT().Dogus(config.CurrentNamespace).Return(nil)
-		clientSetMock.EXPECT().DoguRestarts(config.CurrentNamespace).Return(nil)
+		clientSetMock.EXPECT().CoreV1().Return(coreV1Mock).Twice()
+		clientSetMock.EXPECT().Dogus(config.CurrentNamespace).Return(nil).Times(3)
+		clientSetMock.EXPECT().LegacyClient().Return(nil).Once()
+		clientSetMock.EXPECT().Discovery().Return(nil).Once()
+		clientSetMock.EXPECT().DoguRestarts(config.CurrentNamespace).Return(nil).Once()
 		configMapInterfaceMock := newMockConfigMapInterface(t)
-		coreV1Mock.EXPECT().ConfigMaps(config.CurrentNamespace).Return(configMapInterfaceMock)
+		coreV1Mock.EXPECT().ConfigMaps(config.CurrentNamespace).Return(configMapInterfaceMock).Twice()
 
 		// when
 		err := registerServices(clientSetMock, mockGrpcServerRegistrar)
 
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, 5, len(mockGrpcServerRegistrar.registeredServices))
+		assert.Equal(t, 6, len(mockGrpcServerRegistrar.registeredServices))
 		assert.Contains(t, mockGrpcServerRegistrar.registeredServices, "logging.DoguLogMessages")
-		assert.Contains(t, mockGrpcServerRegistrar.registeredServices, "doguAdministration.DoguAdministration")
+		assert.Contains(t, mockGrpcServerRegistrar.registeredServices, "doguadministration.DoguAdministration")
 		assert.Contains(t, mockGrpcServerRegistrar.registeredServices, "health.DoguHealth")
 		assert.Contains(t, mockGrpcServerRegistrar.registeredServices, "maintenance.DebugMode")
 		assert.Contains(t, mockGrpcServerRegistrar.registeredServices, "grpc.health.v1.Health")
