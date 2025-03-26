@@ -172,7 +172,7 @@ func (s *defaultDebugModeService) Status(ctx context.Context, _ *types.BasicRequ
 
 func createInternalError(err error) error {
 	logrus.Error(err, interErrMsg)
-	return status.Errorf(codes.Internal, err.Error())
+	return status.Error(codes.Internal, err.Error())
 }
 
 func noInheritCancel(_ context.Context) (context.Context, context.CancelFunc) {
