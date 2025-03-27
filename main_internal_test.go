@@ -57,7 +57,7 @@ func Test_registerServices(tt *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 6, len(mockGrpcServerRegistrar.registeredServices))
 		assert.Contains(t, mockGrpcServerRegistrar.registeredServices, "logging.DoguLogMessages")
-		assert.Contains(t, mockGrpcServerRegistrar.registeredServices, "doguadministration.DoguAdministration")
+		assert.Contains(t, mockGrpcServerRegistrar.registeredServices, "doguAdministration.DoguAdministration")
 		assert.Contains(t, mockGrpcServerRegistrar.registeredServices, "health.DoguHealth")
 		assert.Contains(t, mockGrpcServerRegistrar.registeredServices, "maintenance.DebugMode")
 		assert.Contains(t, mockGrpcServerRegistrar.registeredServices, "grpc.health.v1.Health")
