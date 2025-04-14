@@ -14,6 +14,11 @@ manager:
   env:
     stage: production
     logLevel: info
+  resourceLimits:
+    memory: 105M
+  resourceRequests:
+    cpu: 50m
+    memory: 105M
 lokiGateway:
   url: "http://k8s-loki-gateway.ecosystem.svc.cluster.local"
   secretName: "k8s-loki-gateway-secret"
