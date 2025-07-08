@@ -39,13 +39,13 @@ func (l LogLevel) String() string {
 // CreateLogLevelFromProto maps protobuf log level to an internal log level used in application
 func CreateLogLevelFromProto(pLevel pb.LogLevel) (LogLevel, error) {
 	switch pLevel {
-	case pb.LogLevel_DEBUG:
+	case pb.LogLevel_LOG_LEVEL_DEBUG:
 		return LevelDebug, nil
-	case pb.LogLevel_INFO:
+	case pb.LogLevel_LOG_LEVEL_INFO:
 		return LevelInfo, nil
-	case pb.LogLevel_WARN:
+	case pb.LogLevel_LOG_LEVEL_WARN:
 		return LevelWarn, nil
-	case pb.LogLevel_ERROR:
+	case pb.LogLevel_LOG_LEVEL_ERROR_UNSPECIFIED:
 		return LevelError, nil
 	default:
 		return LevelUnknown, fmt.Errorf("unknown log level: %v", pLevel)
