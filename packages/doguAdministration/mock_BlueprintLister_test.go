@@ -5,7 +5,7 @@ package doguAdministration
 import (
 	context "context"
 
-	blueprintcrv1 "github.com/cloudogu/k8s-blueprint-operator/v2/pkg/adapter/kubernetes/blueprintcr/v1"
+	apiv1 "github.com/cloudogu/k8s-blueprint-lib/api/v1"
 
 	mock "github.com/stretchr/testify/mock"
 
@@ -26,23 +26,23 @@ func (_m *MockBlueprintLister) EXPECT() *MockBlueprintLister_Expecter {
 }
 
 // List provides a mock function with given fields: ctx, opts
-func (_m *MockBlueprintLister) List(ctx context.Context, opts v1.ListOptions) (*blueprintcrv1.BlueprintList, error) {
+func (_m *MockBlueprintLister) List(ctx context.Context, opts v1.ListOptions) (*apiv1.BlueprintList, error) {
 	ret := _m.Called(ctx, opts)
 
 	if len(ret) == 0 {
 		panic("no return value specified for List")
 	}
 
-	var r0 *blueprintcrv1.BlueprintList
+	var r0 *apiv1.BlueprintList
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, v1.ListOptions) (*blueprintcrv1.BlueprintList, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, v1.ListOptions) (*apiv1.BlueprintList, error)); ok {
 		return rf(ctx, opts)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, v1.ListOptions) *blueprintcrv1.BlueprintList); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, v1.ListOptions) *apiv1.BlueprintList); ok {
 		r0 = rf(ctx, opts)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*blueprintcrv1.BlueprintList)
+			r0 = ret.Get(0).(*apiv1.BlueprintList)
 		}
 	}
 
@@ -74,12 +74,12 @@ func (_c *MockBlueprintLister_List_Call) Run(run func(ctx context.Context, opts 
 	return _c
 }
 
-func (_c *MockBlueprintLister_List_Call) Return(_a0 *blueprintcrv1.BlueprintList, _a1 error) *MockBlueprintLister_List_Call {
+func (_c *MockBlueprintLister_List_Call) Return(_a0 *apiv1.BlueprintList, _a1 error) *MockBlueprintLister_List_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockBlueprintLister_List_Call) RunAndReturn(run func(context.Context, v1.ListOptions) (*blueprintcrv1.BlueprintList, error)) *MockBlueprintLister_List_Call {
+func (_c *MockBlueprintLister_List_Call) RunAndReturn(run func(context.Context, v1.ListOptions) (*apiv1.BlueprintList, error)) *MockBlueprintLister_List_Call {
 	_c.Call.Return(run)
 	return _c
 }

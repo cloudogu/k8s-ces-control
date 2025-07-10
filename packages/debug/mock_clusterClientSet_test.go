@@ -80,6 +80,10 @@ import (
 
 	rbacv1beta1 "k8s.io/client-go/kubernetes/typed/rbac/v1beta1"
 
+	resourcev1beta1 "k8s.io/client-go/kubernetes/typed/resource/v1beta1"
+
+	resourcev1beta2 "k8s.io/client-go/kubernetes/typed/resource/v1beta2"
+
 	schedulingv1 "k8s.io/client-go/kubernetes/typed/scheduling/v1"
 
 	schedulingv1alpha1 "k8s.io/client-go/kubernetes/typed/scheduling/v1alpha1"
@@ -97,6 +101,8 @@ import (
 	v1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1"
 
 	v1alpha1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1alpha1"
+
+	v1alpha2 "k8s.io/client-go/kubernetes/typed/coordination/v1alpha2"
 
 	v1alpha3 "k8s.io/client-go/kubernetes/typed/resource/v1alpha3"
 
@@ -1109,6 +1115,53 @@ func (_c *mockClusterClientSet_CoordinationV1_Call) Return(_a0 coordinationv1.Co
 }
 
 func (_c *mockClusterClientSet_CoordinationV1_Call) RunAndReturn(run func() coordinationv1.CoordinationV1Interface) *mockClusterClientSet_CoordinationV1_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CoordinationV1alpha2 provides a mock function with no fields
+func (_m *mockClusterClientSet) CoordinationV1alpha2() v1alpha2.CoordinationV1alpha2Interface {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for CoordinationV1alpha2")
+	}
+
+	var r0 v1alpha2.CoordinationV1alpha2Interface
+	if rf, ok := ret.Get(0).(func() v1alpha2.CoordinationV1alpha2Interface); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(v1alpha2.CoordinationV1alpha2Interface)
+		}
+	}
+
+	return r0
+}
+
+// mockClusterClientSet_CoordinationV1alpha2_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CoordinationV1alpha2'
+type mockClusterClientSet_CoordinationV1alpha2_Call struct {
+	*mock.Call
+}
+
+// CoordinationV1alpha2 is a helper method to define mock.On call
+func (_e *mockClusterClientSet_Expecter) CoordinationV1alpha2() *mockClusterClientSet_CoordinationV1alpha2_Call {
+	return &mockClusterClientSet_CoordinationV1alpha2_Call{Call: _e.mock.On("CoordinationV1alpha2")}
+}
+
+func (_c *mockClusterClientSet_CoordinationV1alpha2_Call) Run(run func()) *mockClusterClientSet_CoordinationV1alpha2_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *mockClusterClientSet_CoordinationV1alpha2_Call) Return(_a0 v1alpha2.CoordinationV1alpha2Interface) *mockClusterClientSet_CoordinationV1alpha2_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *mockClusterClientSet_CoordinationV1alpha2_Call) RunAndReturn(run func() v1alpha2.CoordinationV1alpha2Interface) *mockClusterClientSet_CoordinationV1alpha2_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2380,6 +2433,100 @@ func (_c *mockClusterClientSet_ResourceV1alpha3_Call) Return(_a0 v1alpha3.Resour
 }
 
 func (_c *mockClusterClientSet_ResourceV1alpha3_Call) RunAndReturn(run func() v1alpha3.ResourceV1alpha3Interface) *mockClusterClientSet_ResourceV1alpha3_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ResourceV1beta1 provides a mock function with no fields
+func (_m *mockClusterClientSet) ResourceV1beta1() resourcev1beta1.ResourceV1beta1Interface {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ResourceV1beta1")
+	}
+
+	var r0 resourcev1beta1.ResourceV1beta1Interface
+	if rf, ok := ret.Get(0).(func() resourcev1beta1.ResourceV1beta1Interface); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(resourcev1beta1.ResourceV1beta1Interface)
+		}
+	}
+
+	return r0
+}
+
+// mockClusterClientSet_ResourceV1beta1_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ResourceV1beta1'
+type mockClusterClientSet_ResourceV1beta1_Call struct {
+	*mock.Call
+}
+
+// ResourceV1beta1 is a helper method to define mock.On call
+func (_e *mockClusterClientSet_Expecter) ResourceV1beta1() *mockClusterClientSet_ResourceV1beta1_Call {
+	return &mockClusterClientSet_ResourceV1beta1_Call{Call: _e.mock.On("ResourceV1beta1")}
+}
+
+func (_c *mockClusterClientSet_ResourceV1beta1_Call) Run(run func()) *mockClusterClientSet_ResourceV1beta1_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *mockClusterClientSet_ResourceV1beta1_Call) Return(_a0 resourcev1beta1.ResourceV1beta1Interface) *mockClusterClientSet_ResourceV1beta1_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *mockClusterClientSet_ResourceV1beta1_Call) RunAndReturn(run func() resourcev1beta1.ResourceV1beta1Interface) *mockClusterClientSet_ResourceV1beta1_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ResourceV1beta2 provides a mock function with no fields
+func (_m *mockClusterClientSet) ResourceV1beta2() resourcev1beta2.ResourceV1beta2Interface {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ResourceV1beta2")
+	}
+
+	var r0 resourcev1beta2.ResourceV1beta2Interface
+	if rf, ok := ret.Get(0).(func() resourcev1beta2.ResourceV1beta2Interface); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(resourcev1beta2.ResourceV1beta2Interface)
+		}
+	}
+
+	return r0
+}
+
+// mockClusterClientSet_ResourceV1beta2_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ResourceV1beta2'
+type mockClusterClientSet_ResourceV1beta2_Call struct {
+	*mock.Call
+}
+
+// ResourceV1beta2 is a helper method to define mock.On call
+func (_e *mockClusterClientSet_Expecter) ResourceV1beta2() *mockClusterClientSet_ResourceV1beta2_Call {
+	return &mockClusterClientSet_ResourceV1beta2_Call{Call: _e.mock.On("ResourceV1beta2")}
+}
+
+func (_c *mockClusterClientSet_ResourceV1beta2_Call) Run(run func()) *mockClusterClientSet_ResourceV1beta2_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *mockClusterClientSet_ResourceV1beta2_Call) Return(_a0 resourcev1beta2.ResourceV1beta2Interface) *mockClusterClientSet_ResourceV1beta2_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *mockClusterClientSet_ResourceV1beta2_Call) RunAndReturn(run func() resourcev1beta2.ResourceV1beta2Interface) *mockClusterClientSet_ResourceV1beta2_Call {
 	_c.Call.Return(run)
 	return _c
 }

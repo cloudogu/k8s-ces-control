@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	common "github.com/cloudogu/ces-commons-lib/dogu"
 	pb "github.com/cloudogu/ces-control-api/generated/logging"
 	"github.com/cloudogu/cesapp-lib/core"
 	v2 "github.com/cloudogu/k8s-dogu-operator/v2/api/v2"
@@ -368,7 +369,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 			name: "Set LogLevel DEBUG",
 			req: &pb.LogLevelRequest{
 				DoguName: "test",
-				LogLevel: pb.LogLevel_DEBUG,
+				LogLevel: pb.LogLevel_LOG_LEVEL_DEBUG,
 			},
 			xResponse:     true,
 			xResponseCode: codes.OK,
@@ -377,7 +378,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 			name: "Set LogLevel INFO",
 			req: &pb.LogLevelRequest{
 				DoguName: "test",
-				LogLevel: pb.LogLevel_INFO,
+				LogLevel: pb.LogLevel_LOG_LEVEL_INFO,
 			},
 			xResponse:     true,
 			xResponseCode: codes.OK,
@@ -386,7 +387,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 			name: "Set LogLevel WARN",
 			req: &pb.LogLevelRequest{
 				DoguName: "test",
-				LogLevel: pb.LogLevel_WARN,
+				LogLevel: pb.LogLevel_LOG_LEVEL_WARN,
 			},
 			xResponse:     true,
 			xResponseCode: codes.OK,
@@ -395,7 +396,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 			name: "Set LogLevel ERROR",
 			req: &pb.LogLevelRequest{
 				DoguName: "test",
-				LogLevel: pb.LogLevel_ERROR,
+				LogLevel: pb.LogLevel_LOG_LEVEL_ERROR_UNSPECIFIED,
 			},
 			xResponse:      true,
 			xResponseCode:  codes.OK,
@@ -414,7 +415,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 			name: "Empty dogu name",
 			req: &pb.LogLevelRequest{
 				DoguName: "",
-				LogLevel: pb.LogLevel_DEBUG,
+				LogLevel: pb.LogLevel_LOG_LEVEL_DEBUG,
 			},
 			xResponse:     false,
 			xResponseCode: codes.InvalidArgument,
@@ -430,7 +431,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 			mockedDoguGetter := newMockDoguGetter(t)
 
 			if tc.xResponse {
-				mockedDoguConfigRepository.EXPECT().Get(context.TODO(), mock.Anything).Return(config.CreateDoguConfig(config.SimpleDoguName(tc.req.DoguName), config.Entries{"logging/root": config.Value(tc.actualLogLevel.String())}), nil)
+				mockedDoguConfigRepository.EXPECT().Get(context.TODO(), mock.Anything).Return(config.CreateDoguConfig(common.SimpleName(tc.req.DoguName), config.Entries{"logging/root": config.Value(tc.actualLogLevel.String())}), nil)
 				mockedDoguConfigRepository.EXPECT().Update(context.TODO(), mock.Anything).RunAndReturn(func(_a0 context.Context, doguConfig config.DoguConfig) (config.DoguConfig, error) {
 					get, b := doguConfig.Get("logging/root")
 					require.True(t, b)
@@ -499,7 +500,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
-			LogLevel: pb.LogLevel_DEBUG,
+			LogLevel: pb.LogLevel_LOG_LEVEL_DEBUG,
 		})
 
 		assert.True(t, resp != nil)
@@ -542,7 +543,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
-			LogLevel: pb.LogLevel_DEBUG,
+			LogLevel: pb.LogLevel_LOG_LEVEL_DEBUG,
 		})
 
 		assert.True(t, resp != nil)
@@ -584,7 +585,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
-			LogLevel: pb.LogLevel_WARN,
+			LogLevel: pb.LogLevel_LOG_LEVEL_WARN,
 		})
 
 		assert.True(t, resp != nil)
@@ -606,7 +607,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
-			LogLevel: pb.LogLevel_DEBUG,
+			LogLevel: pb.LogLevel_LOG_LEVEL_DEBUG,
 		})
 
 		assert.True(t, resp != nil)
@@ -638,7 +639,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
-			LogLevel: pb.LogLevel_DEBUG,
+			LogLevel: pb.LogLevel_LOG_LEVEL_DEBUG,
 		})
 
 		assert.Nil(t, resp)
@@ -686,7 +687,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
-			LogLevel: pb.LogLevel_DEBUG,
+			LogLevel: pb.LogLevel_LOG_LEVEL_DEBUG,
 		})
 
 		assert.Nil(t, resp)
@@ -703,7 +704,7 @@ func Test_loggingService_GetLogLevel(t *testing.T) {
 		mockedDescriptionGetter := newMockDoguDescriptionGetter(t)
 		mockedDoguGetter := newMockDoguGetter(t)
 
-		mockedDoguConfigRepository.EXPECT().Get(context.TODO(), config.SimpleDoguName("test")).Return(config.DoguConfig{}, assert.AnError)
+		mockedDoguConfigRepository.EXPECT().Get(context.TODO(), common.SimpleName("test")).Return(config.DoguConfig{}, assert.AnError)
 
 		sut := NewLoggingService(mockedLogProvider, mockedDoguConfigRepository, mockedDoguRestarter, mockedDescriptionGetter, mockedDoguGetter)
 
@@ -723,7 +724,7 @@ func Test_loggingService_GetLogLevel(t *testing.T) {
 		mockedDescriptionGetter := newMockDoguDescriptionGetter(t)
 		mockedDoguGetter := newMockDoguGetter(t)
 
-		mockedDoguConfigRepository.EXPECT().Get(context.TODO(), config.SimpleDoguName("test")).Return(config.DoguConfig{}, nil)
+		mockedDoguConfigRepository.EXPECT().Get(context.TODO(), common.SimpleName("test")).Return(config.DoguConfig{}, nil)
 		mockedDescriptionGetter.EXPECT().GetCurrent(context.TODO(), "test").Return(nil, assert.AnError)
 
 		sut := NewLoggingService(mockedLogProvider, mockedDoguConfigRepository, mockedDoguRestarter, mockedDescriptionGetter, mockedDoguGetter)

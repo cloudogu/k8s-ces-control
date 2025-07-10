@@ -7,6 +7,8 @@ import (
 
 	config "github.com/cloudogu/k8s-registry-lib/config"
 
+	dogu "github.com/cloudogu/ces-commons-lib/dogu"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -24,7 +26,7 @@ func (_m *mockDoguConfigRepository) EXPECT() *mockDoguConfigRepository_Expecter 
 }
 
 // Get provides a mock function with given fields: _a0, _a1
-func (_m *mockDoguConfigRepository) Get(_a0 context.Context, _a1 config.SimpleDoguName) (config.DoguConfig, error) {
+func (_m *mockDoguConfigRepository) Get(_a0 context.Context, _a1 dogu.SimpleName) (config.DoguConfig, error) {
 	ret := _m.Called(_a0, _a1)
 
 	if len(ret) == 0 {
@@ -33,16 +35,16 @@ func (_m *mockDoguConfigRepository) Get(_a0 context.Context, _a1 config.SimpleDo
 
 	var r0 config.DoguConfig
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, config.SimpleDoguName) (config.DoguConfig, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, dogu.SimpleName) (config.DoguConfig, error)); ok {
 		return rf(_a0, _a1)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, config.SimpleDoguName) config.DoguConfig); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, dogu.SimpleName) config.DoguConfig); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		r0 = ret.Get(0).(config.DoguConfig)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, config.SimpleDoguName) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, dogu.SimpleName) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)
@@ -58,14 +60,14 @@ type mockDoguConfigRepository_Get_Call struct {
 
 // Get is a helper method to define mock.On call
 //   - _a0 context.Context
-//   - _a1 config.SimpleDoguName
+//   - _a1 dogu.SimpleName
 func (_e *mockDoguConfigRepository_Expecter) Get(_a0 interface{}, _a1 interface{}) *mockDoguConfigRepository_Get_Call {
 	return &mockDoguConfigRepository_Get_Call{Call: _e.mock.On("Get", _a0, _a1)}
 }
 
-func (_c *mockDoguConfigRepository_Get_Call) Run(run func(_a0 context.Context, _a1 config.SimpleDoguName)) *mockDoguConfigRepository_Get_Call {
+func (_c *mockDoguConfigRepository_Get_Call) Run(run func(_a0 context.Context, _a1 dogu.SimpleName)) *mockDoguConfigRepository_Get_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(config.SimpleDoguName))
+		run(args[0].(context.Context), args[1].(dogu.SimpleName))
 	})
 	return _c
 }
@@ -75,7 +77,7 @@ func (_c *mockDoguConfigRepository_Get_Call) Return(_a0 config.DoguConfig, _a1 e
 	return _c
 }
 
-func (_c *mockDoguConfigRepository_Get_Call) RunAndReturn(run func(context.Context, config.SimpleDoguName) (config.DoguConfig, error)) *mockDoguConfigRepository_Get_Call {
+func (_c *mockDoguConfigRepository_Get_Call) RunAndReturn(run func(context.Context, dogu.SimpleName) (config.DoguConfig, error)) *mockDoguConfigRepository_Get_Call {
 	_c.Call.Return(run)
 	return _c
 }

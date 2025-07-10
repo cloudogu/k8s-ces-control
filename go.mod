@@ -8,10 +8,10 @@ replace github.com/cloudogu/cesapp-lib => github.com/cloudogu/cesapp-lib v0.0.0-
 
 require (
 	github.com/bombsimon/logrusr/v2 v2.0.1
+	github.com/cloudogu/ces-commons-lib v0.2.0
 	github.com/cloudogu/ces-control-api v1.3.1-0.20250327091328-888b134803a8
 	github.com/cloudogu/cesapp-lib v0.18.1
 	github.com/cloudogu/k8s-blueprint-lib v1.3.0
-	github.com/cloudogu/k8s-blueprint-operator/v2 v2.6.0
 	github.com/cloudogu/k8s-dogu-operator/v2 v2.3.0
 	github.com/cloudogu/k8s-registry-lib v0.5.1
 	github.com/cloudogu/k8s-support-archive-lib v0.1.2
@@ -29,10 +29,8 @@ require (
 )
 
 require (
-	github.com/Masterminds/semver/v3 v3.3.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cloudogu/ces-commons-lib v0.2.0 // indirect
 	github.com/cloudogu/retry-lib v0.1.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	common "github.com/cloudogu/ces-commons-lib/dogu"
 	"github.com/cloudogu/k8s-registry-lib/config"
 	"gopkg.in/yaml.v3"
 )
@@ -34,7 +35,7 @@ func (d *doguLogLevelYamlRegistryMap) MarshalFromCesRegistryToString(ctx context
 
 	var multiError error
 	for _, dogu := range allDogus {
-		doguConfig, _ := d.doguConfigRepository.Get(ctx, config.SimpleDoguName(dogu.GetSimpleName()))
+		doguConfig, _ := d.doguConfigRepository.Get(ctx, common.SimpleName(dogu.GetSimpleName()))
 		logLevel, exists := doguConfig.Get(keyDoguConfigLogLevel)
 
 		if !exists {
@@ -69,7 +70,7 @@ func (d *doguLogLevelYamlRegistryMap) UnMarshalFromStringToCesRegistry(ctx conte
 func (d *doguLogLevelYamlRegistryMap) restoreToCesRegistry(ctx context.Context) error {
 	var multiError error
 	for dogu, level := range d.logLevelRegistryMap {
-		doguConfig, _ := d.doguConfigRepository.Get(ctx, config.SimpleDoguName(dogu))
+		doguConfig, _ := d.doguConfigRepository.Get(ctx, common.SimpleName(dogu))
 		// If the dogu had no log level it is defined as an empty string in the registry.
 		// In this case we have to delete the entry.
 		if level == "" {
