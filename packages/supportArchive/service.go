@@ -86,6 +86,7 @@ func (d *supportArchiveService) createAndWatchSupportArchive(supportArchive *v1.
 			if !ok {
 				return "", fmt.Errorf("unexpected type")
 			}
+			// TODO watch Conditions instead of Phase
 			if supportArchive.Status.Phase == "created" {
 				downloadPath = supportArchive.Status.DownloadPath
 				return downloadPath, nil
