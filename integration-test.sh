@@ -102,6 +102,9 @@ runTests() {
   testDoguHealth_GetByNames
   testDoguHealth_GetByName
   echo "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
+    echo "Test-Suite: Support-Archive: Test Create"
+    testSupportArchive_Create
+  echo "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
 }
 
 testDoguAdministration_GetAllDogus() {
@@ -282,6 +285,24 @@ testDoguHealth_GetByName() {
     echo "Test: [Dogu-Health-GetByName] Check if NginxStatic is healthy: Failed!"
     addFailingTestCase "Dogu-Health-GetByName-NginxStatic" "Expected to get Dogu 'nginx-static' is healthy but got only: ${doguHealthJson}"
   fi
+}
+
+testSupportArchive_Create() {
+  local createSupportArchiveJson
+  # TODO create a valid json file to create a request
+  createSupportArchiveJson=$(${GRPCURL_BIN_PATH} -plaintext -d '{"doguName": "postfix"}' localhost:"${GRPCURL_PORT}" maintenance.SupportArchive.Create)
+
+
+  local supportArchives=""
+  supportArchives="$(${KUBECTL_BIN_PATH} get supportArchive)"
+  # TODO check if a support archive was created after the request
+  if [[ $(echo ${createSupportArchiveJson} | ${JQ_BIN_PATH} -r '.results.ldap.fullName') == 'ldap' && $(echo ${createSupportArchiveJson} | ${JQ_BIN_PATH} -r '.results.ldap.healthy') == 'true' ]]; then
+      echo "Test: [Support-Archive-Create] Check if support archive is created: Success!"
+      addSuccessTestCase "Support-Archive-Create" "List of returned SupportArchive contained a created one."
+    else
+      echo "Test: [Support-Archive-Create] Check if support archive is created: Failed!"
+      addFailingTestCase "Support-Archive-Create" "There is no existing support archive: ${createSupportArchiveJson}"
+    fi
 }
 
 echo "Using KUBECTL=${KUBECTL_BIN_PATH}"
