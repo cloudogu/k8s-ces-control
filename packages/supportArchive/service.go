@@ -79,7 +79,6 @@ func (d *supportArchiveService) createAndWatchSupportArchive(supportArchive *v1.
 		return "", fmt.Errorf("failed to create watch interface: %q", err)
 	}
 
-	downloadPath := ""
 	for event := range watchInterface.ResultChan() {
 		if event.Type == watch.Added || event.Type == watch.Modified {
 			supportArchive, ok := event.Object.(*v1.SupportArchive)
@@ -87,9 +86,8 @@ func (d *supportArchiveService) createAndWatchSupportArchive(supportArchive *v1.
 				return "", fmt.Errorf("unexpected type")
 			}
 			// TODO watch Conditions instead of Phase
-			if supportArchive.Status.Phase == "created" {
-				downloadPath = supportArchive.Status.DownloadPath
-				return downloadPath, nil
+			if supportArchive.Status.Phase == v1.StatusPhaseCreated {
+				return supportArchive.Status.DownloadPath, nil
 			}
 		}
 	}

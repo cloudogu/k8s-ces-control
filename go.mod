@@ -4,8 +4,6 @@ go 1.24.3
 
 toolchain go1.24.4
 
-replace github.com/cloudogu/cesapp-lib => github.com/cloudogu/cesapp-lib v0.0.0-20241029151530-f7281943e1fc
-
 require (
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/cloudogu/ces-commons-lib v0.2.0
