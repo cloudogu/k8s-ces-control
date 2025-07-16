@@ -58,7 +58,11 @@ func (d *supportArchiveService) mapRequestSettingsToSupportArchive(req *pbMainte
 		return &v1.SupportArchive{}, fmt.Errorf("end time is before start time")
 	}
 
+	timestamp := metav1.Now().Format("20060102150405Z")
 	return &v1.SupportArchive{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "support-archive-" + timestamp,
+		},
 		Spec: v1.SupportArchiveSpec{
 			ExcludedContents: v1.ExcludedContents{
 				SystemState:   exclude.SystemState,
@@ -86,16 +90,29 @@ func (d *supportArchiveService) createAndWatchSupportArchive(supportArchive *v1.
 		return "", fmt.Errorf("failed to create watch interface: %q", err)
 	}
 
-	for event := range watchInterface.ResultChan() {
-		if event.Type == watch.Added || event.Type == watch.Modified {
-			supportArchive, ok := event.Object.(*v1.SupportArchive)
-			if !ok {
-				return "", fmt.Errorf("unexpected type")
+	for {
+		select {
+		case event, channelOk := <-watchInterface.ResultChan():
+			if !channelOk {
+				return "", fmt.Errorf("watch channel closed unexpectedly")
 			}
-			// TODO watch Conditions instead of Phase
-			if supportArchive.Status.Phase == v1.StatusPhaseCreated {
-				return supportArchive.Status.DownloadPath, nil
+
+			if event.Type == watch.Added || event.Type == watch.Modified {
+				eventSupportArchive, typeOk := event.Object.(*v1.SupportArchive)
+				if !typeOk {
+					return "", fmt.Errorf("unexpected type")
+				}
+				// ignore changes to other supportArchives
+				if eventSupportArchive.Name != supportArchive.Name {
+					continue
+				}
+				// TODO watch Conditions instead of Phase
+				if eventSupportArchive.Status.Phase == v1.StatusPhaseCreated {
+					return eventSupportArchive.Status.DownloadPath, nil
+				}
 			}
+		case <-server.Context().Done():
+			return "", fmt.Errorf("timed out waiting for support archive to be created")
 		}
 	}
 	return "", fmt.Errorf("failed to watch support Archive")
