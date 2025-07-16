@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.5.0] - 2025-07-16
+### Added
+- [#62] add metadata mapping for logLevel
+
 ## [v1.4.0] - 2025-04-23
 ### Changed
 - [#60] Set sensible resource requests and limits

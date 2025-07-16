@@ -31,7 +31,7 @@ WORKDIR ${WORKDIR}
 
 LABEL maintainer="hello@cloudogu.com" \
     NAME="k8s-ces-control" \
-    VERSION="1.4.0"
+    VERSION="1.5.0"
 
 COPY --from=backendbuilder /k8s-ces-control/target/k8s-ces-control ${WORKDIR}/k8s-ces-control
 
@@ -60,4 +60,4 @@ EXPOSE 50051
 WORKDIR ${WORKDIR}
 USER k8s-ces-control
 
-CMD LOG_LEVEL=DEBUG ./k8s-ces-control start
+CMD ./k8s-ces-control start
