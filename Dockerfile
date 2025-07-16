@@ -60,4 +60,4 @@ EXPOSE 50051
 WORKDIR ${WORKDIR}
 USER k8s-ces-control
 
-CMD LOG_LEVEL=DEBUG ./k8s-ces-control start
+CMD ./k8s-ces-control start
