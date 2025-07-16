@@ -80,12 +80,13 @@ func (d *supportArchiveService) mapRequestSettingsToSupportArchive(req *pbMainte
 }
 
 func (d *supportArchiveService) createAndWatchSupportArchive(supportArchive *v1.SupportArchive, server pbMaintenance.SupportArchive_CreateServer) (string, error) {
-	_, err := d.supportArchiveClient.Create(server.Context(), supportArchive, metav1.CreateOptions{})
+	ctx := server.Context()
+	_, err := d.supportArchiveClient.Create(ctx, supportArchive, metav1.CreateOptions{})
 	if err != nil {
 		return "", fmt.Errorf("failed to create support archive: %q", err)
 	}
 
-	watchInterface, err := d.supportArchiveClient.Watch(server.Context(), metav1.ListOptions{})
+	watchInterface, err := d.supportArchiveClient.Watch(ctx, metav1.ListOptions{})
 	if err != nil {
 		return "", fmt.Errorf("failed to create watch interface: %q", err)
 	}
@@ -115,5 +116,4 @@ func (d *supportArchiveService) createAndWatchSupportArchive(supportArchive *v1.
 			return "", fmt.Errorf("timed out waiting for support archive to be created")
 		}
 	}
-	return "", fmt.Errorf("failed to watch support Archive")
 }
