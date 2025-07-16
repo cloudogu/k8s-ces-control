@@ -46,7 +46,14 @@ func (d *supportArchiveService) mapRequestSettingsToSupportArchive(req *pbMainte
 	logConf := req.GetCommon().LoggingConfig
 
 	startTime := metav1.NewTime(logConf.StartDateTime.AsTime())
-	endTime := metav1.NewTime(logConf.EndDateTime.AsTime())
+	var endTime metav1.Time
+	// set endTime to now if it was not set
+	if logConf.EndDateTime.AsTime().IsZero() || (logConf.EndDateTime.GetSeconds() == 0 && logConf.EndDateTime.GetNanos() == 0) {
+		endTime = metav1.Now()
+	} else {
+		endTime = metav1.NewTime(logConf.EndDateTime.AsTime())
+	}
+
 	if endTime.Before(&startTime) {
 		return &v1.SupportArchive{}, fmt.Errorf("end time is before start time")
 	}
