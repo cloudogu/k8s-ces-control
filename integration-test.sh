@@ -102,8 +102,8 @@ runTests() {
   testDoguHealth_GetByNames
   testDoguHealth_GetByName
   echo "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
-    echo "Test-Suite: Support-Archive: Test Create"
-    testSupportArchive_Create
+  echo "Test-Suite: Support-Archive: Test Create"
+  testSupportArchive_Create
   echo "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
 }
 
@@ -288,21 +288,39 @@ testDoguHealth_GetByName() {
 }
 
 testSupportArchive_Create() {
+  local existingSupportArchives=""
+  existingSupportArchives="$(${KUBECTL_BIN_PATH} get supportarchive -o custom-columns=NAME:.metadata.name --no-headers 2>/dev/null || echo "")"
+
   local createSupportArchiveJson
-  # TODO create a valid json file to create a request
-  createSupportArchiveJson=$(${GRPCURL_BIN_PATH} -plaintext -d '{"doguName": "postfix"}' localhost:"${GRPCURL_PORT}" maintenance.SupportArchive.Create)
+  createSupportArchiveJson=$(${GRPCURL_BIN_PATH} -plaintext -d '{"common": {"excluded_contents": {}, "logging_config": {}}}' localhost:"${GRPCURL_PORT}" maintenance.SupportArchive.Create)
+  downloadPathGrpc=$(echo ${createSupportArchiveJson} | ${JQ_BIN_PATH} -r '.data' | base64 --decode)
 
+  local newSupportArchives=""
+  newSupportArchives="$(${KUBECTL_BIN_PATH} get supportarchive -o custom-columns=NAME:.metadata.name --no-headers 2>/dev/null || echo "")"
 
-  local supportArchives=""
-  supportArchives="$(${KUBECTL_BIN_PATH} get supportArchive)"
-  # TODO check if a support archive was created after the request
-  if [[ $(echo ${createSupportArchiveJson} | ${JQ_BIN_PATH} -r '.results.ldap.fullName') == 'ldap' && $(echo ${createSupportArchiveJson} | ${JQ_BIN_PATH} -r '.results.ldap.healthy') == 'true' ]]; then
-      echo "Test: [Support-Archive-Create] Check if support archive is created: Success!"
-      addSuccessTestCase "Support-Archive-Create" "List of returned SupportArchive contained a created one."
-    else
-      echo "Test: [Support-Archive-Create] Check if support archive is created: Failed!"
-      addFailingTestCase "Support-Archive-Create" "There is no existing support archive: ${createSupportArchiveJson}"
+  sleep 5s # wait for support-archive-CR
+
+  for archive in $newSupportArchives; do
+    if ! echo "$existingSupportArchives" | grep -q "$archive"; then
+      newlyCapturedArchives+=("$archive")
     fi
+  done
+
+  # Fail if no new archives were created
+  if [ ${#newlyCapturedArchives[@]} -eq 0 ]; then
+    echo "Test: [Support-Archive-Create] Check if support archive is created: Failed!"
+    addFailingTestCase "Support-Archive-Create" "No new support archive was created after API call."
+    return
+  fi
+
+  downloadPathArchive="$(${KUBECTL_BIN_PATH} get supportarchive ${newlyCapturedArchives[0]} -o json | ${JQ_BIN_PATH} -r '.status.downloadPath')"
+  if [[ "$downloadPathGrpc" == "$downloadPathArchive" ]]; then
+    echo "Test: [Support-Archive-Create] Check if support archive is created: Success!"
+    addSuccessTestCase "Support-Archive-Create" "List of returned SupportArchive contained a created one."
+  else
+    echo "Test: [Support-Archive-Create] Check if support archive is created: Failed!"
+    addFailingTestCase "Support-Archive-Create" "There is no existing support archive: ${createSupportArchiveJson}"
+  fi
 }
 
 echo "Using KUBECTL=${KUBECTL_BIN_PATH}"

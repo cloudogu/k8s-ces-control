@@ -58,10 +58,10 @@ func (d *supportArchiveService) mapRequestSettingsToSupportArchive(req *pbMainte
 		return &v1.SupportArchive{}, fmt.Errorf("end time is before start time")
 	}
 
-	timestamp := metav1.Now().Format("20060102150405Z")
+	timestamp := metav1.Now().Format("20060102150405")
 	return &v1.SupportArchive{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "support-archive-" + timestamp,
+			Name: "support-archive-" + timestamp + "z",
 		},
 		Spec: v1.SupportArchiveSpec{
 			ExcludedContents: v1.ExcludedContents{
