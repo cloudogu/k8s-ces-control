@@ -18,6 +18,7 @@ import (
 	"github.com/cloudogu/k8s-registry-lib/dogu"
 	"github.com/cloudogu/k8s-registry-lib/repository"
 	"net"
+	"net/http"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -128,7 +129,7 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService(client.Dogus(config.CurrentNamespace)))
 	debugModeService := debug.NewDebugModeService(doguInterActor, doguConfig, globalConfig, doguDescriptorGetter, client, config.CurrentNamespace)
 	pbMaintenance.RegisterDebugModeServer(grpcServer, debugModeService)
-	supportArchiveService := supportArchive.NewSupportArchiveService(supportArchiveClient)
+	supportArchiveService := supportArchive.NewSupportArchiveService(supportArchiveClient, &http.Client{})
 	pbMaintenance.RegisterSupportArchiveServer(grpcServer, supportArchiveService)
 	watcher := debug.NewDefaultConfigMapRegistryWatcher(configMapClient, debugModeService)
 	watcher.StartWatch(context.Background())

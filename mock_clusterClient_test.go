@@ -32,6 +32,8 @@ import (
 
 	certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
 
+	clientv1 "github.com/cloudogu/k8s-support-archive-lib/client/v1"
+
 	context "context"
 
 	coordinationv1 "k8s.io/client-go/kubernetes/typed/coordination/v1"
@@ -2921,6 +2923,54 @@ func (_c *mockClusterClient_StoragemigrationV1alpha1_Call) Return(_a0 storagemig
 }
 
 func (_c *mockClusterClient_StoragemigrationV1alpha1_Call) RunAndReturn(run func() storagemigrationv1alpha1.StoragemigrationV1alpha1Interface) *mockClusterClient_StoragemigrationV1alpha1_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SupportArchives provides a mock function with given fields: namespace
+func (_m *mockClusterClient) SupportArchives(namespace string) clientv1.SupportArchiveInterface {
+	ret := _m.Called(namespace)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SupportArchives")
+	}
+
+	var r0 clientv1.SupportArchiveInterface
+	if rf, ok := ret.Get(0).(func(string) clientv1.SupportArchiveInterface); ok {
+		r0 = rf(namespace)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(clientv1.SupportArchiveInterface)
+		}
+	}
+
+	return r0
+}
+
+// mockClusterClient_SupportArchives_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SupportArchives'
+type mockClusterClient_SupportArchives_Call struct {
+	*mock.Call
+}
+
+// SupportArchives is a helper method to define mock.On call
+//   - namespace string
+func (_e *mockClusterClient_Expecter) SupportArchives(namespace interface{}) *mockClusterClient_SupportArchives_Call {
+	return &mockClusterClient_SupportArchives_Call{Call: _e.mock.On("SupportArchives", namespace)}
+}
+
+func (_c *mockClusterClient_SupportArchives_Call) Run(run func(namespace string)) *mockClusterClient_SupportArchives_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(string))
+	})
+	return _c
+}
+
+func (_c *mockClusterClient_SupportArchives_Call) Return(_a0 clientv1.SupportArchiveInterface) *mockClusterClient_SupportArchives_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *mockClusterClient_SupportArchives_Call) RunAndReturn(run func(string) clientv1.SupportArchiveInterface) *mockClusterClient_SupportArchives_Call {
 	_c.Call.Return(run)
 	return _c
 }

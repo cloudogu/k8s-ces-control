@@ -10,8 +10,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"io"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -23,7 +25,7 @@ func TestNewSupportArchiveService(t *testing.T) {
 		supportArchiveClientMock := newMockSupportArchiveClient(t)
 
 		//when
-		service := NewSupportArchiveService(supportArchiveClientMock)
+		service := NewSupportArchiveService(supportArchiveClientMock, &http.Client{})
 
 		require.NotNil(t, service)
 	})
@@ -108,7 +110,7 @@ func Test_defaultSupportArchive_mapRequestSettingsToSupportArchive(t *testing.T)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			supportArchiveClientMock := newMockSupportArchiveClient(t)
-			d := NewSupportArchiveService(supportArchiveClientMock)
+			d := NewSupportArchiveService(supportArchiveClientMock, &http.Client{})
 
 			beforeTime := metav1.Now()
 			got, err := d.mapRequestSettingsToSupportArchive(tt.reqFn(t))
@@ -135,7 +137,7 @@ func Test_defaultSupportArchive_mapRequestSettingsToSupportArchive(t *testing.T)
 		}
 
 		supportArchiveClientMock := newMockSupportArchiveClient(t)
-		d := NewSupportArchiveService(supportArchiveClientMock)
+		d := NewSupportArchiveService(supportArchiveClientMock, &http.Client{})
 
 		beforeTime := metav1.Now()
 		got, err := d.mapRequestSettingsToSupportArchive(request)
@@ -149,9 +151,9 @@ func Test_defaultSupportArchive_mapRequestSettingsToSupportArchive(t *testing.T)
 func assertArchiveName(t *testing.T, got *v1.SupportArchive, beforeTime metav1.Time, afterTime metav1.Time) {
 	nameParts := strings.Split(got.Name, "-")
 	assert.Equal(t, len(nameParts), 3)
-	timestampStr := nameParts[2]
+	timestampStr, _ := strings.CutSuffix(nameParts[2], "z")
 	// Parse the timestamp string
-	archiveTime, err := time.Parse("20060102150405Z", timestampStr)
+	archiveTime, err := time.Parse("20060102150405", timestampStr)
 	assert.NoError(t, err)
 
 	// Assert that the archive name timestamp is between before and after times
@@ -161,7 +163,9 @@ func assertArchiveName(t *testing.T, got *v1.SupportArchive, beforeTime metav1.T
 func Test_defaultSupportArchive_Create(t *testing.T) {
 	tests := []struct {
 		name                   string
-		supportArchiveClientFn func(t *testing.T) (supportArchiveClient, supportArchiveCreateserver, context.CancelFunc)
+		supportArchiveClientFn func(t *testing.T) supportArchiveClient
+		supportArchiveServerFn func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc)
+		supportArchiveHttpFn   func(t *testing.T) httpClient
 		req                    *pbMaintenance.CreateSupportArchiveRequest
 		wantErrMessage         string
 	}{
@@ -176,15 +180,19 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 					},
 				}},
 			},
-			supportArchiveClientFn: func(t *testing.T) (supportArchiveClient, supportArchiveCreateserver, context.CancelFunc) {
+			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
 				clientMock := newMockSupportArchiveClient(t)
 				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
 					Return(nil, assert.AnError)
+				return clientMock
+			},
+			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
 				serverMock := newMockSupportArchiveCreateserver(t)
 				serverMock.EXPECT().Context().Return(t.Context())
-				return clientMock, serverMock, nil
+				return serverMock, nil
 			},
-			wantErrMessage: "failed to create support archive: ",
+			supportArchiveHttpFn: func(t *testing.T) httpClient { return nil },
+			wantErrMessage:       "failed to create support archive: ",
 		},
 		{
 			name: "should fail to create watch interface",
@@ -197,17 +205,20 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 					},
 				}},
 			},
-			supportArchiveClientFn: func(t *testing.T) (supportArchiveClient, supportArchiveCreateserver, context.CancelFunc) {
+			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
 				clientMock := newMockSupportArchiveClient(t)
 				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
 					Return(nil, nil)
 				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(nil, assert.AnError)
-
+				return clientMock
+			},
+			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
 				serverMock := newMockSupportArchiveCreateserver(t)
 				serverMock.EXPECT().Context().Return(t.Context())
-				return clientMock, serverMock, nil
+				return serverMock, nil
 			},
-			wantErrMessage: "failed to create watch interface:",
+			supportArchiveHttpFn: func(t *testing.T) httpClient { return nil },
+			wantErrMessage:       "failed to create watch interface:",
 		},
 		{
 			name: "should fail when watch stops without result",
@@ -220,7 +231,7 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 					},
 				}},
 			},
-			supportArchiveClientFn: func(t *testing.T) (supportArchiveClient, supportArchiveCreateserver, context.CancelFunc) {
+			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
 				clientMock := newMockSupportArchiveClient(t)
 				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
 					Return(nil, nil)
@@ -232,12 +243,15 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 					time.Sleep(100 * time.Millisecond)
 					watcher.Stop()
 				}()
-
+				return clientMock
+			},
+			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
 				serverMock := newMockSupportArchiveCreateserver(t)
 				serverMock.EXPECT().Context().Return(t.Context())
-				return clientMock, serverMock, nil
+				return serverMock, nil
 			},
-			wantErrMessage: "failed to create or watch support archive:",
+			supportArchiveHttpFn: func(t *testing.T) httpClient { return nil },
+			wantErrMessage:       "failed to create or watch support archive:",
 		},
 		{
 			name: "should fail when watch returns nil",
@@ -250,7 +264,7 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 					},
 				}},
 			},
-			supportArchiveClientFn: func(t *testing.T) (supportArchiveClient, supportArchiveCreateserver, context.CancelFunc) {
+			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
 				clientMock := newMockSupportArchiveClient(t)
 				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
 					Return(nil, nil)
@@ -262,15 +276,18 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 					time.Sleep(100 * time.Millisecond)
 					watcher.Action(watch.Modified, nil)
 				}()
-
+				return clientMock
+			},
+			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
 				serverMock := newMockSupportArchiveCreateserver(t)
 				serverMock.EXPECT().Context().Return(t.Context())
-				return clientMock, serverMock, nil
+				return serverMock, nil
 			},
-			wantErrMessage: "failed to create or watch support archive:",
+			supportArchiveHttpFn: func(t *testing.T) httpClient { return nil },
+			wantErrMessage:       "failed to create or watch support archive:",
 		},
 		{
-			name: "should fail when download path cannot be sent",
+			name: "should fail when download path is not a url",
 			req: &pbMaintenance.CreateSupportArchiveRequest{
 				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
 					ExcludedContents: &pbMaintenance.ExcludedContents{},
@@ -280,7 +297,7 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 					},
 				}},
 			},
-			supportArchiveClientFn: func(t *testing.T) (supportArchiveClient, supportArchiveCreateserver, context.CancelFunc) {
+			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
 				clientMock := newMockSupportArchiveClient(t)
 				var archiveName string
 				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
@@ -291,7 +308,6 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 				watcher := watch.NewFake()
 				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(watcher, nil)
 
-				downloadPath := "testDownloadPath"
 				go func() {
 					time.Sleep(100 * time.Millisecond)
 					watcher.Action(watch.Modified, &v1.SupportArchive{
@@ -300,19 +316,177 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 						},
 						Status: v1.SupportArchiveStatus{
 							Phase:        v1.StatusPhaseCreated,
-							DownloadPath: downloadPath,
+							DownloadPath: "§$(§/$$=§%)(",
 						},
 					})
 				}()
+				return clientMock
+			},
+			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
+				serverMock := newMockSupportArchiveCreateserver(t)
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+				serverMock.EXPECT().Context().Return(timeoutCtx)
+				return serverMock, cancel
+			},
+			supportArchiveHttpFn: func(t *testing.T) httpClient { return nil },
+			wantErrMessage:       "failed to create request: ",
+		},
+		{
+			name: "should fail when http client throws error",
+			req: &pbMaintenance.CreateSupportArchiveRequest{
+				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
+					ExcludedContents: &pbMaintenance.ExcludedContents{},
+					LoggingConfig: &pbMaintenance.LoggingConfig{
+						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
+						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
+					},
+				}},
+			},
+			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
+				clientMock := newMockSupportArchiveClient(t)
+				var archiveName string
+				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
+					RunAndReturn(func(ctx context.Context, archive *v1.SupportArchive, options metav1.CreateOptions) (*v1.SupportArchive, error) {
+						archiveName = archive.Name
+						return nil, nil
+					})
+				watcher := watch.NewFake()
+				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(watcher, nil)
 
+				go func() {
+					time.Sleep(100 * time.Millisecond)
+					watcher.Action(watch.Modified, &v1.SupportArchive{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: archiveName,
+						},
+						Status: v1.SupportArchiveStatus{
+							Phase:        v1.StatusPhaseCreated,
+							DownloadPath: "testDownloadPath",
+						},
+					})
+				}()
+				return clientMock
+			},
+			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
+				serverMock := newMockSupportArchiveCreateserver(t)
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+				serverMock.EXPECT().Context().Return(timeoutCtx)
+				return serverMock, cancel
+			},
+			supportArchiveHttpFn: func(t *testing.T) httpClient {
+				httpMock := newMockHttpClient(t)
+				httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).Return(nil, assert.AnError)
+				return httpMock
+			},
+			wantErrMessage: "failed to send request: ",
+		},
+		{
+			name: "should fail when http status code is not ok",
+			req: &pbMaintenance.CreateSupportArchiveRequest{
+				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
+					ExcludedContents: &pbMaintenance.ExcludedContents{},
+					LoggingConfig: &pbMaintenance.LoggingConfig{
+						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
+						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
+					},
+				}},
+			},
+			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
+				clientMock := newMockSupportArchiveClient(t)
+				var archiveName string
+				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
+					RunAndReturn(func(ctx context.Context, archive *v1.SupportArchive, options metav1.CreateOptions) (*v1.SupportArchive, error) {
+						archiveName = archive.Name
+						return nil, nil
+					})
+				watcher := watch.NewFake()
+				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(watcher, nil)
+
+				go func() {
+					time.Sleep(100 * time.Millisecond)
+					watcher.Action(watch.Modified, &v1.SupportArchive{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: archiveName,
+						},
+						Status: v1.SupportArchiveStatus{
+							Phase:        v1.StatusPhaseCreated,
+							DownloadPath: "testDownloadPath",
+						},
+					})
+				}()
+				return clientMock
+			},
+			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
+				serverMock := newMockSupportArchiveCreateserver(t)
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+				serverMock.EXPECT().Context().Return(timeoutCtx)
+				return serverMock, cancel
+			},
+			supportArchiveHttpFn: func(t *testing.T) httpClient {
+				httpMock := newMockHttpClient(t)
+				httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).Return(
+					&http.Response{
+						StatusCode: http.StatusBadRequest,
+						Body:       io.NopCloser(strings.NewReader("myTest.zip")),
+					}, nil)
+				return httpMock
+			},
+			wantErrMessage: "bad status: ",
+		},
+		{
+			name: "should fail when download archive cannot be sent",
+			req: &pbMaintenance.CreateSupportArchiveRequest{
+				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
+					ExcludedContents: &pbMaintenance.ExcludedContents{},
+					LoggingConfig: &pbMaintenance.LoggingConfig{
+						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
+						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
+					},
+				}},
+			},
+			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
+				clientMock := newMockSupportArchiveClient(t)
+				var archiveName string
+				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
+					RunAndReturn(func(ctx context.Context, archive *v1.SupportArchive, options metav1.CreateOptions) (*v1.SupportArchive, error) {
+						archiveName = archive.Name
+						return nil, nil
+					})
+				watcher := watch.NewFake()
+				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(watcher, nil)
+
+				go func() {
+					time.Sleep(100 * time.Millisecond)
+					watcher.Action(watch.Modified, &v1.SupportArchive{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: archiveName,
+						},
+						Status: v1.SupportArchiveStatus{
+							Phase:        v1.StatusPhaseCreated,
+							DownloadPath: "testDownloadPath",
+						},
+					})
+				}()
+				return clientMock
+			},
+			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
 				serverMock := newMockSupportArchiveCreateserver(t)
 				timeoutCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 				serverMock.EXPECT().Context().Return(timeoutCtx)
 				resp := &pbTypes.ChunkedDataResponse{}
-				resp.Data = []byte(downloadPath)
+				resp.Data = []byte("myTest.zip")
 				serverMock.EXPECT().Send(resp).Return(assert.AnError)
 
-				return clientMock, serverMock, cancel
+				return serverMock, cancel
+			},
+			supportArchiveHttpFn: func(t *testing.T) httpClient {
+				httpMock := newMockHttpClient(t)
+				httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).Return(
+					&http.Response{
+						StatusCode: http.StatusOK,
+						Body:       io.NopCloser(strings.NewReader("myTest.zip")),
+					}, nil)
+				return httpMock
 			},
 			wantErrMessage: "failed to send response:",
 		},
@@ -324,21 +498,24 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 					LoggingConfig:    &pbMaintenance.LoggingConfig{},
 				}},
 			},
-			supportArchiveClientFn: func(t *testing.T) (supportArchiveClient, supportArchiveCreateserver, context.CancelFunc) {
+			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
 				clientMock := newMockSupportArchiveClient(t)
 				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
 					Return(nil, nil)
 
 				watcher := watch.NewFake()
 				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(watcher, nil)
-
+				return clientMock
+			},
+			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
 				timeoutCtx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 				serverMock := newMockSupportArchiveCreateserver(t)
 				serverMock.EXPECT().Context().Return(timeoutCtx)
 
-				return clientMock, serverMock, cancel
+				return serverMock, cancel
 			},
-			wantErrMessage: "timed out waiting for support archive to be created",
+			supportArchiveHttpFn: func(t *testing.T) httpClient { return nil },
+			wantErrMessage:       "timed out waiting for support archive to be created",
 		},
 		{
 			name: "should ignore archives with different name",
@@ -351,7 +528,7 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 					},
 				}},
 			},
-			supportArchiveClientFn: func(t *testing.T) (supportArchiveClient, supportArchiveCreateserver, context.CancelFunc) {
+			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
 				timestampStart := &timestamppb.Timestamp{Seconds: int64(16000)}
 				timestampEnd := &timestamppb.Timestamp{Seconds: int64(32000)}
 				clientMock := newMockSupportArchiveClient(t)
@@ -368,7 +545,6 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 				watcher := watch.NewFake()
 				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(watcher, nil)
 
-				downloadPath := "testDownloadPath"
 				go func() {
 					time.Sleep(100 * time.Millisecond)
 					watcher.Action(watch.Modified, &v1.SupportArchive{
@@ -387,18 +563,33 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 						},
 						Status: v1.SupportArchiveStatus{
 							Phase:        v1.StatusPhaseCreated,
-							DownloadPath: downloadPath,
+							DownloadPath: "testDownloadPath",
 						},
 					})
 				}()
+				return clientMock
+			},
+			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
 				timeoutCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				serverMock := newMockSupportArchiveCreateserver(t)
 				serverMock.EXPECT().Context().Return(timeoutCtx)
 				resp := &pbTypes.ChunkedDataResponse{}
-				resp.Data = []byte(downloadPath)
+				resp.Data = []byte("myTest.zip")
 				serverMock.EXPECT().Send(resp).Return(nil)
 
-				return clientMock, serverMock, cancel
+				return serverMock, cancel
+			},
+			supportArchiveHttpFn: func(t *testing.T) httpClient {
+				httpMock := newMockHttpClient(t)
+				httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).RunAndReturn(func(request *http.Request) (*http.Response, error) {
+					assert.Equal(t, request.Method, "GET")
+					assert.Equal(t, request.URL.Path, "testDownloadPath")
+					return &http.Response{
+						StatusCode: http.StatusOK,
+						Body:       io.NopCloser(strings.NewReader("myTest.zip")),
+					}, nil
+				})
+				return httpMock
 			},
 		},
 		{
@@ -412,7 +603,7 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 					},
 				}},
 			},
-			supportArchiveClientFn: func(t *testing.T) (supportArchiveClient, supportArchiveCreateserver, context.CancelFunc) {
+			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
 				timestampStart := &timestamppb.Timestamp{Seconds: int64(16000)}
 				timestampEnd := &timestamppb.Timestamp{Seconds: int64(32000)}
 				clientMock := newMockSupportArchiveClient(t)
@@ -429,7 +620,6 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 				watcher := watch.NewFake()
 				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(watcher, nil)
 
-				downloadPath := "testDownloadPath"
 				go func() {
 					time.Sleep(1 * time.Second)
 					watcher.Action(watch.Modified, &v1.SupportArchive{
@@ -438,32 +628,49 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 						},
 						Status: v1.SupportArchiveStatus{
 							Phase:        v1.StatusPhaseCreated,
-							DownloadPath: downloadPath,
+							DownloadPath: "testDownloadPath",
 						},
 					})
 				}()
+				return clientMock
+			},
+			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
 				timeoutCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				serverMock := newMockSupportArchiveCreateserver(t)
 				serverMock.EXPECT().Context().Return(timeoutCtx)
 				resp := &pbTypes.ChunkedDataResponse{}
-				resp.Data = []byte(downloadPath)
+				resp.Data = []byte(("myTest.zip"))
 				serverMock.EXPECT().Send(resp).Return(nil)
 
-				return clientMock, serverMock, cancel
+				return serverMock, cancel
+			},
+			supportArchiveHttpFn: func(t *testing.T) httpClient {
+				httpMock := newMockHttpClient(t)
+				httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).RunAndReturn(func(request *http.Request) (*http.Response, error) {
+					assert.Equal(t, request.Method, "GET")
+					assert.Equal(t, request.URL.Path, "testDownloadPath")
+					return &http.Response{
+						StatusCode: http.StatusOK,
+						Body:       io.NopCloser(strings.NewReader("myTest.zip")),
+					}, nil
+				})
+				return httpMock
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
-			clientmock, servicMock, cancelWatch := tt.supportArchiveClientFn(t)
+			clientmock := tt.supportArchiveClientFn(t)
+			serverMock, cancelWatch := tt.supportArchiveServerFn(t)
 			if cancelWatch != nil {
 				defer cancelWatch()
 			}
-			service := NewSupportArchiveService(clientmock)
+			httpmock := tt.supportArchiveHttpFn(t)
+			service := NewSupportArchiveService(clientmock, httpmock)
 
 			// when
-			err := service.Create(tt.req, servicMock)
+			err := service.Create(tt.req, serverMock)
 
 			//then
 			if tt.wantErrMessage != "" {

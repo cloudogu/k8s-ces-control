@@ -11,8 +11,7 @@ import (
 type LogLevel int
 
 const (
-	LevelUnknown LogLevel = iota
-	LevelError
+	LevelErrorUnspecified LogLevel = iota
 	LevelWarn
 	LevelInfo
 	LevelDebug
@@ -21,18 +20,16 @@ const (
 // String converts LogLevel type to a string
 func (l LogLevel) String() string {
 	switch l {
-	case LevelUnknown:
-		return "UNKNOWN"
 	case LevelDebug:
-		return "DEBUG"
+		return "LOG_LEVEL_DEBUG"
 	case LevelInfo:
-		return "INFO"
+		return "LOG_LEVEL_INFO"
 	case LevelWarn:
-		return "WARN"
-	case LevelError:
-		return "ERROR"
+		return "LOG_LEVEL_WARN"
+	case LevelErrorUnspecified:
+		return "LOG_LEVEL_ERROR_UNSPECIFIED"
 	default:
-		return "WARN"
+		return "LOG_LEVEL_WARN"
 	}
 }
 
@@ -46,9 +43,9 @@ func CreateLogLevelFromProto(pLevel pb.LogLevel) (LogLevel, error) {
 	case pb.LogLevel_LOG_LEVEL_WARN:
 		return LevelWarn, nil
 	case pb.LogLevel_LOG_LEVEL_ERROR_UNSPECIFIED:
-		return LevelError, nil
+		return LevelErrorUnspecified, nil
 	default:
-		return LevelUnknown, fmt.Errorf("unknown log level: %v", pLevel)
+		return LevelErrorUnspecified, fmt.Errorf("unknown log level: %v", pLevel)
 	}
 }
 
@@ -57,8 +54,8 @@ func CreateLogLevelFromString(sLevel string) (LogLevel, error) {
 	sLevelUpper := strings.ToUpper(sLevel)
 
 	switch sLevelUpper {
-	case LevelError.String():
-		return LevelError, nil
+	case LevelErrorUnspecified.String():
+		return LevelErrorUnspecified, nil
 	case LevelWarn.String():
 		return LevelWarn, nil
 	case LevelInfo.String():
@@ -66,6 +63,6 @@ func CreateLogLevelFromString(sLevel string) (LogLevel, error) {
 	case LevelDebug.String():
 		return LevelDebug, nil
 	default:
-		return LevelUnknown, errors.New("unknown log level")
+		return LevelErrorUnspecified, errors.New("unknown log level")
 	}
 }

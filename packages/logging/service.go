@@ -216,13 +216,13 @@ func (s *loggingService) getLogLevel(ctx context.Context, doguName string, doguC
 		var err error
 		currentLogLevelStr, err = s.getDefaultLogLevel(ctx, doguName)
 		if err != nil {
-			return LevelUnknown, fmt.Errorf("could not get default log level from dogu description: %w", err)
+			return LevelErrorUnspecified, fmt.Errorf("could not get default log level from dogu description: %w", err)
 		}
 	}
 
 	if currentLogLevelStr == "" {
 		logrus.Warnf("log level for dogu %s is neither set in config nor description", doguName)
-		return LevelUnknown, nil
+		return LevelErrorUnspecified, nil
 	}
 
 	logrus.Debugf("current log level from dogu %s is %s", doguName, currentLogLevelStr)
@@ -231,7 +231,7 @@ func (s *loggingService) getLogLevel(ctx context.Context, doguName string, doguC
 	if err != nil {
 		logrus.Warnf("invalid log level set for dogu %s: %s", doguName, currentLogLevelStr)
 
-		return LevelUnknown, nil
+		return LevelErrorUnspecified, nil
 	}
 
 	return currentLogLevel, nil

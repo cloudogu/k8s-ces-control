@@ -140,7 +140,7 @@ func Test_server_GetDoguList(t *testing.T) {
 					Version:     "1.2.3-2",
 					Description: "asdf",
 					Tags:        []string{"example"},
-					LogLevel:    "DEBUG",
+					LogLevel:    "LOG_LEVEL_DEBUG",
 				},
 				{
 					Name:        "will-succeed-too",
@@ -148,7 +148,7 @@ func Test_server_GetDoguList(t *testing.T) {
 					Version:     "3.2.1-1",
 					Description: "qwert",
 					Tags:        []string{"example", "banana"},
-					LogLevel:    "DEBUG",
+					LogLevel:    "LOG_LEVEL_DEBUG",
 				},
 			},
 		}, actual)

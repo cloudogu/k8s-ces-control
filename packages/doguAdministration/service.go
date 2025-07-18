@@ -84,7 +84,7 @@ func (s *server) RestartDogu(ctx context.Context, request *pb.DoguAdministration
 }
 
 func getGRPCInternalDoguActionError(verb string, err error) error {
-	return status.Errorf(codes.Internal, fmt.Errorf("failed to %s dogu: %w", verb, err).Error())
+	return status.Errorf(codes.Internal, "%v", fmt.Errorf("failed to %s dogu: %w", verb, err).Error())
 }
 
 // GetDoguList returns the list of dogus to administrate (all)
