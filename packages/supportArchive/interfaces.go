@@ -10,6 +10,8 @@ type supportArchiveClient interface {
 	v1.SupportArchiveInterface
 }
 
+//nolint:unused
+//goland:noinspection GoUnusedType
 type supportArchiveCreateserver interface {
 	maintenance.SupportArchive_CreateServer
 }
