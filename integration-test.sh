@@ -291,14 +291,21 @@ testSupportArchive_Create() {
   local existingSupportArchives=""
   existingSupportArchives="$(${KUBECTL_BIN_PATH} get supportarchive -o custom-columns=NAME:.metadata.name --no-headers 2>/dev/null || echo "")"
 
+  # Create a temporary file to store the downloaded archive
+  local tempArchiveFile=$(mktemp /tmp/support-archive-XXXXXX.zip)
+
+  echo "Downloading support archive to ${tempArchiveFile}..."
+
+  # Get the JSON response from grpcurl
   local createSupportArchiveJson
   createSupportArchiveJson=$(${GRPCURL_BIN_PATH} -plaintext -d '{"common": {"excluded_contents": {}, "logging_config": {}}}' localhost:"${GRPCURL_PORT}" maintenance.SupportArchive.Create)
-  downloadPathGrpc=$(echo ${createSupportArchiveJson} | ${JQ_BIN_PATH} -r '.data' | base64 --decode)
 
+  # Extract the base64-encoded data and decode it to a file
+  echo ${createSupportArchiveJson} | ${JQ_BIN_PATH} -r '.data' | base64 --decode > "${tempArchiveFile}"
+
+  # Wait for a new support-archive-cr and check if it is created
   local newSupportArchives=""
   newSupportArchives="$(${KUBECTL_BIN_PATH} get supportarchive -o custom-columns=NAME:.metadata.name --no-headers 2>/dev/null || echo "")"
-
-  sleep 5s # wait for support-archive-CR
 
   for archive in $newSupportArchives; do
     if ! echo "$existingSupportArchives" | grep -q "$archive"; then
@@ -308,19 +315,35 @@ testSupportArchive_Create() {
 
   # Fail if no new archives were created
   if [ ${#newlyCapturedArchives[@]} -eq 0 ]; then
-    echo "Test: [Support-Archive-Create] Check if support archive is created: Failed!"
+    echo "Test: [Support-Archive-Create] Check if support archive is created: Failed! (No new CR was created)"
     addFailingTestCase "Support-Archive-Create" "No new support archive was created after API call."
     return
   fi
 
-  downloadPathArchive="$(${KUBECTL_BIN_PATH} get supportarchive ${newlyCapturedArchives[0]} -o json | ${JQ_BIN_PATH} -r '.status.downloadPath')"
-  if [[ "$downloadPathGrpc" == "$downloadPathArchive" ]]; then
-    echo "Test: [Support-Archive-Create] Check if support archive is created: Success!"
-    addSuccessTestCase "Support-Archive-Create" "List of returned SupportArchive contained a created one."
+  # Check if the file has been created and is not empty
+  if [ -f "${tempArchiveFile}" ] && [ -s "${tempArchiveFile}" ]; then
+    # Use "file" command to check if it's a valid ZIP archive
+    if file "${tempArchiveFile}" | grep -q "Zip archive data"; then
+      echo "Test: [Support-Archive-Create] Check if support archive is downloaded: Success!"
+      addSuccessTestCase "Support-Archive-Create-Download" "Support archive was successfully downloaded as a ZIP file."
+    else
+      echo "Test: [Support-Archive-Create] Check if support archive is downloaded: Failed! (Not a valid zip)"
+      addFailingTestCase "Support-Archive-Create-Download" "Downloaded file is not a valid ZIP archive: $(file ${tempArchiveFile})"
+      echo "Deleting temporary file ${tempArchiveFile}..."
+      rm -f "${tempArchiveFile}"
+      return
+    fi
   else
-    echo "Test: [Support-Archive-Create] Check if support archive is created: Failed!"
-    addFailingTestCase "Support-Archive-Create" "There is no existing support archive: ${createSupportArchiveJson}"
+    echo "Test: [Support-Archive-Create] Check if support archive is downloaded: Failed! (Empty file or none at all created)"
+    addFailingTestCase "Support-Archive-Create-Download" "Failed to download support archive or file is empty."
+    echo "Deleting temporary file ${tempArchiveFile}..."
+    rm -f "${tempArchiveFile}"
+    return
   fi
+
+  # Clean up the temporary file
+  echo "Deleting temporary file ${tempArchiveFile}..."
+  rm -f "${tempArchiveFile}"
 }
 
 echo "Using KUBECTL=${KUBECTL_BIN_PATH}"
