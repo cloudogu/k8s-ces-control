@@ -47,7 +47,8 @@ func Test_defaultSupportArchive_mapRequestSettingsToSupportArchive(t *testing.T)
 						ExcludedContents: &pbMaintenance.ExcludedContents{
 							SystemState:   true,
 							SensitiveData: true,
-							LogsAndEvents: true,
+							Logs:          true,
+							Events:        true,
 							VolumeInfo:    true,
 							SystemInfo:    true,
 						},
@@ -66,7 +67,8 @@ func Test_defaultSupportArchive_mapRequestSettingsToSupportArchive(t *testing.T)
 						ExcludedContents: v1.ExcludedContents{
 							SystemState:   true,
 							SensitiveData: true,
-							LogsAndEvents: true,
+							Logs:          true,
+							Events:        true,
 							VolumeInfo:    true,
 							SystemInfo:    true,
 						},
@@ -88,7 +90,8 @@ func Test_defaultSupportArchive_mapRequestSettingsToSupportArchive(t *testing.T)
 						ExcludedContents: &pbMaintenance.ExcludedContents{
 							SystemState:   true,
 							SensitiveData: true,
-							LogsAndEvents: true,
+							Logs:          true,
+							Events:        true,
 							VolumeInfo:    true,
 							SystemInfo:    true,
 						},
@@ -315,7 +318,9 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 							Name: archiveName,
 						},
 						Status: v1.SupportArchiveStatus{
-							Phase:        v1.StatusPhaseCreated,
+							Conditions: []metav1.Condition{
+								{Type: v1.ConditionSupportArchiveCreated, Status: metav1.ConditionTrue},
+							},
 							DownloadPath: "§$(§/$$=§%)(",
 						},
 					})
@@ -360,7 +365,9 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 							Name: archiveName,
 						},
 						Status: v1.SupportArchiveStatus{
-							Phase:        v1.StatusPhaseCreated,
+							Conditions: []metav1.Condition{
+								{Type: v1.ConditionSupportArchiveCreated, Status: metav1.ConditionTrue},
+							},
 							DownloadPath: "testDownloadPath",
 						},
 					})
@@ -409,7 +416,9 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 							Name: archiveName,
 						},
 						Status: v1.SupportArchiveStatus{
-							Phase:        v1.StatusPhaseCreated,
+							Conditions: []metav1.Condition{
+								{Type: v1.ConditionSupportArchiveCreated, Status: metav1.ConditionTrue},
+							},
 							DownloadPath: "testDownloadPath",
 						},
 					})
@@ -462,7 +471,9 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 							Name: archiveName,
 						},
 						Status: v1.SupportArchiveStatus{
-							Phase:        v1.StatusPhaseCreated,
+							Conditions: []metav1.Condition{
+								{Type: v1.ConditionSupportArchiveCreated, Status: metav1.ConditionTrue},
+							},
 							DownloadPath: "testDownloadPath",
 						},
 					})
@@ -552,7 +563,9 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 							Name: "wrongName",
 						},
 						Status: v1.SupportArchiveStatus{
-							Phase:        v1.StatusPhaseCreated,
+							Conditions: []metav1.Condition{
+								{Type: v1.ConditionSupportArchiveCreated, Status: metav1.ConditionTrue},
+							},
 							DownloadPath: "differentPath", // this would let the Send-Mock fail
 						},
 					})
@@ -562,7 +575,9 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 							Name: archiveName,
 						},
 						Status: v1.SupportArchiveStatus{
-							Phase:        v1.StatusPhaseCreated,
+							Conditions: []metav1.Condition{
+								{Type: v1.ConditionSupportArchiveCreated, Status: metav1.ConditionTrue},
+							},
 							DownloadPath: "testDownloadPath",
 						},
 					})
@@ -627,7 +642,9 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 							Name: archiveName,
 						},
 						Status: v1.SupportArchiveStatus{
-							Phase:        v1.StatusPhaseCreated,
+							Conditions: []metav1.Condition{
+								{Type: v1.ConditionSupportArchiveCreated, Status: metav1.ConditionTrue},
+							},
 							DownloadPath: "testDownloadPath",
 						},
 					})

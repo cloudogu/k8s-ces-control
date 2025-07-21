@@ -856,6 +856,67 @@ func (_c *mockSupportArchiveClient_UpdateStatusFailed_Call) RunAndReturn(run fun
 	return _c
 }
 
+// UpdateStatusWithRetry provides a mock function with given fields: ctx, cr, modifyStatusFn, opts
+func (_m *mockSupportArchiveClient) UpdateStatusWithRetry(ctx context.Context, cr *v1.SupportArchive, modifyStatusFn func(v1.SupportArchiveStatus) v1.SupportArchiveStatus, opts metav1.UpdateOptions) (*v1.SupportArchive, error) {
+	ret := _m.Called(ctx, cr, modifyStatusFn, opts)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateStatusWithRetry")
+	}
+
+	var r0 *v1.SupportArchive
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *v1.SupportArchive, func(v1.SupportArchiveStatus) v1.SupportArchiveStatus, metav1.UpdateOptions) (*v1.SupportArchive, error)); ok {
+		return rf(ctx, cr, modifyStatusFn, opts)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *v1.SupportArchive, func(v1.SupportArchiveStatus) v1.SupportArchiveStatus, metav1.UpdateOptions) *v1.SupportArchive); ok {
+		r0 = rf(ctx, cr, modifyStatusFn, opts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*v1.SupportArchive)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *v1.SupportArchive, func(v1.SupportArchiveStatus) v1.SupportArchiveStatus, metav1.UpdateOptions) error); ok {
+		r1 = rf(ctx, cr, modifyStatusFn, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// mockSupportArchiveClient_UpdateStatusWithRetry_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateStatusWithRetry'
+type mockSupportArchiveClient_UpdateStatusWithRetry_Call struct {
+	*mock.Call
+}
+
+// UpdateStatusWithRetry is a helper method to define mock.On call
+//   - ctx context.Context
+//   - cr *v1.SupportArchive
+//   - modifyStatusFn func(v1.SupportArchiveStatus) v1.SupportArchiveStatus
+//   - opts metav1.UpdateOptions
+func (_e *mockSupportArchiveClient_Expecter) UpdateStatusWithRetry(ctx interface{}, cr interface{}, modifyStatusFn interface{}, opts interface{}) *mockSupportArchiveClient_UpdateStatusWithRetry_Call {
+	return &mockSupportArchiveClient_UpdateStatusWithRetry_Call{Call: _e.mock.On("UpdateStatusWithRetry", ctx, cr, modifyStatusFn, opts)}
+}
+
+func (_c *mockSupportArchiveClient_UpdateStatusWithRetry_Call) Run(run func(ctx context.Context, cr *v1.SupportArchive, modifyStatusFn func(v1.SupportArchiveStatus) v1.SupportArchiveStatus, opts metav1.UpdateOptions)) *mockSupportArchiveClient_UpdateStatusWithRetry_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*v1.SupportArchive), args[2].(func(v1.SupportArchiveStatus) v1.SupportArchiveStatus), args[3].(metav1.UpdateOptions))
+	})
+	return _c
+}
+
+func (_c *mockSupportArchiveClient_UpdateStatusWithRetry_Call) Return(_a0 *v1.SupportArchive, _a1 error) *mockSupportArchiveClient_UpdateStatusWithRetry_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *mockSupportArchiveClient_UpdateStatusWithRetry_Call) RunAndReturn(run func(context.Context, *v1.SupportArchive, func(v1.SupportArchiveStatus) v1.SupportArchiveStatus, metav1.UpdateOptions) (*v1.SupportArchive, error)) *mockSupportArchiveClient_UpdateStatusWithRetry_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Watch provides a mock function with given fields: ctx, opts
 func (_m *mockSupportArchiveClient) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	ret := _m.Called(ctx, opts)

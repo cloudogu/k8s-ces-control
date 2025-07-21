@@ -56,7 +56,9 @@ func (d *supportArchiveService) Create(req *pbMaintenance.CreateSupportArchiveRe
 
 func (d *supportArchiveService) mapRequestSettingsToSupportArchive(req *pbMaintenance.CreateSupportArchiveRequest) (*v1.SupportArchive, error) {
 	log.Log.Info("mapRequestSettingsToSupportArchive", "request", req)
-	//TODO: potential nil pointer!
+	if req.GetCommon() == nil {
+		return &v1.SupportArchive{}, fmt.Errorf("no request of type Common found")
+	}
 	exclude := req.GetCommon().ExcludedContents
 	logConf := req.GetCommon().LoggingConfig
 
@@ -82,7 +84,8 @@ func (d *supportArchiveService) mapRequestSettingsToSupportArchive(req *pbMainte
 			ExcludedContents: v1.ExcludedContents{
 				SystemState:   exclude.SystemState,
 				SensitiveData: exclude.SensitiveData,
-				LogsAndEvents: exclude.LogsAndEvents,
+				Logs:          exclude.Events,
+				Events:        exclude.Logs,
 				VolumeInfo:    exclude.VolumeInfo,
 				SystemInfo:    exclude.SystemInfo,
 			},
@@ -122,9 +125,11 @@ func (d *supportArchiveService) createAndWatchSupportArchive(supportArchive *v1.
 				if eventSupportArchive.Name != supportArchive.Name {
 					continue
 				}
-				// TODO watch Conditions instead of Phase
-				if eventSupportArchive.Status.Phase == v1.StatusPhaseCreated {
-					return eventSupportArchive.Status.DownloadPath, nil
+
+				for _, condition := range eventSupportArchive.Status.Conditions {
+					if condition.Type == v1.ConditionSupportArchiveCreated && condition.Status == metav1.ConditionTrue {
+						return eventSupportArchive.Status.DownloadPath, nil
+					}
 				}
 			}
 		case <-server.Context().Done():
