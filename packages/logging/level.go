@@ -21,28 +21,28 @@ const (
 func (l LogLevel) String() string {
 	switch l {
 	case LevelDebug:
-		return "LOG_LEVEL_DEBUG"
+		return "DEBUG"
 	case LevelInfo:
-		return "LOG_LEVEL_INFO"
+		return "INFO"
 	case LevelWarn:
-		return "LOG_LEVEL_WARN"
+		return "WARN"
 	case LevelErrorUnspecified:
-		return "LOG_LEVEL_ERROR_UNSPECIFIED"
+		return "ERROR"
 	default:
-		return "LOG_LEVEL_WARN"
+		return "WARN"
 	}
 }
 
 // CreateLogLevelFromProto maps protobuf log level to an internal log level used in application
 func CreateLogLevelFromProto(pLevel pb.LogLevel) (LogLevel, error) {
 	switch pLevel {
-	case pb.LogLevel_LOG_LEVEL_DEBUG:
+	case pb.LogLevel_DEBUG:
 		return LevelDebug, nil
-	case pb.LogLevel_LOG_LEVEL_INFO:
+	case pb.LogLevel_INFO:
 		return LevelInfo, nil
-	case pb.LogLevel_LOG_LEVEL_WARN:
+	case pb.LogLevel_WARN:
 		return LevelWarn, nil
-	case pb.LogLevel_LOG_LEVEL_ERROR_UNSPECIFIED:
+	case pb.LogLevel_ERROR:
 		return LevelErrorUnspecified, nil
 	default:
 		return LevelErrorUnspecified, fmt.Errorf("unknown log level: %v", pLevel)

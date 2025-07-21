@@ -369,7 +369,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 			name: "Set LogLevel DEBUG",
 			req: &pb.LogLevelRequest{
 				DoguName: "test",
-				LogLevel: pb.LogLevel_LOG_LEVEL_DEBUG,
+				LogLevel: pb.LogLevel_DEBUG,
 			},
 			xResponse:     true,
 			xResponseCode: codes.OK,
@@ -378,7 +378,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 			name: "Set LogLevel INFO",
 			req: &pb.LogLevelRequest{
 				DoguName: "test",
-				LogLevel: pb.LogLevel_LOG_LEVEL_INFO,
+				LogLevel: pb.LogLevel_INFO,
 			},
 			xResponse:     true,
 			xResponseCode: codes.OK,
@@ -387,7 +387,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 			name: "Set LogLevel WARN",
 			req: &pb.LogLevelRequest{
 				DoguName: "test",
-				LogLevel: pb.LogLevel_LOG_LEVEL_WARN,
+				LogLevel: pb.LogLevel_WARN,
 			},
 			xResponse:     true,
 			xResponseCode: codes.OK,
@@ -396,7 +396,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 			name: "Set LogLevel ERROR",
 			req: &pb.LogLevelRequest{
 				DoguName: "test",
-				LogLevel: pb.LogLevel_LOG_LEVEL_ERROR_UNSPECIFIED,
+				LogLevel: pb.LogLevel_ERROR,
 			},
 			xResponse:      true,
 			xResponseCode:  codes.OK,
@@ -415,7 +415,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 			name: "Empty dogu name",
 			req: &pb.LogLevelRequest{
 				DoguName: "",
-				LogLevel: pb.LogLevel_LOG_LEVEL_DEBUG,
+				LogLevel: pb.LogLevel_DEBUG,
 			},
 			xResponse:     false,
 			xResponseCode: codes.InvalidArgument,
@@ -500,7 +500,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
-			LogLevel: pb.LogLevel_LOG_LEVEL_DEBUG,
+			LogLevel: pb.LogLevel_DEBUG,
 		})
 
 		assert.True(t, resp != nil)
@@ -543,7 +543,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
-			LogLevel: pb.LogLevel_LOG_LEVEL_DEBUG,
+			LogLevel: pb.LogLevel_DEBUG,
 		})
 
 		assert.True(t, resp != nil)
@@ -585,7 +585,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
-			LogLevel: pb.LogLevel_LOG_LEVEL_WARN,
+			LogLevel: pb.LogLevel_WARN,
 		})
 
 		assert.True(t, resp != nil)
@@ -607,7 +607,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
-			LogLevel: pb.LogLevel_LOG_LEVEL_DEBUG,
+			LogLevel: pb.LogLevel_DEBUG,
 		})
 
 		assert.True(t, resp != nil)
@@ -639,7 +639,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
-			LogLevel: pb.LogLevel_LOG_LEVEL_DEBUG,
+			LogLevel: pb.LogLevel_DEBUG,
 		})
 
 		assert.Nil(t, resp)
@@ -687,7 +687,7 @@ func TestLoggingService_SetLogLevel(t *testing.T) {
 
 		resp, err := sut.ApplyLogLevelWithRestart(context.TODO(), &pb.LogLevelRequest{
 			DoguName: "test",
-			LogLevel: pb.LogLevel_LOG_LEVEL_DEBUG,
+			LogLevel: pb.LogLevel_DEBUG,
 		})
 
 		assert.Nil(t, resp)

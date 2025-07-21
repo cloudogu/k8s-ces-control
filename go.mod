@@ -7,7 +7,7 @@ toolchain go1.24.4
 require (
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/cloudogu/ces-commons-lib v0.2.0
-	github.com/cloudogu/ces-control-api v1.3.1-0.20250721045426-8bd2aa709037
+	github.com/cloudogu/ces-control-api v1.3.1-0.20250721093628-4ae4307bc5b0
 	github.com/cloudogu/cesapp-lib v0.18.1
 	github.com/cloudogu/k8s-blueprint-lib v1.3.0
 	github.com/cloudogu/k8s-dogu-operator/v2 v2.3.0

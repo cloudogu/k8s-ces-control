@@ -14,10 +14,10 @@ func TestCreateLogLevelFromProto(t *testing.T) {
 		input    pbLogging.LogLevel
 		err      error
 	}{
-		{"Debug", LevelDebug, pbLogging.LogLevel_LOG_LEVEL_DEBUG, nil},
-		{"Info", LevelInfo, pbLogging.LogLevel_LOG_LEVEL_INFO, nil},
-		{"Warn", LevelWarn, pbLogging.LogLevel_LOG_LEVEL_WARN, nil},
-		{"Error", LevelErrorUnspecified, pbLogging.LogLevel_LOG_LEVEL_ERROR_UNSPECIFIED, nil},
+		{"Debug", LevelDebug, pbLogging.LogLevel_DEBUG, nil},
+		{"Info", LevelInfo, pbLogging.LogLevel_INFO, nil},
+		{"Warn", LevelWarn, pbLogging.LogLevel_WARN, nil},
+		{"Error", LevelErrorUnspecified, pbLogging.LogLevel_ERROR, nil},
 		{"Unknown", LevelErrorUnspecified, 100, fmt.Errorf("unknown log level UNKNOWN")},
 	}
 
@@ -50,11 +50,11 @@ func TestCreateLevelFromString(t *testing.T) {
 		expected LogLevel
 		err      error
 	}{
-		{"Debug", "LOG_LEVEL_DEBUG", LevelDebug, nil},
-		{"Info", "LOG_LEVEL_INFO", LevelInfo, nil},
-		{"Warn", "LOG_LEVEL_WARN", LevelWarn, nil},
-		{"Error", "LOG_LEVEL_ERROR_UNSPECIFIED", LevelErrorUnspecified, nil},
-		{"Unknown", "LOG_LEVEL_UNKNOWN", LevelErrorUnspecified, fmt.Errorf("unknown log level UNKNOWN")},
+		{"Debug", "DEBUG", LevelDebug, nil},
+		{"Info", "INFO", LevelInfo, nil},
+		{"Warn", "WARN", LevelWarn, nil},
+		{"Error", "ERROR", LevelErrorUnspecified, nil},
+		{"Unknown", "UNKNOWN", LevelErrorUnspecified, fmt.Errorf("unknown log level UNKNOWN")},
 		{"Empty", "", 0, errors.New("log level string is empty")},
 	}
 
@@ -86,12 +86,12 @@ func TestLogLevel_String(t *testing.T) {
 		input    LogLevel
 		expected string
 	}{
-		{"Debug", LevelDebug, "LOG_LEVEL_DEBUG"},
-		{"Info", LevelInfo, "LOG_LEVEL_INFO"},
-		{"Warn", LevelWarn, "LOG_LEVEL_WARN"},
-		{"Error", LevelErrorUnspecified, "LOG_LEVEL_ERROR_UNSPECIFIED"},
-		{"Unknown", LevelErrorUnspecified, "LOG_LEVEL_ERROR_UNSPECIFIED"},
-		{"Unknown", LogLevel(100), "LOG_LEVEL_WARN"},
+		{"Debug", LevelDebug, "DEBUG"},
+		{"Info", LevelInfo, "INFO"},
+		{"Warn", LevelWarn, "WARN"},
+		{"Error", LevelErrorUnspecified, "ERROR"},
+		{"Unknown", LevelErrorUnspecified, "ERROR"},
+		{"Unknown", LogLevel(100), "WARN"},
 	}
 
 	for _, tt := range tests {

@@ -18,6 +18,8 @@ github.com/cloudogu/ces-control-api v1.3.1-0.20250327091328-888b134803a8 h1:F/dN
 github.com/cloudogu/ces-control-api v1.3.1-0.20250327091328-888b134803a8/go.mod h1:4kKlQppOuNVka0R7Ce+7KBv75c4xgxKOkJTJVXsa6Gs=
 github.com/cloudogu/ces-control-api v1.3.1-0.20250721045426-8bd2aa709037 h1:UcYo+TQmN66uvCQ19Mk8I7DBTZbKtKUfkMGwI9lwUyU=
 github.com/cloudogu/ces-control-api v1.3.1-0.20250721045426-8bd2aa709037/go.mod h1:4kKlQppOuNVka0R7Ce+7KBv75c4xgxKOkJTJVXsa6Gs=
+github.com/cloudogu/ces-control-api v1.3.1-0.20250721093628-4ae4307bc5b0 h1:8Xu4e4xKbi7Q34p+5dMBThQ1E4FLWPpBZ0QLCubKomU=
+github.com/cloudogu/ces-control-api v1.3.1-0.20250721093628-4ae4307bc5b0/go.mod h1:4kKlQppOuNVka0R7Ce+7KBv75c4xgxKOkJTJVXsa6Gs=
 github.com/cloudogu/cesapp-lib v0.18.1 h1:LMdGktIefm/PuhdPqpLTPvjY1smO06EEGBbRSAaYi7U=
 github.com/cloudogu/cesapp-lib v0.18.1/go.mod h1:J05eXFxnz4enZblABlmiVTZaUtJ+LIhlJ2UF6l9jpDw=
 github.com/cloudogu/k8s-blueprint-lib v1.3.0 h1:+Ob+O2xaMX+iTSrxK01r8MOoR2EwZ8FLFbXCzOgibzw=
