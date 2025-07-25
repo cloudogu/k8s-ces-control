@@ -52,7 +52,7 @@ func Test_defaultSupportArchive_mapRequestSettingsToSupportArchive(t *testing.T)
 							VolumeInfo:    true,
 							SystemInfo:    true,
 						},
-						LoggingConfig: &pbMaintenance.LoggingConfig{
+						ContentTimeframe: &pbMaintenance.ContentTimeframe{
 							EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
 							StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
 						},
@@ -72,7 +72,7 @@ func Test_defaultSupportArchive_mapRequestSettingsToSupportArchive(t *testing.T)
 							VolumeInfo:    true,
 							SystemInfo:    true,
 						},
-						LoggingConfig: v1.LoggingConfig{
+						ContentTimeframe: v1.ContentTimeframe{
 							StartTime: metav1.NewTime(timestampStart.AsTime()),
 							EndTime:   metav1.NewTime(timestampEnd.AsTime()),
 						},
@@ -95,7 +95,7 @@ func Test_defaultSupportArchive_mapRequestSettingsToSupportArchive(t *testing.T)
 							VolumeInfo:    true,
 							SystemInfo:    true,
 						},
-						LoggingConfig: &pbMaintenance.LoggingConfig{
+						ContentTimeframe: &pbMaintenance.ContentTimeframe{
 							EndDateTime:   &timestamppb.Timestamp{Seconds: int64(1600)},
 							StartDateTime: &timestamppb.Timestamp{Seconds: int64(32000)},
 						},
@@ -133,7 +133,7 @@ func Test_defaultSupportArchive_mapRequestSettingsToSupportArchive(t *testing.T)
 		request := &pbMaintenance.CreateSupportArchiveRequest{
 			Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
 				ExcludedContents: &pbMaintenance.ExcludedContents{},
-				LoggingConfig: &pbMaintenance.LoggingConfig{
+				ContentTimeframe: &pbMaintenance.ContentTimeframe{
 					StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
 				},
 			}},
@@ -146,8 +146,8 @@ func Test_defaultSupportArchive_mapRequestSettingsToSupportArchive(t *testing.T)
 		got, err := d.mapRequestSettingsToSupportArchive(request)
 
 		assert.NoError(t, err)
-		assert.True(t, got.Spec.LoggingConfig.EndTime.Time.Equal(beforeTime.Time) ||
-			got.Spec.LoggingConfig.EndTime.Time.After(beforeTime.Time))
+		assert.True(t, got.Spec.ContentTimeframe.EndTime.Time.Equal(beforeTime.Time) ||
+			got.Spec.ContentTimeframe.EndTime.Time.After(beforeTime.Time))
 	})
 }
 
@@ -177,7 +177,7 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 			req: &pbMaintenance.CreateSupportArchiveRequest{
 				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
 					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					LoggingConfig: &pbMaintenance.LoggingConfig{
+					ContentTimeframe: &pbMaintenance.ContentTimeframe{
 						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
 						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
 					},
@@ -202,7 +202,7 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 			req: &pbMaintenance.CreateSupportArchiveRequest{
 				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
 					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					LoggingConfig: &pbMaintenance.LoggingConfig{
+					ContentTimeframe: &pbMaintenance.ContentTimeframe{
 						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
 						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
 					},
@@ -228,7 +228,7 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 			req: &pbMaintenance.CreateSupportArchiveRequest{
 				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
 					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					LoggingConfig: &pbMaintenance.LoggingConfig{
+					ContentTimeframe: &pbMaintenance.ContentTimeframe{
 						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
 						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
 					},
@@ -261,7 +261,7 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 			req: &pbMaintenance.CreateSupportArchiveRequest{
 				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
 					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					LoggingConfig: &pbMaintenance.LoggingConfig{
+					ContentTimeframe: &pbMaintenance.ContentTimeframe{
 						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
 						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
 					},
@@ -294,7 +294,7 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 			req: &pbMaintenance.CreateSupportArchiveRequest{
 				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
 					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					LoggingConfig: &pbMaintenance.LoggingConfig{
+					ContentTimeframe: &pbMaintenance.ContentTimeframe{
 						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
 						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
 					},
@@ -341,7 +341,7 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 			req: &pbMaintenance.CreateSupportArchiveRequest{
 				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
 					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					LoggingConfig: &pbMaintenance.LoggingConfig{
+					ContentTimeframe: &pbMaintenance.ContentTimeframe{
 						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
 						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
 					},
@@ -392,7 +392,7 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 			req: &pbMaintenance.CreateSupportArchiveRequest{
 				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
 					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					LoggingConfig: &pbMaintenance.LoggingConfig{
+					ContentTimeframe: &pbMaintenance.ContentTimeframe{
 						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
 						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
 					},
@@ -447,7 +447,7 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 			req: &pbMaintenance.CreateSupportArchiveRequest{
 				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
 					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					LoggingConfig: &pbMaintenance.LoggingConfig{
+					ContentTimeframe: &pbMaintenance.ContentTimeframe{
 						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
 						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
 					},
@@ -506,7 +506,7 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 			req: &pbMaintenance.CreateSupportArchiveRequest{
 				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
 					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					LoggingConfig:    &pbMaintenance.LoggingConfig{},
+					ContentTimeframe: &pbMaintenance.ContentTimeframe{},
 				}},
 			},
 			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
@@ -533,7 +533,7 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 			req: &pbMaintenance.CreateSupportArchiveRequest{
 				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
 					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					LoggingConfig: &pbMaintenance.LoggingConfig{
+					ContentTimeframe: &pbMaintenance.ContentTimeframe{
 						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
 						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
 					},
@@ -548,8 +548,8 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 					RunAndReturn(func(ctx context.Context, archive *v1.SupportArchive, options metav1.CreateOptions) (*v1.SupportArchive, error) {
 						archiveName = archive.Name
 						assert.Equal(t, archive.Spec.ExcludedContents, v1.ExcludedContents{})
-						assert.Equal(t, archive.Spec.LoggingConfig.StartTime, metav1.NewTime(timestampStart.AsTime()))
-						assert.Equal(t, archive.Spec.LoggingConfig.EndTime, metav1.NewTime(timestampEnd.AsTime()))
+						assert.Equal(t, archive.Spec.ContentTimeframe.StartTime, metav1.NewTime(timestampStart.AsTime()))
+						assert.Equal(t, archive.Spec.ContentTimeframe.EndTime, metav1.NewTime(timestampEnd.AsTime()))
 						return nil, nil
 					})
 
@@ -612,7 +612,7 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 			req: &pbMaintenance.CreateSupportArchiveRequest{
 				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
 					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					LoggingConfig: &pbMaintenance.LoggingConfig{
+					ContentTimeframe: &pbMaintenance.ContentTimeframe{
 						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
 						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
 					},
@@ -627,8 +627,8 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 					RunAndReturn(func(ctx context.Context, archive *v1.SupportArchive, options metav1.CreateOptions) (*v1.SupportArchive, error) {
 						archiveName = archive.Name
 						assert.Equal(t, archive.Spec.ExcludedContents, v1.ExcludedContents{})
-						assert.Equal(t, archive.Spec.LoggingConfig.StartTime, metav1.NewTime(timestampStart.AsTime()))
-						assert.Equal(t, archive.Spec.LoggingConfig.EndTime, metav1.NewTime(timestampEnd.AsTime()))
+						assert.Equal(t, archive.Spec.ContentTimeframe.StartTime, metav1.NewTime(timestampStart.AsTime()))
+						assert.Equal(t, archive.Spec.ContentTimeframe.EndTime, metav1.NewTime(timestampEnd.AsTime()))
 						return nil, nil
 					})
 

@@ -5,6 +5,7 @@ import (
 	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
 	"github.com/cloudogu/k8s-ces-control/packages/stream"
 	v1 "github.com/cloudogu/k8s-support-archive-lib/api/v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"io"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -55,21 +56,14 @@ func (d *supportArchiveService) Create(req *pbMaintenance.CreateSupportArchiveRe
 }
 
 func (d *supportArchiveService) mapRequestSettingsToSupportArchive(req *pbMaintenance.CreateSupportArchiveRequest) (*v1.SupportArchive, error) {
-	log.Log.Info("mapRequestSettingsToSupportArchive", "request", req)
 	if req.GetCommon() == nil {
 		return &v1.SupportArchive{}, fmt.Errorf("no request of type Common found")
 	}
 	exclude := req.GetCommon().ExcludedContents
-	logConf := req.GetCommon().LoggingConfig
+	logConf := req.GetCommon().ContentTimeframe
 
-	startTime := metav1.NewTime(logConf.StartDateTime.AsTime())
-	var endTime metav1.Time
-	// set endTime to now if it was not set
-	if logConf.EndDateTime.AsTime().IsZero() || (logConf.EndDateTime.GetSeconds() == 0 && logConf.EndDateTime.GetNanos() == 0) {
-		endTime = metav1.Now()
-	} else {
-		endTime = metav1.NewTime(logConf.EndDateTime.AsTime())
-	}
+	startTime := setDefaultTimeIfEmpty(logConf.StartDateTime, metav1.NewTime(metav1.Now().AddDate(0, 0, -4)))
+	endTime := setDefaultTimeIfEmpty(logConf.EndDateTime, metav1.Now())
 
 	if endTime.Before(&startTime) {
 		return &v1.SupportArchive{}, fmt.Errorf("end time is before start time")
@@ -89,12 +83,23 @@ func (d *supportArchiveService) mapRequestSettingsToSupportArchive(req *pbMainte
 				VolumeInfo:    exclude.VolumeInfo,
 				SystemInfo:    exclude.SystemInfo,
 			},
-			LoggingConfig: v1.LoggingConfig{
+			ContentTimeframe: v1.ContentTimeframe{
 				StartTime: startTime,
 				EndTime:   endTime,
 			},
 		},
 	}, nil
+}
+
+func setDefaultTimeIfEmpty(timestamp *timestamppb.Timestamp, defaultTime metav1.Time) metav1.Time {
+	var timeObj metav1.Time
+
+	if timestamp.AsTime().IsZero() || (timestamp.GetSeconds() == 0 && timestamp.GetNanos() == 0) {
+		timeObj = defaultTime
+	} else {
+		timeObj = metav1.NewTime(timestamp.AsTime())
+	}
+	return timeObj
 }
 
 func (d *supportArchiveService) createAndWatchSupportArchive(supportArchive *v1.SupportArchive, server pbMaintenance.SupportArchive_CreateServer) (string, error) {

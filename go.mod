@@ -7,12 +7,12 @@ toolchain go1.24.4
 require (
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/cloudogu/ces-commons-lib v0.2.0
-	github.com/cloudogu/ces-control-api v1.3.1-0.20250721093628-4ae4307bc5b0
+	github.com/cloudogu/ces-control-api v1.3.1-0.20250725143446-229cef433431
 	github.com/cloudogu/cesapp-lib v0.18.1
 	github.com/cloudogu/k8s-blueprint-lib v1.3.0
 	github.com/cloudogu/k8s-dogu-operator/v2 v2.3.0
 	github.com/cloudogu/k8s-registry-lib v0.5.1
-	github.com/cloudogu/k8s-support-archive-lib v0.0.0-20250721044737-f34164e252cb
+	github.com/cloudogu/k8s-support-archive-lib v0.0.0-20250725145308-af6dbb624efc
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
