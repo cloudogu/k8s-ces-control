@@ -298,7 +298,7 @@ testSupportArchive_Create() {
 
   # Get the JSON response from grpcurl
   local createSupportArchiveJson
-  createSupportArchiveJson=$(${GRPCURL_BIN_PATH} -plaintext -d '{"common": {"excluded_contents": {}, "logging_config": {}}}' localhost:"${GRPCURL_PORT}" maintenance.SupportArchive.Create)
+  createSupportArchiveJson=$(${GRPCURL_BIN_PATH} -plaintext -d '{"common": {"excluded_contents": {}, "content_timeframe": {}}}' localhost:"${GRPCURL_PORT}" maintenance.SupportArchive.Create)
 
   # Extract the base64-encoded data and decode it to a file
   echo ${createSupportArchiveJson} | ${JQ_BIN_PATH} -r '.data' | base64 --decode > "${tempArchiveFile}"
