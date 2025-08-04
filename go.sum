@@ -22,6 +22,8 @@ github.com/cloudogu/ces-control-api v1.3.1-0.20250721093628-4ae4307bc5b0 h1:8Xu4
 github.com/cloudogu/ces-control-api v1.3.1-0.20250721093628-4ae4307bc5b0/go.mod h1:4kKlQppOuNVka0R7Ce+7KBv75c4xgxKOkJTJVXsa6Gs=
 github.com/cloudogu/ces-control-api v1.3.1-0.20250725143446-229cef433431 h1:isIUpy0oUYLy9qEdKBpPuOe6Y7fGebCv29HO/NsEH28=
 github.com/cloudogu/ces-control-api v1.3.1-0.20250725143446-229cef433431/go.mod h1:4kKlQppOuNVka0R7Ce+7KBv75c4xgxKOkJTJVXsa6Gs=
+github.com/cloudogu/ces-control-api v1.5.0 h1:r1R1hxclcJCtXziJipDHRfpamQx/XaBkjJDEhz3o4Q4=
+github.com/cloudogu/ces-control-api v1.5.0/go.mod h1:4kKlQppOuNVka0R7Ce+7KBv75c4xgxKOkJTJVXsa6Gs=
 github.com/cloudogu/cesapp-lib v0.18.1 h1:LMdGktIefm/PuhdPqpLTPvjY1smO06EEGBbRSAaYi7U=
 github.com/cloudogu/cesapp-lib v0.18.1/go.mod h1:J05eXFxnz4enZblABlmiVTZaUtJ+LIhlJ2UF6l9jpDw=
 github.com/cloudogu/k8s-blueprint-lib v1.3.0 h1:+Ob+O2xaMX+iTSrxK01r8MOoR2EwZ8FLFbXCzOgibzw=
@@ -36,6 +38,8 @@ github.com/cloudogu/k8s-support-archive-lib v0.0.0-20250725142953-d9add64d4720 h
 github.com/cloudogu/k8s-support-archive-lib v0.0.0-20250725142953-d9add64d4720/go.mod h1:xgC9bj8Q0rzefinCb7RScQwF/bxcZ2675Slqff3rZcQ=
 github.com/cloudogu/k8s-support-archive-lib v0.0.0-20250725145308-af6dbb624efc h1:eiL1Zw1K74UTzDwEvey+MxyOFPAi8CZk6HKyRyRu3Eo=
 github.com/cloudogu/k8s-support-archive-lib v0.0.0-20250725145308-af6dbb624efc/go.mod h1:xgC9bj8Q0rzefinCb7RScQwF/bxcZ2675Slqff3rZcQ=
+github.com/cloudogu/k8s-support-archive-lib v0.0.0-20250804113354-778ad443943b h1:kDRwcr5HC5X42CwYp60B3yWVxR5mFiC8iLwIz/kmWJE=
+github.com/cloudogu/k8s-support-archive-lib v0.0.0-20250804113354-778ad443943b/go.mod h1:xgC9bj8Q0rzefinCb7RScQwF/bxcZ2675Slqff3rZcQ=
 github.com/cloudogu/k8s-support-archive-lib v0.1.2 h1:sJt6HAhbxGaEL+pBAZIqC8iNkNaTGCdCReUXMm3P6JY=
 github.com/cloudogu/k8s-support-archive-lib v0.1.2/go.mod h1:xgC9bj8Q0rzefinCb7RScQwF/bxcZ2675Slqff3rZcQ=
 github.com/cloudogu/retry-lib v0.1.0 h1:gaAmtyjUqgHbxfCWMeUn0qnGbDH4TtZVSQkbZ1Nq6eI=
