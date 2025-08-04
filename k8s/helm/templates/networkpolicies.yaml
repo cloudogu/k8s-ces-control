@@ -33,7 +33,7 @@ metadata:
   name: {{ printf "%s-support-archive-ingress" (include "k8s-ces-control.name" .) | trunc 63 | trimSuffix "-" }}
   namespace: {{ $.Release.Namespace }}
   labels:
-    {{- include "helm.labels" . | nindent 4 }}
+    {{- include "k8s-ces-control.labels" . | nindent 4 }}
 spec:
   podSelector:
     matchLabels:
