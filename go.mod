@@ -12,7 +12,7 @@ require (
 	github.com/cloudogu/k8s-blueprint-lib v1.3.0
 	github.com/cloudogu/k8s-dogu-operator/v2 v2.3.0
 	github.com/cloudogu/k8s-registry-lib v0.5.1
-	github.com/cloudogu/k8s-support-archive-lib v0.0.0-20250804113354-778ad443943b
+	github.com/cloudogu/k8s-support-archive-lib v0.2.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
