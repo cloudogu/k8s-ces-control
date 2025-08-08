@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	common "github.com/cloudogu/ces-commons-lib/dogu"
 	"github.com/cloudogu/cesapp-lib/core"
 	v2 "github.com/cloudogu/k8s-dogu-operator/v2/api/v2"
 	"github.com/cloudogu/k8s-registry-lib/config"
@@ -157,7 +158,7 @@ func (s *loggingService) ApplyLogLevelWithRestart(ctx context.Context, req *pb.L
 }
 
 func (s *loggingService) setLogLevel(ctx context.Context, doguName string, l LogLevel) (bool, error) {
-	doguConfig, err := s.doguConfigRepository.Get(ctx, config.SimpleDoguName(doguName))
+	doguConfig, err := s.doguConfigRepository.Get(ctx, common.SimpleName(doguName))
 	if err != nil {
 		return false, logLevelNotFoundError(err)
 	}
@@ -195,7 +196,7 @@ func (s *loggingService) setLogLevel(ctx context.Context, doguName string, l Log
 // When there is no value set for the log level LevelUnknown is returned without an error.
 // An error is only returned in case dogu config or dogu description cannot be read.
 func (s *loggingService) GetLogLevel(ctx context.Context, doguName string) (LogLevel, error) {
-	doguConfig, err := s.doguConfigRepository.Get(ctx, config.SimpleDoguName(doguName))
+	doguConfig, err := s.doguConfigRepository.Get(ctx, common.SimpleName(doguName))
 	if err != nil {
 		return 0, logLevelNotFoundError(err)
 	}
@@ -215,13 +216,13 @@ func (s *loggingService) getLogLevel(ctx context.Context, doguName string, doguC
 		var err error
 		currentLogLevelStr, err = s.getDefaultLogLevel(ctx, doguName)
 		if err != nil {
-			return LevelUnknown, fmt.Errorf("could not get default log level from dogu description: %w", err)
+			return LevelErrorUnspecified, fmt.Errorf("could not get default log level from dogu description: %w", err)
 		}
 	}
 
 	if currentLogLevelStr == "" {
 		logrus.Warnf("log level for dogu %s is neither set in config nor description", doguName)
-		return LevelUnknown, nil
+		return LevelErrorUnspecified, nil
 	}
 
 	logrus.Debugf("current log level from dogu %s is %s", doguName, currentLogLevelStr)
@@ -230,7 +231,7 @@ func (s *loggingService) getLogLevel(ctx context.Context, doguName string, doguC
 	if err != nil {
 		logrus.Warnf("invalid log level set for dogu %s: %s", doguName, currentLogLevelStr)
 
-		return LevelUnknown, nil
+		return LevelErrorUnspecified, nil
 	}
 
 	return currentLogLevel, nil

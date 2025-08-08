@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
 	ecoSystemV2 "github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
+	supClientV1 "github.com/cloudogu/k8s-support-archive-lib/client/v1"
 	"k8s.io/client-go/kubernetes"
 	appsV1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	coreV1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -32,4 +33,5 @@ type clusterClient interface {
 	ecoSystemV2.EcoSystemV2Interface
 	doguAdministration.BlueprintLister
 	kubernetes.Interface
+	supClientV1.SupportArchiveV1Interface
 }

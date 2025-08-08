@@ -17,8 +17,8 @@ func TestCreateLogLevelFromProto(t *testing.T) {
 		{"Debug", LevelDebug, pbLogging.LogLevel_DEBUG, nil},
 		{"Info", LevelInfo, pbLogging.LogLevel_INFO, nil},
 		{"Warn", LevelWarn, pbLogging.LogLevel_WARN, nil},
-		{"Error", LevelError, pbLogging.LogLevel_ERROR, nil},
-		{"Unknown", LevelUnknown, 100, fmt.Errorf("unknown log level UNKNOWN")},
+		{"Error", LevelErrorUnspecified, pbLogging.LogLevel_ERROR, nil},
+		{"Unknown", LevelErrorUnspecified, 100, fmt.Errorf("unknown log level UNKNOWN")},
 	}
 
 	for _, tt := range tests {
@@ -53,8 +53,8 @@ func TestCreateLevelFromString(t *testing.T) {
 		{"Debug", "DEBUG", LevelDebug, nil},
 		{"Info", "INFO", LevelInfo, nil},
 		{"Warn", "WARN", LevelWarn, nil},
-		{"Error", "ERROR", LevelError, nil},
-		{"Unknown", "UNKNOWN", LevelUnknown, fmt.Errorf("unknown log level UNKNOWN")},
+		{"Error", "ERROR", LevelErrorUnspecified, nil},
+		{"Unknown", "UNKNOWN", LevelErrorUnspecified, fmt.Errorf("unknown log level UNKNOWN")},
 		{"Empty", "", 0, errors.New("log level string is empty")},
 	}
 
@@ -89,8 +89,8 @@ func TestLogLevel_String(t *testing.T) {
 		{"Debug", LevelDebug, "DEBUG"},
 		{"Info", LevelInfo, "INFO"},
 		{"Warn", LevelWarn, "WARN"},
-		{"Error", LevelError, "ERROR"},
-		{"Unknown", LevelUnknown, "UNKNOWN"},
+		{"Error", LevelErrorUnspecified, "ERROR"},
+		{"Unknown", LevelErrorUnspecified, "ERROR"},
 		{"Unknown", LogLevel(100), "WARN"},
 	}
 
