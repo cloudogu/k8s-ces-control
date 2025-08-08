@@ -2,6 +2,7 @@ package doguinteraction
 
 import (
 	"context"
+	common "github.com/cloudogu/ces-commons-lib/dogu"
 	"github.com/cloudogu/cesapp-lib/core"
 	v2 "github.com/cloudogu/k8s-dogu-operator/v2/api/v2"
 	"github.com/cloudogu/k8s-registry-lib/config"
@@ -608,8 +609,8 @@ func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 		doguConfigRepositoryMock := newMockDoguConfigRepository(t)
 		doguConfigA := config.CreateDoguConfig("postgresql", config.Entries{})
 		doguConfigB := config.CreateDoguConfig("redmine", config.Entries{})
-		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("postgresql")).Return(doguConfigA, nil)
-		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("redmine")).Return(doguConfigB, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), common.SimpleName("postgresql")).Return(doguConfigA, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), common.SimpleName("redmine")).Return(doguConfigB, nil)
 		doguConfigRepositoryMock.EXPECT().Update(context.TODO(), mock.Anything).RunAndReturn(func(ctx context.Context, doguConfig config.DoguConfig) (config.DoguConfig, error) {
 			get, b := doguConfig.Get("logging/root")
 			require.True(t, b)
@@ -643,8 +644,8 @@ func Test_defaultDoguInterActor_SetLogLevelInAllDogus(t *testing.T) {
 		doguConfigRepositoryMock := newMockDoguConfigRepository(t)
 		doguConfigA := config.CreateDoguConfig("postgresql", config.Entries{})
 		doguConfigB := config.CreateDoguConfig("redmine", config.Entries{})
-		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("postgresql")).Return(doguConfigA, nil)
-		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), config.SimpleDoguName("redmine")).Return(doguConfigB, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), common.SimpleName("postgresql")).Return(doguConfigA, nil)
+		doguConfigRepositoryMock.EXPECT().Get(context.TODO(), common.SimpleName("redmine")).Return(doguConfigB, nil)
 		doguConfigRepositoryMock.EXPECT().Update(context.TODO(), mock.Anything).RunAndReturn(func(ctx context.Context, doguConfig config.DoguConfig) (config.DoguConfig, error) {
 			get, b := doguConfig.Get("logging/root")
 			require.True(t, b)

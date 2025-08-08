@@ -45,6 +45,7 @@ func Test_registerServices(tt *testing.T) {
 		clientSetMock.EXPECT().CoreV1().Return(coreV1Mock)
 		clientSetMock.EXPECT().Dogus(config.CurrentNamespace).Return(nil)
 		clientSetMock.EXPECT().DoguRestarts(config.CurrentNamespace).Return(nil)
+		clientSetMock.EXPECT().SupportArchives(config.CurrentNamespace).Return(nil)
 		configMapInterfaceMock := newMockConfigMapInterface(t)
 		coreV1Mock.EXPECT().ConfigMaps(config.CurrentNamespace).Return(configMapInterfaceMock)
 
@@ -53,7 +54,7 @@ func Test_registerServices(tt *testing.T) {
 
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, 5, len(mockGrpcServerRegistrar.registeredServices))
+		assert.Equal(t, 6, len(mockGrpcServerRegistrar.registeredServices))
 		assert.Contains(t, mockGrpcServerRegistrar.registeredServices, "logging.DoguLogMessages")
 		assert.Contains(t, mockGrpcServerRegistrar.registeredServices, "doguAdministration.DoguAdministration")
 		assert.Contains(t, mockGrpcServerRegistrar.registeredServices, "health.DoguHealth")
