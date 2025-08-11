@@ -4,10 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	v1 "github.com/cloudogu/k8s-debug-mode-cr-lib/api/v1"
+	debugClient "github.com/cloudogu/k8s-debug-mode-cr-lib/pkg/client/v1"
 	"github.com/sirupsen/logrus"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
+	"time"
 
 	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
 	"github.com/cloudogu/ces-control-api/generated/types"
@@ -38,50 +42,49 @@ func NewDebugModeService(doguInterActor doguInterActor, doguConfigRepository dog
 	}
 }
 
+func newDebugModeClient(restConfig rest.Config) (debugClient.DebugModeInterface, error) {
+	config, err := debugClient.NewForConfig(&restConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return config.DebugMode("ecosystem"), nil
+}
+
 // Enable enables the debug mode, sets dogu log level to debug and restarts all dogus.
 func (s *defaultDebugModeService) Enable(ctx context.Context, req *pbMaintenance.ToggleDebugModeRequest) (*types.BasicResponse, error) {
 	logrus.Info("Starting to enable debug-mode...")
 
-	err := s.maintenanceModeSwitch.ActivateMaintenanceMode(ctx, maintenanceTitle, activateMaintenanceText)
+	client, err := newDebugModeClient(rest.Config{})
 	if err != nil {
-		return nil, createInternalError(fmt.Errorf("failed to activate maintenance mode: %w", err))
+		return nil, err
 	}
 
-	// Create new context otherwise the cancellation of this context (f. i. by time-out) the admin dogu's request would be canceled as consequence.
-	noInheritedCtx, cancel := noInheritCancel(ctx)
+	timestamp := time.Now().Add(time.Duration(req.Timer) * time.Second)
 
-	defer func() {
-		err = s.maintenanceModeSwitch.DeactivateMaintenanceMode(noInheritedCtx)
-		if err != nil {
-			logrus.Error(fmt.Errorf("failed to deactivate maintenance mode: %s, %w", interErrMsg, err))
-		}
-		logrus.Info("...Finished enabling debug-mode.")
-		cancel()
-	}()
-
-	err = s.debugModeRegistry.Enable(ctx, req.Timer)
-	if err != nil {
-		return nil, s.rollbackDisable(ctx, createInternalError(fmt.Errorf("failed to enable debug mode registry: %w", err)))
+	debugMode := v1.DebugMode{
+		TypeMeta:   metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{},
+		Spec: v1.DebugModeSpec{
+			DeactivateTimestamp: metav1.NewTime(timestamp),
+			TargetLogLevel:      "DEBUG",
+		},
+		Status: v1.DebugModeStatus{
+			Phase:  v1.StatusPhase("DebugModeStatusSet"),
+			Errors: "",
+			Conditions: []metav1.Condition{{
+				Type:    v1.ConditionLogLevelSet,
+				Status:  metav1.ConditionFalse,
+				Reason:  "DebugModeStatusSet",
+				Message: "Set condition to false",
+			},
+			},
+		},
 	}
 
-	err = s.debugModeRegistry.BackupDoguLogLevels(ctx)
+	_, err = client.Create(ctx, &debugMode, metav1.CreateOptions{})
 	if err != nil {
-		return nil, s.rollbackDisable(ctx, createInternalError(fmt.Errorf("failed to backup dogu log levels: %w", err)))
-	}
-
-	err = s.doguInterActor.SetLogLevelInAllDogus(ctx, logLevelDebug)
-	if err != nil {
-		return nil, s.rollbackRestoreDisable(ctx, createInternalError(fmt.Errorf("failed to set dogu log levels to debug: %w", err)))
-	}
-
-	err = s.doguInterActor.StopAllDogus(noInheritedCtx)
-	if err != nil {
-		return nil, s.rollbackRestoreStartDisable(ctx, createInternalError(fmt.Errorf("failed to stop all dogus: %w", err)))
-	}
-
-	err = s.doguInterActor.StartAllDogus(noInheritedCtx)
-	if err != nil {
-		return nil, s.rollbackRestoreStartDisable(ctx, createInternalError(fmt.Errorf("failed to start all dogus %w", err)))
+		return nil, err
 	}
 
 	return &types.BasicResponse{}, nil
@@ -120,41 +123,22 @@ func wrapRollBackErr(err error) error {
 // Disable returns an error because the method is unimplemented.
 func (s *defaultDebugModeService) Disable(ctx context.Context, _ *pbMaintenance.ToggleDebugModeRequest) (*types.BasicResponse, error) {
 	logrus.Info("Starting to disable debug-mode...")
-	err := s.maintenanceModeSwitch.ActivateMaintenanceMode(ctx, maintenanceTitle, deactivateMaintenanceText)
+
+	client, err := newDebugModeClient(rest.Config{})
 	if err != nil {
-		return nil, createInternalError(fmt.Errorf("failed to activate maintenance mode: %w", err))
+		return nil, err
 	}
 
-	// Create new context because the admin dogu itself will be canceled
-	noInheritedCtx, cancel := noInheritCancel(ctx)
-
-	defer func() {
-		err = s.maintenanceModeSwitch.DeactivateMaintenanceMode(noInheritedCtx)
-		if err != nil {
-			logrus.Error(fmt.Errorf("failed to deactivate maintenance mode: %s: %w", interErrMsg, err))
-		}
-		logrus.Info("...Finished disabling debug-mode.")
-		cancel()
-	}()
-
-	err = s.debugModeRegistry.RestoreDoguLogLevels(ctx)
+	debugMode, err := client.Get(ctx, "debugmode", metav1.GetOptions{})
 	if err != nil {
-		return nil, createInternalError(fmt.Errorf("failed to restore log levels to ces registry: %w", err))
+		return nil, err
 	}
 
-	err = s.doguInterActor.StopAllDogus(noInheritedCtx)
-	if err != nil {
-		return nil, createInternalError(fmt.Errorf("failed to stop all dogus: %w", err))
-	}
+	debugMode.Spec.DeactivateTimestamp = metav1.NewTime(time.Now())
 
-	err = s.doguInterActor.StartAllDogus(noInheritedCtx)
+	_, err = client.Update(ctx, debugMode, metav1.UpdateOptions{})
 	if err != nil {
-		return nil, createInternalError(fmt.Errorf("failed to start all dogus: %w", err))
-	}
-
-	err = s.debugModeRegistry.Disable(noInheritedCtx)
-	if err != nil {
-		return nil, createInternalError(fmt.Errorf("failed to disable the debug mode registry: %w", err))
+		return nil, err
 	}
 
 	return &types.BasicResponse{}, nil
@@ -162,12 +146,17 @@ func (s *defaultDebugModeService) Disable(ctx context.Context, _ *pbMaintenance.
 
 // Status return an error because the method is unimplemented.
 func (s *defaultDebugModeService) Status(ctx context.Context, _ *types.BasicRequest) (*pbMaintenance.DebugModeStatusResponse, error) {
-	enabled, timestamp, err := s.debugModeRegistry.Status(ctx)
+	client, err := newDebugModeClient(rest.Config{})
 	if err != nil {
-		return nil, createInternalError(fmt.Errorf("failed to get status of debug mode registry: %w", err))
+		return nil, err
 	}
 
-	return &pbMaintenance.DebugModeStatusResponse{IsEnabled: enabled, DisableAtTimestamp: timestamp}, nil
+	debugMode, err := client.Get(ctx, "debugmode", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbMaintenance.DebugModeStatusResponse{IsEnabled: true, DisableAtTimestamp: debugMode.Spec.DeactivateTimestamp.Unix()}, nil
 }
 
 func createInternalError(err error) error {
