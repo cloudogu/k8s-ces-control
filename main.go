@@ -13,10 +13,12 @@ import (
 	"github.com/cloudogu/k8s-ces-control/packages/doguHealth"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
+	"github.com/cloudogu/k8s-ces-control/packages/supportArchive"
 	"github.com/cloudogu/k8s-ces-control/packages/util"
 	"github.com/cloudogu/k8s-registry-lib/dogu"
 	"github.com/cloudogu/k8s-registry-lib/repository"
 	"net"
+	"net/http"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -110,6 +112,8 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 
 	doguInterActor := doguinteraction.NewDefaultDoguInterActor(doguConfig, doguClient, doguRestartClient, doguDescriptorGetter)
 
+	supportArchiveClient := client.SupportArchives(config.CurrentNamespace)
+
 	loggingService := logging.NewLoggingService(
 		lokiLogProvider,
 		doguConfig,
@@ -125,6 +129,8 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService(client.Dogus(config.CurrentNamespace)))
 	debugModeService := debug.NewDebugModeService(doguInterActor, doguConfig, globalConfig, doguDescriptorGetter, client, config.CurrentNamespace)
 	pbMaintenance.RegisterDebugModeServer(grpcServer, debugModeService)
+	supportArchiveService := supportArchive.NewSupportArchiveService(supportArchiveClient, &http.Client{})
+	pbMaintenance.RegisterSupportArchiveServer(grpcServer, supportArchiveService)
 	watcher := debug.NewDefaultConfigMapRegistryWatcher(configMapClient, debugModeService)
 	watcher.StartWatch(context.Background())
 

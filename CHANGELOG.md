@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.6.0] - 2025-08-08
+### Added
+- [#64] Create supportArchive-CRs and download the corresponding support archive when created
+
 ## [v1.5.0] - 2025-07-16
 ### Added
 - [#62] add metadata mapping for logLevel

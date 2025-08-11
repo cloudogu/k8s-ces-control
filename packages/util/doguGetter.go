@@ -3,8 +3,8 @@ package util
 import (
 	"context"
 	"fmt"
+	common "github.com/cloudogu/ces-commons-lib/dogu"
 	"github.com/cloudogu/cesapp-lib/core"
-	"github.com/cloudogu/k8s-registry-lib/dogu"
 )
 
 type doguGetter struct {
@@ -20,7 +20,7 @@ func NewDoguGetter(versionRegistry doguVersionRegistry, doguRepository localDogu
 }
 
 func (r *doguGetter) GetCurrent(ctx context.Context, simpleDoguName string) (*core.Dogu, error) {
-	current, err := r.versionRegistry.GetCurrent(ctx, dogu.SimpleDoguName(simpleDoguName))
+	current, err := r.versionRegistry.GetCurrent(ctx, common.SimpleName(simpleDoguName))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current version for dogu %s: %w", simpleDoguName, err)
 	}

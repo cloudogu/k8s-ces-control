@@ -1,9 +1,9 @@
 package util
 
-import "github.com/cloudogu/k8s-registry-lib/dogu"
+import "github.com/cloudogu/ces-commons-lib/dogu"
 
 type doguVersionRegistry interface {
-	dogu.DoguVersionRegistry
+	dogu.VersionRegistry
 }
 
 type localDoguDescriptorRepository interface {

@@ -25,6 +25,31 @@ spec:
       ports:
         - protocol: TCP
           port: 8080
+---
+# This NetworkPolicy allows ingress to the support archive operator pods from k8s-ces-control.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ printf "%s-support-archive-ingress" (include "k8s-ces-control.name" .) | trunc 63 | trimSuffix "-" }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "k8s-ces-control.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app: ces
+      app.kubernetes.io/name: k8s-support-archive-operator
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ces
+              app.kubernetes.io/name: k8s-ces-control
+          namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $.Release.Namespace }}
 {{- if .Values.global.networkPolicies.denyIngress }}
 ---
 # This NetworkPolicy denies all ingress to k8s-ces-control.
