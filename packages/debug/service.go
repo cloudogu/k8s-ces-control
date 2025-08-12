@@ -63,8 +63,10 @@ func (s *defaultDebugModeService) Enable(ctx context.Context, req *pbMaintenance
 	timestamp := time.Now().Add(time.Duration(req.Timer) * time.Second)
 
 	debugMode := v1.DebugMode{
-		TypeMeta:   metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{},
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "debug-mode",
+		},
 		Spec: v1.DebugModeSpec{
 			DeactivateTimestamp: metav1.NewTime(timestamp),
 			TargetLogLevel:      "DEBUG",
@@ -129,7 +131,7 @@ func (s *defaultDebugModeService) Disable(ctx context.Context, _ *pbMaintenance.
 		return nil, err
 	}
 
-	debugMode, err := client.Get(ctx, "debugmode", metav1.GetOptions{})
+	debugMode, err := client.Get(ctx, "debug-mode", metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +153,7 @@ func (s *defaultDebugModeService) Status(ctx context.Context, _ *types.BasicRequ
 		return nil, err
 	}
 
-	debugMode, err := client.Get(ctx, "debugmode", metav1.GetOptions{})
+	debugMode, err := client.Get(ctx, "debug-mode", metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
