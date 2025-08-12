@@ -70,7 +70,7 @@ func (s *defaultDebugModeService) Enable(ctx context.Context, req *pbMaintenance
 			TargetLogLevel:      "DEBUG",
 		},
 		Status: v1.DebugModeStatus{
-			Phase:  v1.StatusPhase("DebugModeStatusSet"),
+			Phase:  v1.DebugModeStatusSet,
 			Errors: "",
 			Conditions: []metav1.Condition{{
 				Type:    v1.ConditionLogLevelSet,
@@ -156,7 +156,7 @@ func (s *defaultDebugModeService) Status(ctx context.Context, _ *types.BasicRequ
 		return nil, err
 	}
 
-	return &pbMaintenance.DebugModeStatusResponse{IsEnabled: true, DisableAtTimestamp: debugMode.Spec.DeactivateTimestamp.Unix()}, nil
+	return &pbMaintenance.DebugModeStatusResponse{IsEnabled: debugMode.Status.Phase == v1.DebugModeStatusCompleted, DisableAtTimestamp: debugMode.Spec.DeactivateTimestamp.Unix()}, nil
 }
 
 func createInternalError(err error) error {
