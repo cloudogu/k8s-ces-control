@@ -6,6 +6,7 @@ import (
 	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
 	"github.com/cloudogu/ces-control-api/generated/types"
 	"github.com/cloudogu/cesapp-lib/core"
+	debugClientV1 "github.com/cloudogu/k8s-debug-mode-cr-lib/pkg/client/v1"
 	ecoSystemV2 "github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
 	"github.com/cloudogu/k8s-registry-lib/config"
 	"k8s.io/client-go/kubernetes"
@@ -25,6 +26,10 @@ type coreV1Interface interface {
 
 type configMapInterface interface {
 	v1.ConfigMapInterface
+}
+
+type debugModeInterface interface {
+	debugClientV1.DebugModeInterface
 }
 
 //nolint:unused

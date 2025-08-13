@@ -10,7 +10,7 @@ require (
 	github.com/cloudogu/ces-control-api v1.5.0
 	github.com/cloudogu/cesapp-lib v0.18.1
 	github.com/cloudogu/k8s-blueprint-lib v1.3.0
-	github.com/cloudogu/k8s-debug-mode-cr-lib v0.1.1
+	github.com/cloudogu/k8s-debug-mode-cr-lib v0.2.3
 	github.com/cloudogu/k8s-dogu-operator/v2 v2.3.0
 	github.com/cloudogu/k8s-registry-lib v0.5.1
 	github.com/cloudogu/k8s-support-archive-lib v0.2.0
