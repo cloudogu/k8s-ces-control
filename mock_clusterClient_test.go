@@ -32,7 +32,7 @@ import (
 
 	certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
 
-	clientv1 "github.com/cloudogu/k8s-support-archive-lib/client/v1"
+	clientv1 "github.com/cloudogu/k8s-debug-mode-cr-lib/pkg/client/v1"
 
 	context "context"
 
@@ -61,6 +61,8 @@ import (
 	flowcontrolv1beta1 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta1"
 
 	flowcontrolv1beta2 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta2"
+
+	k8s_support_archive_libclientv1 "github.com/cloudogu/k8s-support-archive-lib/client/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -1264,6 +1266,54 @@ func (_c *mockClusterClient_CoreV1_Call) Return(_a0 corev1.CoreV1Interface) *moc
 }
 
 func (_c *mockClusterClient_CoreV1_Call) RunAndReturn(run func() corev1.CoreV1Interface) *mockClusterClient_CoreV1_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DebugMode provides a mock function with given fields: namespace
+func (_m *mockClusterClient) DebugMode(namespace string) clientv1.DebugModeInterface {
+	ret := _m.Called(namespace)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DebugMode")
+	}
+
+	var r0 clientv1.DebugModeInterface
+	if rf, ok := ret.Get(0).(func(string) clientv1.DebugModeInterface); ok {
+		r0 = rf(namespace)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(clientv1.DebugModeInterface)
+		}
+	}
+
+	return r0
+}
+
+// mockClusterClient_DebugMode_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DebugMode'
+type mockClusterClient_DebugMode_Call struct {
+	*mock.Call
+}
+
+// DebugMode is a helper method to define mock.On call
+//   - namespace string
+func (_e *mockClusterClient_Expecter) DebugMode(namespace interface{}) *mockClusterClient_DebugMode_Call {
+	return &mockClusterClient_DebugMode_Call{Call: _e.mock.On("DebugMode", namespace)}
+}
+
+func (_c *mockClusterClient_DebugMode_Call) Run(run func(namespace string)) *mockClusterClient_DebugMode_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(string))
+	})
+	return _c
+}
+
+func (_c *mockClusterClient_DebugMode_Call) Return(_a0 clientv1.DebugModeInterface) *mockClusterClient_DebugMode_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *mockClusterClient_DebugMode_Call) RunAndReturn(run func(string) clientv1.DebugModeInterface) *mockClusterClient_DebugMode_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2928,19 +2978,19 @@ func (_c *mockClusterClient_StoragemigrationV1alpha1_Call) RunAndReturn(run func
 }
 
 // SupportArchives provides a mock function with given fields: namespace
-func (_m *mockClusterClient) SupportArchives(namespace string) clientv1.SupportArchiveInterface {
+func (_m *mockClusterClient) SupportArchives(namespace string) k8s_support_archive_libclientv1.SupportArchiveInterface {
 	ret := _m.Called(namespace)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SupportArchives")
 	}
 
-	var r0 clientv1.SupportArchiveInterface
-	if rf, ok := ret.Get(0).(func(string) clientv1.SupportArchiveInterface); ok {
+	var r0 k8s_support_archive_libclientv1.SupportArchiveInterface
+	if rf, ok := ret.Get(0).(func(string) k8s_support_archive_libclientv1.SupportArchiveInterface); ok {
 		r0 = rf(namespace)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(clientv1.SupportArchiveInterface)
+			r0 = ret.Get(0).(k8s_support_archive_libclientv1.SupportArchiveInterface)
 		}
 	}
 
@@ -2965,12 +3015,12 @@ func (_c *mockClusterClient_SupportArchives_Call) Run(run func(namespace string)
 	return _c
 }
 
-func (_c *mockClusterClient_SupportArchives_Call) Return(_a0 clientv1.SupportArchiveInterface) *mockClusterClient_SupportArchives_Call {
+func (_c *mockClusterClient_SupportArchives_Call) Return(_a0 k8s_support_archive_libclientv1.SupportArchiveInterface) *mockClusterClient_SupportArchives_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *mockClusterClient_SupportArchives_Call) RunAndReturn(run func(string) clientv1.SupportArchiveInterface) *mockClusterClient_SupportArchives_Call {
+func (_c *mockClusterClient_SupportArchives_Call) RunAndReturn(run func(string) k8s_support_archive_libclientv1.SupportArchiveInterface) *mockClusterClient_SupportArchives_Call {
 	_c.Call.Return(run)
 	return _c
 }
