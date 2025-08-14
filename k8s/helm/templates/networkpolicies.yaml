@@ -50,6 +50,33 @@ spec:
           namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: {{ $.Release.Namespace }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ printf "%s-debug-mode-ingress" (include "k8s-ces-control.name" .) | trunc 63 | trimSuffix "-" }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "k8s-ces-control.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app: ces
+      app.kubernetes.io/name: k8s-debug-mode-operator
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ces
+              app.kubernetes.io/name: k8s-ces-control
+          namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $.Release.Namespace }}
+      ports:
+        - protocol: TCP
+          port: 8080
 {{- if .Values.global.networkPolicies.denyIngress }}
 ---
 # This NetworkPolicy denies all ingress to k8s-ces-control.
@@ -68,5 +95,5 @@ spec:
       {{- include "k8s-ces-control.selectorLabels" . | nindent 6 }}
   policyTypes:
     - Ingress
-{{- end}}
+{{- end }}
 {{- end }}

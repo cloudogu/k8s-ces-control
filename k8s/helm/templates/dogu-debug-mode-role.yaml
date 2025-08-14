@@ -32,3 +32,11 @@ rules:
       - dogurestarts
     verbs:
       - create
+  - apiGroups:
+      - k8s.cloudogu.com
+    resources:
+      - debugmodes
+    verbs:
+      - update
+      - create
+      - get

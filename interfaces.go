@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
+	debugClientV1 "github.com/cloudogu/k8s-debug-mode-cr-lib/pkg/client/v1"
 	ecoSystemV2 "github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
 	supClientV1 "github.com/cloudogu/k8s-support-archive-lib/client/v1"
 	"k8s.io/client-go/kubernetes"
@@ -34,4 +35,5 @@ type clusterClient interface {
 	doguAdministration.BlueprintLister
 	kubernetes.Interface
 	supClientV1.SupportArchiveV1Interface
+	debugClientV1.DebugModeV1Interface
 }
