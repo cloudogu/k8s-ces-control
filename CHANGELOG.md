@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.7.1] - 2025-08-29
+### Fixed
+- [#70] use UnixMilli instead of Unix Time for DebugMode Status request
+
 ## [v1.7.0] - 2025-08-14
 ### Added
 - [#66] Create debugMode-CRs 
