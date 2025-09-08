@@ -1,12 +1,13 @@
 package main
 
 import (
+	"os"
+	"testing"
+
 	"github.com/cloudogu/k8s-ces-control/packages/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
-	"os"
-	"testing"
 )
 
 func Test_startCesControl(tt *testing.T) {
@@ -47,6 +48,9 @@ func Test_registerServices(tt *testing.T) {
 		clientSetMock.EXPECT().DoguRestarts(config.CurrentNamespace).Return(nil)
 		clientSetMock.EXPECT().SupportArchives(config.CurrentNamespace).Return(nil)
 		clientSetMock.EXPECT().DebugMode(config.CurrentNamespace).Return(nil)
+		clientSetMock.EXPECT().Backups(config.CurrentNamespace).Return(nil)
+		clientSetMock.EXPECT().Restores(config.CurrentNamespace).Return(nil)
+
 		configMapInterfaceMock := newMockConfigMapInterface(t)
 		coreV1Mock.EXPECT().ConfigMaps(config.CurrentNamespace).Return(configMapInterfaceMock)
 

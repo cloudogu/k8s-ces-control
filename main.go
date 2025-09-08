@@ -3,6 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
+	"os"
+
 	pbDoguAdministration "github.com/cloudogu/ces-control-api/generated/doguAdministration"
 	pgHealth "github.com/cloudogu/ces-control-api/generated/health"
 	pbLogging "github.com/cloudogu/ces-control-api/generated/logging"
@@ -18,9 +22,6 @@ import (
 	"github.com/cloudogu/k8s-ces-control/packages/util"
 	"github.com/cloudogu/k8s-registry-lib/dogu"
 	"github.com/cloudogu/k8s-registry-lib/repository"
-	"net"
-	"net/http"
-	"os"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
