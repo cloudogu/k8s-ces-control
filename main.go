@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"os"
 
+	pbBackup "github.com/cloudogu/ces-control-api/generated/backup"
 	pbDoguAdministration "github.com/cloudogu/ces-control-api/generated/doguAdministration"
 	pgHealth "github.com/cloudogu/ces-control-api/generated/health"
 	pbLogging "github.com/cloudogu/ces-control-api/generated/logging"
 	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
-	pbBackup "github.com/cloudogu/k8s-ces-control/packages/backup"
+	"github.com/cloudogu/k8s-ces-control/packages/backup"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
 	pbDebug "github.com/cloudogu/k8s-ces-control/packages/debug"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
@@ -140,8 +141,8 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 	pbMaintenance.RegisterSupportArchiveServer(grpcServer, supportArchiveService)
 	watcher := pbDebug.NewDefaultConfigMapRegistryWatcher(configMapClient, debugModeService)
 	watcher.StartWatch(context.Background())
-	pbBackup.NewBackupService(backupClient, restoreClient)
-
+	backupService := backup.NewBackupService(backupClient, restoreClient)
+	pbBackup.RegisterBackupManagementServer(grpcServer, backupService)
 	// health endpoint used to determine the healthiness of the app
 	grpc_health_v1.RegisterHealthServer(grpcServer, health.NewServer())
 	return nil
