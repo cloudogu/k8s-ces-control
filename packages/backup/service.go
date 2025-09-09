@@ -8,21 +8,21 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type defaultBackupService struct {
-	pbBackup.BackupManagementServer
+type DefaultBackupService struct {
+	pbBackup.UnimplementedBackupManagementServer
 	backupClient  backupInterface
 	restoreClient restoreInterface
 }
 
 // NewBackupService returns an instance of defaultBackupService.
-func NewBackupService(backupClient backupInterface, restoreClient restoreInterface) *defaultBackupService {
-	return &defaultBackupService{
+func NewBackupService(backupClient backupInterface, restoreClient restoreInterface) *DefaultBackupService {
+	return &DefaultBackupService{
 		backupClient:  backupClient,
 		restoreClient: restoreClient,
 	}
 }
 
-func (s *defaultBackupService) AllBackups(ctx context.Context, _ *pbBackup.GetAllBackupsRequest) (*pbBackup.GetAllBackupsResponse, error) {
+func (s *DefaultBackupService) AllBackups(ctx context.Context, _ *pbBackup.GetAllBackupsRequest) (*pbBackup.GetAllBackupsResponse, error) {
 	list, err := s.backupClient.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func (s *defaultBackupService) AllBackups(ctx context.Context, _ *pbBackup.GetAl
 	return &pbBackup.GetAllBackupsResponse{Backups: s.mapBackups(list)}, nil
 }
 
-func (s *defaultBackupService) AllRestores(ctx context.Context, _ *pbBackup.GetAllRestoresRequest) (*pbBackup.GetAllRestoresResponse, error) {
+func (s *DefaultBackupService) AllRestores(ctx context.Context, _ *pbBackup.GetAllRestoresRequest) (*pbBackup.GetAllRestoresResponse, error) {
 	list, err := s.restoreClient.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func (s *defaultBackupService) AllRestores(ctx context.Context, _ *pbBackup.GetA
 	return &pbBackup.GetAllRestoresResponse{Restores: restores}, nil
 }
 
-func (s *defaultBackupService) mapBackups(backupList *v1.BackupList) []*pbBackup.BackupResponse {
+func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList) []*pbBackup.BackupResponse {
 	backupResponseList := make([]*pbBackup.BackupResponse, 0, 5)
 	for _, backup := range backupList.Items {
 		backupResponse := pbBackup.BackupResponse{
@@ -61,7 +61,7 @@ func (s *defaultBackupService) mapBackups(backupList *v1.BackupList) []*pbBackup
 	return backupResponseList
 }
 
-func (s *defaultBackupService) mapRestores(ctx context.Context, restoreList *v1.RestoreList) ([]*pbBackup.RestoreResponse, error) {
+func (s *DefaultBackupService) mapRestores(ctx context.Context, restoreList *v1.RestoreList) ([]*pbBackup.RestoreResponse, error) {
 	restoreResponseList := make([]*pbBackup.RestoreResponse, 0, 5)
 	for _, restore := range restoreList.Items {
 		backup, err := s.backupClient.Get(ctx, restore.Spec.BackupName, metav1.GetOptions{})
