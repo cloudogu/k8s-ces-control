@@ -3,10 +3,10 @@ package doguAdministration
 import (
 	"context"
 	"fmt"
+
 	pb "github.com/cloudogu/ces-control-api/generated/doguAdministration"
 	"github.com/cloudogu/ces-control-api/generated/types"
 	"github.com/cloudogu/cesapp-lib/core"
-	v1bp "github.com/cloudogu/k8s-blueprint-lib/api/v1"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -131,22 +131,21 @@ func (s *server) GetBlueprintId(ctx context.Context, _ *pb.DoguBlueprinitIdReque
 	}
 
 	if len(bpList.Items) == 0 {
-		return nil, status.Errorf(codes.NotFound, "could not found blueprintID")
+		return nil, status.Errorf(codes.NotFound, "could not find blueprintID")
+	}
+	if len(bpList.Items) >= 2 {
+		return nil, status.Errorf(codes.OutOfRange, "multiple blueprints found")
 	}
 
-	currentBlueprintID := getCurrentBlueprintID(bpList.Items)
+	currentBlueprint := bpList.Items[0]
 
-	return &pb.DoguBlueprintIdResponse{BlueprintId: currentBlueprintID}, nil
-}
-
-func getCurrentBlueprintID(blueprintList []v1bp.Blueprint) string {
-	var latestBluePrint = blueprintList[0]
-
-	for _, bp := range blueprintList {
-		if bp.CreationTimestamp.Time.After(latestBluePrint.CreationTimestamp.Time) {
-			latestBluePrint = bp
-		}
+	var currentBlueprintId string
+	// For the rare case that the blueprint has no spec, we return the name of the blueprint
+	if currentBlueprint.Spec == nil {
+		currentBlueprintId = currentBlueprint.Name
+	} else {
+		currentBlueprintId = currentBlueprint.Spec.DisplayName
 	}
 
-	return latestBluePrint.Name
+	return &pb.DoguBlueprintIdResponse{BlueprintId: currentBlueprintId}, nil
 }
