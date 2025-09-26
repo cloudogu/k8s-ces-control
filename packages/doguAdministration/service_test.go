@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/cloudogu/ces-control-api/generated/doguAdministration"
 	"github.com/cloudogu/ces-control-api/generated/types"
@@ -374,13 +375,14 @@ func Test_server_GetBlueprintId(t *testing.T) {
 		require.Nil(t, actual)
 	})
 
+	now := metav1.Now()
 	t.Run("client List returns one element without spec", func(t *testing.T) {
 		bluePrintListerMock := NewMockBlueprintLister(t)
 		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
 			Return(&blueprintcrv2.BlueprintList{Items: []blueprintcrv2.Blueprint{
 				{ObjectMeta: metav1.ObjectMeta{
 					Name:              "SIV1",
-					CreationTimestamp: metav1.Now(),
+					CreationTimestamp: now,
 				}},
 			}}, nil)
 
@@ -405,7 +407,7 @@ func Test_server_GetBlueprintId(t *testing.T) {
 			Return(&blueprintcrv2.BlueprintList{Items: []blueprintcrv2.Blueprint{
 				{ObjectMeta: metav1.ObjectMeta{
 					Name:              "SIV1",
-					CreationTimestamp: metav1.Now(),
+					CreationTimestamp: now,
 				},
 					Spec: &blueprintcrv2.BlueprintSpec{}},
 			}}, nil)
@@ -431,7 +433,7 @@ func Test_server_GetBlueprintId(t *testing.T) {
 			Return(&blueprintcrv2.BlueprintList{Items: []blueprintcrv2.Blueprint{
 				{ObjectMeta: metav1.ObjectMeta{
 					Name:              "SIV1",
-					CreationTimestamp: metav1.Now(),
+					CreationTimestamp: now,
 				},
 					Spec: &blueprintcrv2.BlueprintSpec{
 						DisplayName: "SIV1-DisplayName",
@@ -453,17 +455,21 @@ func Test_server_GetBlueprintId(t *testing.T) {
 		assert.NotNil(t, actual)
 		assert.Equal(t, "SIV1-DisplayName", actual.GetBlueprintId())
 	})
-	t.Run("client List returns list with two elements", func(t *testing.T) {
+	t.Run("should always return the id from the oldest blueprint", func(t *testing.T) {
 		bluePrintListerMock := NewMockBlueprintLister(t)
 		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
 			Return(&blueprintcrv2.BlueprintList{Items: []blueprintcrv2.Blueprint{
 				{ObjectMeta: metav1.ObjectMeta{
-					Name:              "SIV1",
-					CreationTimestamp: metav1.Now(),
+					Name:              "SIV3",
+					CreationTimestamp: metav1.NewTime(now.Add(time.Second * 2)),
 				}},
 				{ObjectMeta: metav1.ObjectMeta{
 					Name:              "SIV2",
-					CreationTimestamp: metav1.Now(),
+					CreationTimestamp: metav1.NewTime(now.Add(time.Second)),
+				}},
+				{ObjectMeta: metav1.ObjectMeta{
+					Name:              "SIV1",
+					CreationTimestamp: now,
 				}},
 			}}, nil)
 
@@ -477,10 +483,8 @@ func Test_server_GetBlueprintId(t *testing.T) {
 
 		// when
 		actual, err := sut.GetBlueprintId(testCtx, request)
-		assert.Error(t, err)
-		assert.Equal(t, codes.OutOfRange, status.Code(err))
-
-		assert.Nil(t, actual)
+		assert.NoError(t, err)
+		assert.Equal(t, "SIV1", actual.BlueprintId)
 	})
 
 }
