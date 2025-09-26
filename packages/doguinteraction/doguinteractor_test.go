@@ -393,6 +393,7 @@ func Test_defaultDoguInterActor_StartDoguWithWait(t *testing.T) {
 		doguClientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{FieldSelector: "metadata.name=postgresql"}).Return(watcher, nil).Run(
 			func(watchCtx context.Context, opts metav1.ListOptions) {
 				callCtx = watchCtx
+				time.Sleep(2 * time.Second)
 				watcher.Stop()
 			})
 
@@ -501,7 +502,7 @@ func Test_defaultDoguInterActor_StartAllDogus(t *testing.T) {
 			redmineWatcher := watch.NewFake()
 			doguClientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{FieldSelector: "metadata.name=redmine"}).Return(redmineWatcher, nil)
 			go func() {
-				time.Sleep(1 * time.Second)
+				time.Sleep(2 * time.Second)
 				redmineWatcher.Action(watch.Modified, redmineDogu)
 			}()
 		})
