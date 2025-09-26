@@ -397,6 +397,7 @@ func Test_defaultDoguInterActor_StartDoguWithWait(t *testing.T) {
 			})
 
 		go func() {
+			time.Sleep(1 * time.Second)
 			watcher.Action(watch.Modified, expectedUpdateDogu)
 		}()
 
