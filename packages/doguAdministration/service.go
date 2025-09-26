@@ -141,7 +141,7 @@ func (s *server) GetBlueprintId(ctx context.Context, _ *pb.DoguBlueprinitIdReque
 
 	var currentBlueprintId string
 	// For the rare case that the blueprint has no spec, we return the name of the blueprint
-	if currentBlueprint.Spec == nil {
+	if currentBlueprint.Spec == nil || currentBlueprint.Spec.DisplayName == "" {
 		currentBlueprintId = currentBlueprint.Name
 	} else {
 		currentBlueprintId = currentBlueprint.Spec.DisplayName
