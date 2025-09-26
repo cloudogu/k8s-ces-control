@@ -3,6 +3,7 @@ package doguAdministration
 import (
 	"context"
 	"fmt"
+	v2 "github.com/cloudogu/k8s-blueprint-lib/v2/api/v2"
 
 	pb "github.com/cloudogu/ces-control-api/generated/doguAdministration"
 	"github.com/cloudogu/ces-control-api/generated/types"
@@ -133,19 +134,39 @@ func (s *server) GetBlueprintId(ctx context.Context, _ *pb.DoguBlueprinitIdReque
 	if len(bpList.Items) == 0 {
 		return nil, status.Errorf(codes.NotFound, "could not find blueprintID")
 	}
+
 	if len(bpList.Items) >= 2 {
-		return nil, status.Errorf(codes.OutOfRange, "multiple blueprints found")
+		logrus.Warn("multiple blueprints found")
 	}
 
-	currentBlueprint := bpList.Items[0]
+	currentBlueprint := getLatestBlueprint(bpList)
 
+	return &pb.DoguBlueprintIdResponse{BlueprintId: getResponseString(currentBlueprint)}, nil
+}
+
+func getResponseString(bp *v2.Blueprint) string {
 	var currentBlueprintId string
 	// For the rare case that the blueprint has no spec, we return the name of the blueprint
-	if currentBlueprint.Spec == nil || currentBlueprint.Spec.DisplayName == "" {
-		currentBlueprintId = currentBlueprint.Name
+	if bp.Spec == nil || bp.Spec.DisplayName == "" {
+		currentBlueprintId = bp.Name
 	} else {
-		currentBlueprintId = currentBlueprint.Spec.DisplayName
+		currentBlueprintId = bp.Spec.DisplayName
 	}
 
-	return &pb.DoguBlueprintIdResponse{BlueprintId: currentBlueprintId}, nil
+	return currentBlueprintId
+}
+
+func getLatestBlueprint(list *v2.BlueprintList) *v2.Blueprint {
+	var oldestBp *v2.Blueprint
+	for _, bp := range list.Items {
+		if oldestBp == nil {
+			oldestBp = &bp
+			continue
+		}
+		if bp.ObjectMeta.CreationTimestamp.Before(&oldestBp.ObjectMeta.CreationTimestamp) {
+			oldestBp = &bp
+		}
+	}
+
+	return oldestBp
 }
