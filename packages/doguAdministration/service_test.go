@@ -399,6 +399,32 @@ func Test_server_GetBlueprintId(t *testing.T) {
 		assert.Equal(t, "SIV1", actual.GetBlueprintId())
 	})
 
+	t.Run("client List returns one element with spec but with empty displayName", func(t *testing.T) {
+		bluePrintListerMock := NewMockBlueprintLister(t)
+		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
+			Return(&blueprintcrv2.BlueprintList{Items: []blueprintcrv2.Blueprint{
+				{ObjectMeta: metav1.ObjectMeta{
+					Name:              "SIV1",
+					CreationTimestamp: metav1.Now(),
+				},
+					Spec: &blueprintcrv2.BlueprintSpec{}},
+			}}, nil)
+
+		sut := &server{
+			doguDescriptorGetter: newMockDoguDescriptorGetter(t),
+			blueprintLister:      bluePrintListerMock,
+			doguInterActor:       newMockDoguInterActor(t),
+		}
+
+		request := &doguAdministration.DoguBlueprinitIdRequest{}
+
+		// when
+		actual, err := sut.GetBlueprintId(testCtx, request)
+		assert.NoError(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, "SIV1", actual.GetBlueprintId())
+	})
+
 	t.Run("client List returns one element with spec", func(t *testing.T) {
 		bluePrintListerMock := NewMockBlueprintLister(t)
 		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
