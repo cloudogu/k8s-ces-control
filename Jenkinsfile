@@ -94,7 +94,7 @@ node('docker') {
                                          "k8s-support-archive-operator-crd": ["version": "latest", "helmRepositoryNamespace": "k8s"],
                                          "k8s-support-archive-operator": ["version": "latest", "helmRepositoryNamespace": "k8s"]
                 ])
-                k3d.setup('3.2.1')
+                k3d.setup('4.2.0')
             }
 
             stage("Wait for Setup") {
