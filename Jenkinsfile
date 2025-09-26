@@ -90,12 +90,11 @@ node('docker') {
             stage('Setup') {
                 k3d.configureComponents(["k8s-minio":    ["version": "latest", "helmRepositoryNamespace": "k8s"],
                                          "k8s-loki":     ["version": "latest", "helmRepositoryNamespace": "k8s"],
-                                         "k8s-promtail": ["version": "latest", "helmRepositoryNamespace": "k8s"],
                                          "k8s-prometheus": ["version": "latest", "helmRepositoryNamespace": "k8s", "valuesYamlOverwrite": "kube-prometheus-stack:\n  nodeExporter:\n    enabled: false"],
                                          "k8s-support-archive-operator-crd": ["version": "latest", "helmRepositoryNamespace": "k8s"],
                                          "k8s-support-archive-operator": ["version": "latest", "helmRepositoryNamespace": "k8s"]
                 ])
-                k3d.setup('3.2.1')
+                k3d.setup('4.2.0')
             }
 
             stage("Wait for Setup") {
