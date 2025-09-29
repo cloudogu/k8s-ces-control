@@ -163,7 +163,7 @@ func getLatestBlueprint(list *v2.BlueprintList) *v2.Blueprint {
 			oldestBp = &bp
 			continue
 		}
-		if bp.ObjectMeta.CreationTimestamp.Before(&oldestBp.ObjectMeta.CreationTimestamp) {
+		if bp.CreationTimestamp.Before(&oldestBp.ObjectMeta.CreationTimestamp) {
 			oldestBp = &bp
 		}
 	}
