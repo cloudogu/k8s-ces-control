@@ -2,6 +2,7 @@ package backup
 
 import (
 	"context"
+	"fmt"
 
 	pbBackup "github.com/cloudogu/ces-control-api/generated/backup"
 	v1 "github.com/cloudogu/k8s-backup-lib/api/v1"
@@ -80,4 +81,16 @@ func (s *DefaultBackupService) mapRestores(ctx context.Context, restoreList *v1.
 	}
 
 	return restoreResponseList, nil
+}
+
+func (s *DefaultBackupService) GetSchedule(context.Context, *pbBackup.GetBackupScheduleRequest) (*pbBackup.GetBackupScheduleResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *DefaultBackupService) SetSchedule(context.Context, *pbBackup.SetBackupScheduleRequest) (*pbBackup.SetBackupScheduleResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *DefaultBackupService) GetRetentionPolicy(context.Context, *pbBackup.RetentionPolicyRequest) (*pbBackup.RetentionPolicyResponse, error) {
+	return nil, fmt.Errorf("not implemented")
 }
