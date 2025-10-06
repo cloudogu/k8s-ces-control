@@ -40,6 +40,7 @@ type clusterClient struct {
 	debugClientV1.DebugModeV1Interface
 	backupClientV1.BackupsGetter
 	backupClientV1.RestoresGetter
+	backupClientV1.BackupSchedulesGetter
 }
 
 var currentStage = stageProduction
@@ -91,6 +92,7 @@ func CreateClusterClient() (*clusterClient, error) {
 		DebugModeV1Interface:      debugModeClient,
 		BackupsGetter:             backupClient,
 		RestoresGetter:            backupClient,
+		BackupSchedulesGetter:     backupClient,
 	}, nil
 }
 

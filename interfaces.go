@@ -39,4 +39,5 @@ type clusterClient interface {
 	debugClientV1.DebugModeV1Interface
 	backupClientV1.BackupsGetter
 	backupClientV1.RestoresGetter
+	backupClientV1.BackupSchedulesGetter
 }

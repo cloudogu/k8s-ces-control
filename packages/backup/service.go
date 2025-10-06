@@ -11,15 +11,17 @@ import (
 
 type DefaultBackupService struct {
 	pbBackup.UnimplementedBackupManagementServer
-	backupClient  backupInterface
-	restoreClient restoreInterface
+	backupClient         backupInterface
+	restoreClient        restoreInterface
+	backupScheduleClient backupScheduleClient
 }
 
 // NewBackupService returns an instance of defaultBackupService.
-func NewBackupService(backupClient backupInterface, restoreClient restoreInterface) *DefaultBackupService {
+func NewBackupService(backupClient backupInterface, restoreClient restoreInterface, backupScheduleClient backupScheduleClient) *DefaultBackupService {
 	return &DefaultBackupService{
-		backupClient:  backupClient,
-		restoreClient: restoreClient,
+		backupClient:         backupClient,
+		restoreClient:        restoreClient,
+		backupScheduleClient: backupScheduleClient,
 	}
 }
 
@@ -83,12 +85,22 @@ func (s *DefaultBackupService) mapRestores(ctx context.Context, restoreList *v1.
 	return restoreResponseList, nil
 }
 
-func (s *DefaultBackupService) GetSchedule(context.Context, *pbBackup.GetBackupScheduleRequest) (*pbBackup.GetBackupScheduleResponse, error) {
-	return nil, fmt.Errorf("not implemented")
+func (s *DefaultBackupService) GetSchedule(ctx context.Context, _ *pbBackup.GetBackupScheduleRequest) (*pbBackup.GetBackupScheduleResponse, error) {
+	schedule, err := getBackupSchedule(ctx, s.backupScheduleClient)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbBackup.GetBackupScheduleResponse{Schedule: schedule}, nil
 }
 
-func (s *DefaultBackupService) SetSchedule(context.Context, *pbBackup.SetBackupScheduleRequest) (*pbBackup.SetBackupScheduleResponse, error) {
-	return nil, fmt.Errorf("not implemented")
+func (s *DefaultBackupService) SetSchedule(ctx context.Context, req *pbBackup.SetBackupScheduleRequest) (*pbBackup.SetBackupScheduleResponse, error) {
+	err := setBackupSchedule(ctx, s.backupScheduleClient, req.Schedule)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbBackup.SetBackupScheduleResponse{}, nil
 }
 
 func (s *DefaultBackupService) GetRetentionPolicy(context.Context, *pbBackup.RetentionPolicyRequest) (*pbBackup.RetentionPolicyResponse, error) {

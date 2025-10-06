@@ -8,7 +8,9 @@ import (
 	backupV1 "github.com/cloudogu/k8s-backup-lib/api/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func Test_getAllBackups(t *testing.T) {
@@ -197,5 +199,78 @@ func Test_getAllRestores(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(allRestores.Restores))
+	})
+}
+
+func TestDefaultBackupService_GetSchedule(t *testing.T) {
+	testCtx := context.Background()
+	schedule := &backupV1.BackupSchedule{Spec: backupV1.BackupScheduleSpec{Schedule: "1 2 * 4 *"}}
+
+	t.Run("should get schedule", func(t *testing.T) {
+		mBackupScheduleClient := newMockBackupScheduleClient(t)
+		mBackupScheduleClient.EXPECT().Get(testCtx, "ces-schedule", metav1.GetOptions{}).Return(schedule, nil)
+
+		svc := &DefaultBackupService{
+			backupScheduleClient: mBackupScheduleClient,
+		}
+
+		response, err := svc.GetSchedule(testCtx, nil)
+
+		require.NoError(t, err)
+		assert.Equal(t, "1 2 * 4 *", response.Schedule)
+	})
+
+	t.Run("should fail to get empty schedule with error", func(t *testing.T) {
+		mBackupScheduleClient := newMockBackupScheduleClient(t)
+		mBackupScheduleClient.EXPECT().Get(testCtx, "ces-schedule", metav1.GetOptions{}).Return(nil, assert.AnError)
+
+		svc := &DefaultBackupService{
+			backupScheduleClient: mBackupScheduleClient,
+		}
+
+		_, err := svc.GetSchedule(testCtx, nil)
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to get backup schedule:")
+	})
+}
+
+func TestDefaultBackupService_SetSchedule(t *testing.T) {
+	testCtx := context.Background()
+
+	t.Run("should set schedule", func(t *testing.T) {
+		expectedSchedule := &backupV1.BackupSchedule{
+			ObjectMeta: metav1.ObjectMeta{Name: "ces-schedule"},
+			Spec:       backupV1.BackupScheduleSpec{Schedule: "* 2 3 * *"},
+		}
+
+		mBackupScheduleClient := newMockBackupScheduleClient(t)
+		mBackupScheduleClient.EXPECT().Get(testCtx, "ces-schedule", metav1.GetOptions{}).Return(nil, k8sErrors.NewNotFound(schema.GroupResource{}, "not found"))
+		mBackupScheduleClient.EXPECT().Create(testCtx, expectedSchedule, metav1.CreateOptions{}).Return(expectedSchedule, nil)
+
+		svc := &DefaultBackupService{
+			backupScheduleClient: mBackupScheduleClient,
+		}
+
+		response, err := svc.SetSchedule(testCtx, &backup.SetBackupScheduleRequest{Schedule: "* 2 3 * *"})
+
+		require.NoError(t, err)
+		assert.Equal(t, &backup.SetBackupScheduleResponse{}, response)
+	})
+
+	t.Run("should fail to set schedule", func(t *testing.T) {
+		mBackupScheduleClient := newMockBackupScheduleClient(t)
+		mBackupScheduleClient.EXPECT().Get(testCtx, "ces-schedule", metav1.GetOptions{}).Return(nil, assert.AnError)
+
+		svc := &DefaultBackupService{
+			backupScheduleClient: mBackupScheduleClient,
+		}
+
+		_, err := svc.SetSchedule(testCtx, &backup.SetBackupScheduleRequest{Schedule: "* 2 3 * *"})
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to get existing backup schedule:")
 	})
 }

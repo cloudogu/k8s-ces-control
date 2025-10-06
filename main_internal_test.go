@@ -50,6 +50,7 @@ func Test_registerServices(tt *testing.T) {
 		clientSetMock.EXPECT().DebugMode(config.CurrentNamespace).Return(nil)
 		clientSetMock.EXPECT().Backups(config.CurrentNamespace).Return(nil)
 		clientSetMock.EXPECT().Restores(config.CurrentNamespace).Return(nil)
+		clientSetMock.EXPECT().BackupSchedules(config.CurrentNamespace).Return(nil)
 
 		configMapInterfaceMock := newMockConfigMapInterface(t)
 		coreV1Mock.EXPECT().ConfigMaps(config.CurrentNamespace).Return(configMapInterfaceMock)
