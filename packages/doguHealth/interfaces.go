@@ -1,9 +1,9 @@
 package doguHealth
 
 import (
-	"github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
+	"github.com/cloudogu/k8s-dogu-lib/v2/client"
 )
 
 type doguClient interface {
-	ecoSystem.DoguInterface
+	client.DoguInterface
 }

@@ -2,18 +2,19 @@ package doguinteraction
 
 import (
 	"context"
+
 	common "github.com/cloudogu/ces-commons-lib/dogu"
 	"github.com/cloudogu/cesapp-lib/core"
-	"github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
+	"github.com/cloudogu/k8s-dogu-lib/v2/client"
 	"github.com/cloudogu/k8s-registry-lib/config"
 )
 
 type DoguInterface interface {
-	ecoSystem.DoguInterface
+	client.DoguInterface
 }
 
 type DoguRestartInterface interface {
-	ecoSystem.DoguRestartInterface
+	client.DoguRestartInterface
 }
 
 type doguDescriptorGetter interface {

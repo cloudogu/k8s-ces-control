@@ -5,6 +5,7 @@ import (
 
 	backupClientV1 "github.com/cloudogu/k8s-backup-lib/api/ecosystem"
 	backupV1 "github.com/cloudogu/k8s-backup-lib/api/v1"
+	componentV1 "github.com/cloudogu/k8s-component-lib/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -25,4 +26,9 @@ type backupScheduleClient interface {
 
 	// Get takes name of the backup schedule, and returns the corresponding backup schedule object, and an error if there is any.
 	Get(ctx context.Context, name string, opts metav1.GetOptions) (*backupV1.BackupSchedule, error)
+}
+
+type componentClient interface {
+	// Get takes name of the component, and returns the corresponding component object, and an error if there is any.
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*componentV1.Component, error)
 }

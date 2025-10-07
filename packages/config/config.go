@@ -9,7 +9,7 @@ import (
 	bpo_kubernetes "github.com/cloudogu/k8s-blueprint-lib/client"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
 	debugClientV1 "github.com/cloudogu/k8s-debug-mode-cr-lib/pkg/client/v1"
-	ecoSystemV2 "github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
+	ecoSystemV2 "github.com/cloudogu/k8s-dogu-lib/v2/client"
 	supClientV1 "github.com/cloudogu/k8s-support-archive-lib/client/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 

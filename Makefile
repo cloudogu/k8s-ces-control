@@ -1,7 +1,7 @@
 # Set these to the desired values
 ARTIFACT_ID=k8s-ces-control
 VERSION=1.7.0
-GOTAG=1.24.3
+GOTAG=1.25.1
 STAGE?=production
 LOG_LEVEL?=info
 
@@ -100,3 +100,9 @@ check-env-var-stage:
 check-env-var-log-level:
 	@echo "Found log level [$(LOG_LEVEL)]!"
 	@$(call check_defined, LOG_LEVEL, LOG_LEVEL is not set. You need to export it before executing this command. Valid Values: [DEBUG,INFO,WARN,ERROR])
+
+# Override make target to use mockery v2
+.PHONY: mocks
+mocks: ${MOCKERY_BIN} ## target is used to generate mocks for all interfaces in a project.
+	${MOCKERY_BIN}
+	@echo "Mocks successfully created."
