@@ -2,7 +2,6 @@ package backup
 
 import (
 	"context"
-	"fmt"
 
 	pbBackup "github.com/cloudogu/ces-control-api/generated/backup"
 	v1 "github.com/cloudogu/k8s-backup-lib/api/v1"
@@ -14,14 +13,16 @@ type DefaultBackupService struct {
 	backupClient         backupInterface
 	restoreClient        restoreInterface
 	backupScheduleClient backupScheduleClient
+	componentClient      componentClient
 }
 
 // NewBackupService returns an instance of defaultBackupService.
-func NewBackupService(backupClient backupInterface, restoreClient restoreInterface, backupScheduleClient backupScheduleClient) *DefaultBackupService {
+func NewBackupService(backupClient backupInterface, restoreClient restoreInterface, backupScheduleClient backupScheduleClient, componentClient componentClient) *DefaultBackupService {
 	return &DefaultBackupService{
 		backupClient:         backupClient,
 		restoreClient:        restoreClient,
 		backupScheduleClient: backupScheduleClient,
+		componentClient:      componentClient,
 	}
 }
 
@@ -103,6 +104,30 @@ func (s *DefaultBackupService) SetSchedule(ctx context.Context, req *pbBackup.Se
 	return &pbBackup.SetBackupScheduleResponse{}, nil
 }
 
-func (s *DefaultBackupService) GetRetentionPolicy(context.Context, *pbBackup.RetentionPolicyRequest) (*pbBackup.RetentionPolicyResponse, error) {
-	return nil, fmt.Errorf("not implemented")
+func (s *DefaultBackupService) GetRetentionPolicy(ctx context.Context, _ *pbBackup.RetentionPolicyRequest) (*pbBackup.RetentionPolicyResponse, error) {
+	policy, err := getRetentionPolicy(ctx, s.componentClient)
+	if err != nil {
+		return nil, err
+	}
+
+	// map policy to protobuf enum
+	retentionPolicy := pbBackup.RetentionPolicy_KeepAll
+	switch policy {
+	case string(keepAllPolicy):
+		retentionPolicy = pbBackup.RetentionPolicy_KeepAll
+		break
+	case string(removeAllButKeepLatestPolicy):
+		retentionPolicy = pbBackup.RetentionPolicy_RemoveAllButKeepLatest
+		break
+	case string(keepLastSevenDaysPolicy):
+		retentionPolicy = pbBackup.RetentionPolicy_KeepLastSevenDays
+		break
+	case string(keepLast7DaysOldestOf1Month1Quarter1HalfYear1YearPolicy):
+		retentionPolicy = pbBackup.RetentionPolicy_KeepLast7DaysOldestOf1Month1Quarter1HalfYear1Year
+		break
+	default:
+		retentionPolicy = pbBackup.RetentionPolicy_KeepAll
+	}
+
+	return &pbBackup.RetentionPolicyResponse{Policy: retentionPolicy}, nil
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/cloudogu/ces-control-api/generated/backup"
 	backupV1 "github.com/cloudogu/k8s-backup-lib/api/v1"
+	componentV1 "github.com/cloudogu/k8s-component-lib/api/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -272,5 +273,136 @@ func TestDefaultBackupService_SetSchedule(t *testing.T) {
 		require.Error(t, err)
 		assert.ErrorIs(t, err, assert.AnError)
 		assert.ErrorContains(t, err, "failed to get existing backup schedule:")
+	})
+}
+
+func TestDefaultBackupService_GetRetentionPolicy(t *testing.T) {
+	testCtx := context.Background()
+
+	t.Run("should get default policy", func(t *testing.T) {
+		mComponentClient := newMockComponentClient(t)
+		mComponentClient.EXPECT().Get(testCtx, "k8s-backup-operator", metav1.GetOptions{}).Return(&componentV1.Component{
+			Spec: componentV1.ComponentSpec{},
+		}, nil)
+
+		svc := &DefaultBackupService{
+			componentClient: mComponentClient,
+		}
+
+		response, err := svc.GetRetentionPolicy(testCtx, nil)
+
+		require.NoError(t, err)
+		assert.Equal(t, backup.RetentionPolicy_KeepAll, response.Policy)
+	})
+
+	t.Run("should get policy", func(t *testing.T) {
+		mComponentClient := newMockComponentClient(t)
+		mComponentClient.EXPECT().Get(testCtx, "k8s-backup-operator", metav1.GetOptions{}).Return(&componentV1.Component{
+			Spec: componentV1.ComponentSpec{
+				ValuesYamlOverwrite: `
+cleanup:
+  exclude: foo
+retention:
+  strategy: "removeAllButKeepLatest"
+  garbageCollectionCron: "0 * * * *"
+`,
+			},
+		}, nil)
+
+		svc := &DefaultBackupService{
+			componentClient: mComponentClient,
+		}
+
+		response, err := svc.GetRetentionPolicy(testCtx, nil)
+
+		require.NoError(t, err)
+		assert.Equal(t, backup.RetentionPolicy_RemoveAllButKeepLatest, response.Policy)
+	})
+
+	t.Run("should get policy keepAll", func(t *testing.T) {
+		mComponentClient := newMockComponentClient(t)
+		mComponentClient.EXPECT().Get(testCtx, "k8s-backup-operator", metav1.GetOptions{}).Return(&componentV1.Component{
+			Spec: componentV1.ComponentSpec{
+				ValuesYamlOverwrite: `
+cleanup:
+  exclude: foo
+retention:
+  strategy: "keepAll"
+  garbageCollectionCron: "0 * * * *"
+`,
+			},
+		}, nil)
+
+		svc := &DefaultBackupService{
+			componentClient: mComponentClient,
+		}
+
+		response, err := svc.GetRetentionPolicy(testCtx, nil)
+
+		require.NoError(t, err)
+		assert.Equal(t, backup.RetentionPolicy_KeepAll, response.Policy)
+	})
+
+	t.Run("should get policy keepLastSevenDays", func(t *testing.T) {
+		mComponentClient := newMockComponentClient(t)
+		mComponentClient.EXPECT().Get(testCtx, "k8s-backup-operator", metav1.GetOptions{}).Return(&componentV1.Component{
+			Spec: componentV1.ComponentSpec{
+				ValuesYamlOverwrite: `
+cleanup:
+  exclude: foo
+retention:
+  strategy: "keepLastSevenDays"
+  garbageCollectionCron: "0 * * * *"
+`,
+			},
+		}, nil)
+
+		svc := &DefaultBackupService{
+			componentClient: mComponentClient,
+		}
+
+		response, err := svc.GetRetentionPolicy(testCtx, nil)
+
+		require.NoError(t, err)
+		assert.Equal(t, backup.RetentionPolicy_KeepLastSevenDays, response.Policy)
+	})
+
+	t.Run("should get policy keep7Days1Month1Quarter1Year", func(t *testing.T) {
+		mComponentClient := newMockComponentClient(t)
+		mComponentClient.EXPECT().Get(testCtx, "k8s-backup-operator", metav1.GetOptions{}).Return(&componentV1.Component{
+			Spec: componentV1.ComponentSpec{
+				ValuesYamlOverwrite: `
+cleanup:
+  exclude: foo
+retention:
+  strategy: "keep7Days1Month1Quarter1Year"
+  garbageCollectionCron: "0 * * * *"
+`,
+			},
+		}, nil)
+
+		svc := &DefaultBackupService{
+			componentClient: mComponentClient,
+		}
+
+		response, err := svc.GetRetentionPolicy(testCtx, nil)
+
+		require.NoError(t, err)
+		assert.Equal(t, backup.RetentionPolicy_KeepLast7DaysOldestOf1Month1Quarter1HalfYear1Year, response.Policy)
+	})
+
+	t.Run("should fail to get empty policy with error", func(t *testing.T) {
+		mComponentClient := newMockComponentClient(t)
+		mComponentClient.EXPECT().Get(testCtx, "k8s-backup-operator", metav1.GetOptions{}).Return(nil, assert.AnError)
+
+		svc := &DefaultBackupService{
+			componentClient: mComponentClient,
+		}
+
+		_, err := svc.GetRetentionPolicy(testCtx, nil)
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to get backup-operator component:")
 	})
 }
