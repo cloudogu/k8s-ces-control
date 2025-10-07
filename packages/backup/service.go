@@ -2,11 +2,15 @@ package backup
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	pbBackup "github.com/cloudogu/ces-control-api/generated/backup"
 	v1 "github.com/cloudogu/k8s-backup-lib/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+const defaultBackupProvider = "velero"
 
 type DefaultBackupService struct {
 	pbBackup.UnimplementedBackupManagementServer
@@ -20,6 +24,26 @@ func NewBackupService(backupClient backupInterface, restoreClient restoreInterfa
 		backupClient:  backupClient,
 		restoreClient: restoreClient,
 	}
+}
+
+func (s *DefaultBackupService) CreateBackup(ctx context.Context, _ *pbBackup.CreateBackupRequest) (*pbBackup.CreateBackupResponse, error) {
+	timestamp := time.Now().Format("20060102-1504")
+	backupName := fmt.Sprintf("backup-%s", timestamp)
+	backup := &v1.Backup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: backupName,
+		},
+		Spec: v1.BackupSpec{
+			Provider:           defaultBackupProvider,
+			SyncedFromProvider: false,
+		},
+	}
+	_, err := s.backupClient.Create(ctx, backup, metav1.CreateOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbBackup.CreateBackupResponse{}, nil
 }
 
 func (s *DefaultBackupService) AllBackups(ctx context.Context, _ *pbBackup.GetAllBackupsRequest) (*pbBackup.GetAllBackupsResponse, error) {
