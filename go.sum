@@ -22,6 +22,8 @@ github.com/cloudogu/cesapp-lib v0.18.1 h1:LMdGktIefm/PuhdPqpLTPvjY1smO06EEGBbRSA
 github.com/cloudogu/cesapp-lib v0.18.1/go.mod h1:J05eXFxnz4enZblABlmiVTZaUtJ+LIhlJ2UF6l9jpDw=
 github.com/cloudogu/k8s-blueprint-lib/v2 v2.0.0-20250925091741-275e54da827b h1:1VRisF6h7o/B8fOtPIRuMApMe4PQKiCgiYDLD2tyScw=
 github.com/cloudogu/k8s-blueprint-lib/v2 v2.0.0-20250925091741-275e54da827b/go.mod h1:yNtYKIfJkJyMCQ5srtWspl4CDIu3pCvfNC4Yci1XVtQ=
+github.com/cloudogu/k8s-blueprint-lib/v2 v2.0.0 h1:3opEauJ733KlUEhsBVDpi4MdYeiEXg63oedX+/F2Btk=
+github.com/cloudogu/k8s-blueprint-lib/v2 v2.0.0/go.mod h1:Qyi8M+HJMHJfhXN6Zotey/tXjFuJDM9RIXn+FjQaJAU=
 github.com/cloudogu/k8s-debug-mode-cr-lib v0.2.3 h1:8sftEGNt8NzOdMX23tMGWCwr3mXVCQE9ERBRwQfPnzw=
 github.com/cloudogu/k8s-debug-mode-cr-lib v0.2.3/go.mod h1:7FjWsEJ3Goo+Luyx7LYEIweu4+BBpNyDW67oO5F0/kY=
 github.com/cloudogu/k8s-dogu-operator/v2 v2.3.0 h1:U2VHM9QwHArm5AYmcfSgzzAbTdgxrk+TqcgTublhNZA=

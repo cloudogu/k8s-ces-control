@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- [#73] Update blueprint-lib to v2.0.0
+- [#73] Use Blueprint-Displayname to display the blueprint name in the UI
 
 ## [v1.7.2] - 2025-09-17
 ### Fixed

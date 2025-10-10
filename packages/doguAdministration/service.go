@@ -3,6 +3,7 @@ package doguAdministration
 import (
 	"context"
 	"fmt"
+
 	v2 "github.com/cloudogu/k8s-blueprint-lib/v2/api/v2"
 
 	pb "github.com/cloudogu/ces-control-api/generated/doguAdministration"
@@ -146,8 +147,8 @@ func (s *server) GetBlueprintId(ctx context.Context, _ *pb.DoguBlueprinitIdReque
 
 func getResponseString(bp *v2.Blueprint) string {
 	var currentBlueprintId string
-	// For the rare case that the blueprint has no spec, we return the name of the blueprint
-	if bp.Spec == nil || bp.Spec.DisplayName == "" {
+	// For the rare case that the blueprint has an empty displayName, we return the name of the blueprint
+	if bp.Spec.DisplayName == "" {
 		currentBlueprintId = bp.Name
 	} else {
 		currentBlueprintId = bp.Spec.DisplayName
@@ -163,7 +164,7 @@ func getLatestBlueprint(list *v2.BlueprintList) *v2.Blueprint {
 			oldestBp = &bp
 			continue
 		}
-		if bp.CreationTimestamp.Before(&oldestBp.ObjectMeta.CreationTimestamp) {
+		if bp.CreationTimestamp.Before(&oldestBp.CreationTimestamp) {
 			oldestBp = &bp
 		}
 	}

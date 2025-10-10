@@ -409,7 +409,7 @@ func Test_server_GetBlueprintId(t *testing.T) {
 					Name:              "SIV1",
 					CreationTimestamp: now,
 				},
-					Spec: &blueprintcrv2.BlueprintSpec{}},
+					Spec: blueprintcrv2.BlueprintSpec{}},
 			}}, nil)
 
 		sut := &server{
@@ -435,7 +435,7 @@ func Test_server_GetBlueprintId(t *testing.T) {
 					Name:              "SIV1",
 					CreationTimestamp: now,
 				},
-					Spec: &blueprintcrv2.BlueprintSpec{
+					Spec: blueprintcrv2.BlueprintSpec{
 						DisplayName: "SIV1-DisplayName",
 					},
 				},
