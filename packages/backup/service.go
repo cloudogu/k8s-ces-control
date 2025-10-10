@@ -10,8 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const defaultBackupProvider = "velero"
-
 type DefaultBackupService struct {
 	pbBackup.UnimplementedBackupManagementServer
 	backupClient  backupInterface
@@ -34,7 +32,6 @@ func (s *DefaultBackupService) CreateBackup(ctx context.Context, _ *pbBackup.Cre
 			Name: backupName,
 		},
 		Spec: v1.BackupSpec{
-			Provider:           defaultBackupProvider,
 			SyncedFromProvider: false,
 		},
 	}

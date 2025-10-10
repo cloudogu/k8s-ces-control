@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added 
 - [#68] Get backups and restores from cluster
+- [#77] Create backups in ui
 
 ## [v1.7.2] - 2025-09-17
 ### Fixed
