@@ -111,20 +111,16 @@ func (s *DefaultBackupService) GetRetentionPolicy(ctx context.Context, _ *pbBack
 	}
 
 	// map policy to protobuf enum
-	retentionPolicy := pbBackup.RetentionPolicy_RETENTION_POLICY_UNSPECIFIED
+	var retentionPolicy pbBackup.RetentionPolicy
 	switch policy {
 	case string(keepAllPolicy):
 		retentionPolicy = pbBackup.RetentionPolicy_RETENTION_POLICY_KEEP_ALL
-		break
 	case string(removeAllButKeepLatestPolicy):
 		retentionPolicy = pbBackup.RetentionPolicy_RETENTION_POLICY_REMOVE_ALL_BUT_KEEP_LATEST
-		break
 	case string(keepLastSevenDaysPolicy):
 		retentionPolicy = pbBackup.RetentionPolicy_RETENTION_POLICY_KEEP_LAST_SEVEN_DAYS
-		break
 	case string(keepLast7DaysOldestOf1Month1Quarter1HalfYear1YearPolicy):
 		retentionPolicy = pbBackup.RetentionPolicy_RETENTION_POLICY_KEEP_LAST_7_DAYS_OLDEST_OF_1_MONTH_1_QUARTER_1_HALF_YEAR_1_YEAR
-		break
 	default:
 		retentionPolicy = pbBackup.RetentionPolicy_RETENTION_POLICY_UNSPECIFIED
 	}
