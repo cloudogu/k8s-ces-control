@@ -292,7 +292,7 @@ func TestDefaultBackupService_GetRetentionPolicy(t *testing.T) {
 		response, err := svc.GetRetentionPolicy(testCtx, nil)
 
 		require.NoError(t, err)
-		assert.Equal(t, backup.RetentionPolicy_KeepAll, response.Policy)
+		assert.Equal(t, backup.RetentionPolicy_RETENTION_POLICY_UNSPECIFIED, response.Policy)
 	})
 
 	t.Run("should get policy", func(t *testing.T) {
@@ -316,7 +316,7 @@ retention:
 		response, err := svc.GetRetentionPolicy(testCtx, nil)
 
 		require.NoError(t, err)
-		assert.Equal(t, backup.RetentionPolicy_RemoveAllButKeepLatest, response.Policy)
+		assert.Equal(t, backup.RetentionPolicy_RETENTION_POLICY_REMOVE_ALL_BUT_KEEP_LATEST, response.Policy)
 	})
 
 	t.Run("should get policy keepAll", func(t *testing.T) {
@@ -340,7 +340,7 @@ retention:
 		response, err := svc.GetRetentionPolicy(testCtx, nil)
 
 		require.NoError(t, err)
-		assert.Equal(t, backup.RetentionPolicy_KeepAll, response.Policy)
+		assert.Equal(t, backup.RetentionPolicy_RETENTION_POLICY_KEEP_ALL, response.Policy)
 	})
 
 	t.Run("should get policy keepLastSevenDays", func(t *testing.T) {
@@ -364,7 +364,7 @@ retention:
 		response, err := svc.GetRetentionPolicy(testCtx, nil)
 
 		require.NoError(t, err)
-		assert.Equal(t, backup.RetentionPolicy_KeepLastSevenDays, response.Policy)
+		assert.Equal(t, backup.RetentionPolicy_RETENTION_POLICY_KEEP_LAST_SEVEN_DAYS, response.Policy)
 	})
 
 	t.Run("should get policy keep7Days1Month1Quarter1Year", func(t *testing.T) {
@@ -388,7 +388,7 @@ retention:
 		response, err := svc.GetRetentionPolicy(testCtx, nil)
 
 		require.NoError(t, err)
-		assert.Equal(t, backup.RetentionPolicy_KeepLast7DaysOldestOf1Month1Quarter1HalfYear1Year, response.Policy)
+		assert.Equal(t, backup.RetentionPolicy_RETENTION_POLICY_KEEP_LAST_7_DAYS_OLDEST_OF_1_MONTH_1_QUARTER_1_HALF_YEAR_1_YEAR, response.Policy)
 	})
 
 	t.Run("should fail to get empty policy with error", func(t *testing.T) {

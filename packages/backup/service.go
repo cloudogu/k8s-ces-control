@@ -104,30 +104,30 @@ func (s *DefaultBackupService) SetSchedule(ctx context.Context, req *pbBackup.Se
 	return &pbBackup.SetBackupScheduleResponse{}, nil
 }
 
-func (s *DefaultBackupService) GetRetentionPolicy(ctx context.Context, _ *pbBackup.RetentionPolicyRequest) (*pbBackup.RetentionPolicyResponse, error) {
+func (s *DefaultBackupService) GetRetentionPolicy(ctx context.Context, _ *pbBackup.GetRetentionPolicyRequest) (*pbBackup.GetRetentionPolicyResponse, error) {
 	policy, err := getRetentionPolicy(ctx, s.componentClient)
 	if err != nil {
 		return nil, err
 	}
 
 	// map policy to protobuf enum
-	retentionPolicy := pbBackup.RetentionPolicy_KeepAll
+	retentionPolicy := pbBackup.RetentionPolicy_RETENTION_POLICY_UNSPECIFIED
 	switch policy {
 	case string(keepAllPolicy):
-		retentionPolicy = pbBackup.RetentionPolicy_KeepAll
+		retentionPolicy = pbBackup.RetentionPolicy_RETENTION_POLICY_KEEP_ALL
 		break
 	case string(removeAllButKeepLatestPolicy):
-		retentionPolicy = pbBackup.RetentionPolicy_RemoveAllButKeepLatest
+		retentionPolicy = pbBackup.RetentionPolicy_RETENTION_POLICY_REMOVE_ALL_BUT_KEEP_LATEST
 		break
 	case string(keepLastSevenDaysPolicy):
-		retentionPolicy = pbBackup.RetentionPolicy_KeepLastSevenDays
+		retentionPolicy = pbBackup.RetentionPolicy_RETENTION_POLICY_KEEP_LAST_SEVEN_DAYS
 		break
 	case string(keepLast7DaysOldestOf1Month1Quarter1HalfYear1YearPolicy):
-		retentionPolicy = pbBackup.RetentionPolicy_KeepLast7DaysOldestOf1Month1Quarter1HalfYear1Year
+		retentionPolicy = pbBackup.RetentionPolicy_RETENTION_POLICY_KEEP_LAST_7_DAYS_OLDEST_OF_1_MONTH_1_QUARTER_1_HALF_YEAR_1_YEAR
 		break
 	default:
-		retentionPolicy = pbBackup.RetentionPolicy_KeepAll
+		retentionPolicy = pbBackup.RetentionPolicy_RETENTION_POLICY_UNSPECIFIED
 	}
 
-	return &pbBackup.RetentionPolicyResponse{Policy: retentionPolicy}, nil
+	return &pbBackup.GetRetentionPolicyResponse{Policy: retentionPolicy}, nil
 }
