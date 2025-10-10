@@ -1,6 +1,7 @@
 package main
 
 import (
+	backupClientV1 "github.com/cloudogu/k8s-backup-lib/api/ecosystem"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
 	debugClientV1 "github.com/cloudogu/k8s-debug-mode-cr-lib/pkg/client/v1"
 	ecoSystemV2 "github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
@@ -36,4 +37,6 @@ type clusterClient interface {
 	kubernetes.Interface
 	supClientV1.SupportArchiveV1Interface
 	debugClientV1.DebugModeV1Interface
+	backupClientV1.BackupsGetter
+	backupClientV1.RestoresGetter
 }

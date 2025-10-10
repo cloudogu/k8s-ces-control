@@ -2,13 +2,15 @@ package config
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/bombsimon/logrusr/v2"
+	backupClientV1 "github.com/cloudogu/k8s-backup-lib/api/ecosystem"
 	bpo_kubernetes "github.com/cloudogu/k8s-blueprint-lib/client"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
 	debugClientV1 "github.com/cloudogu/k8s-debug-mode-cr-lib/pkg/client/v1"
 	ecoSystemV2 "github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
 	supClientV1 "github.com/cloudogu/k8s-support-archive-lib/client/v1"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/sirupsen/logrus"
@@ -36,6 +38,8 @@ type clusterClient struct {
 	kubernetes.Interface
 	supClientV1.SupportArchiveV1Interface
 	debugClientV1.DebugModeV1Interface
+	backupClientV1.BackupsGetter
+	backupClientV1.RestoresGetter
 }
 
 var currentStage = stageProduction
@@ -74,7 +78,20 @@ func CreateClusterClient() (*clusterClient, error) {
 		return nil, fmt.Errorf("unable to create ecosystem clientset: %w", err)
 	}
 
-	return &clusterClient{EcoSystemV2Interface: doguClient, BlueprintLister: bluePrintLister, Interface: k8sClient, SupportArchiveV1Interface: supportArchiveClient, DebugModeV1Interface: debugModeClient}, nil
+	backupClient, err := backupClientV1.NewForConfig(clusterConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create ecosystem clientset: %w", err)
+	}
+
+	return &clusterClient{
+		EcoSystemV2Interface:      doguClient,
+		BlueprintLister:           bluePrintLister,
+		Interface:                 k8sClient,
+		SupportArchiveV1Interface: supportArchiveClient,
+		DebugModeV1Interface:      debugModeClient,
+		BackupsGetter:             backupClient,
+		RestoresGetter:            backupClient,
+	}, nil
 }
 
 // ConfigureApplication performs the default configuration for the control app including configuring the logging and

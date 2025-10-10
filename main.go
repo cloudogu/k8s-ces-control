@@ -3,12 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
+	"os"
+
+	pbBackup "github.com/cloudogu/ces-control-api/generated/backup"
 	pbDoguAdministration "github.com/cloudogu/ces-control-api/generated/doguAdministration"
 	pgHealth "github.com/cloudogu/ces-control-api/generated/health"
 	pbLogging "github.com/cloudogu/ces-control-api/generated/logging"
 	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
+	"github.com/cloudogu/k8s-ces-control/packages/backup"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
-	"github.com/cloudogu/k8s-ces-control/packages/debug"
+	pbDebug "github.com/cloudogu/k8s-ces-control/packages/debug"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
 	"github.com/cloudogu/k8s-ces-control/packages/doguHealth"
 	"github.com/cloudogu/k8s-ces-control/packages/doguinteraction"
@@ -17,9 +23,6 @@ import (
 	"github.com/cloudogu/k8s-ces-control/packages/util"
 	"github.com/cloudogu/k8s-registry-lib/dogu"
 	"github.com/cloudogu/k8s-registry-lib/repository"
-	"net"
-	"net/http"
-	"os"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -114,6 +117,9 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 
 	supportArchiveClient := client.SupportArchives(config.CurrentNamespace)
 
+	backupClient := client.Backups(config.CurrentNamespace)
+	restoreClient := client.Restores(config.CurrentNamespace)
+
 	debugModeClient := client.DebugMode(config.CurrentNamespace)
 
 	loggingService := logging.NewLoggingService(
@@ -129,13 +135,14 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 	pbLogging.RegisterDoguLogMessagesServer(grpcServer, loggingService)
 	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministrationServer)
 	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService(client.Dogus(config.CurrentNamespace)))
-	debugModeService := debug.NewDebugModeService(debugModeClient, doguInterActor, doguConfig, globalConfig, doguDescriptorGetter, client, config.CurrentNamespace)
+	debugModeService := pbDebug.NewDebugModeService(debugModeClient, doguInterActor, doguConfig, globalConfig, doguDescriptorGetter, client, config.CurrentNamespace)
 	pbMaintenance.RegisterDebugModeServer(grpcServer, debugModeService)
 	supportArchiveService := supportArchive.NewSupportArchiveService(supportArchiveClient, &http.Client{})
 	pbMaintenance.RegisterSupportArchiveServer(grpcServer, supportArchiveService)
-	watcher := debug.NewDefaultConfigMapRegistryWatcher(configMapClient, debugModeService)
+	watcher := pbDebug.NewDefaultConfigMapRegistryWatcher(configMapClient, debugModeService)
 	watcher.StartWatch(context.Background())
-
+	backupService := backup.NewBackupService(backupClient, restoreClient)
+	pbBackup.RegisterBackupManagementServer(grpcServer, backupService)
 	// health endpoint used to determine the healthiness of the app
 	grpc_health_v1.RegisterHealthServer(grpcServer, health.NewServer())
 	return nil
