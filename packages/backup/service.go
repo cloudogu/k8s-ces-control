@@ -2,6 +2,7 @@ package backup
 
 import (
 	"context"
+	"fmt"
 
 	pbBackup "github.com/cloudogu/ces-control-api/generated/backup"
 	v1 "github.com/cloudogu/k8s-backup-lib/api/v1"
@@ -25,7 +26,7 @@ func NewBackupService(backupClient backupInterface, restoreClient restoreInterfa
 func (s *DefaultBackupService) AllBackups(ctx context.Context, _ *pbBackup.GetAllBackupsRequest) (*pbBackup.GetAllBackupsResponse, error) {
 	list, err := s.backupClient.List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list backups: %w", err)
 	}
 
 	return &pbBackup.GetAllBackupsResponse{Backups: s.mapBackups(list)}, nil
@@ -34,12 +35,12 @@ func (s *DefaultBackupService) AllBackups(ctx context.Context, _ *pbBackup.GetAl
 func (s *DefaultBackupService) AllRestores(ctx context.Context, _ *pbBackup.GetAllRestoresRequest) (*pbBackup.GetAllRestoresResponse, error) {
 	list, err := s.restoreClient.List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list restores: %w", err)
 	}
 
 	restores, err := s.mapRestores(ctx, list)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to map restores to dto: %w", err)
 	}
 
 	return &pbBackup.GetAllRestoresResponse{Restores: restores}, nil
@@ -49,7 +50,7 @@ func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList) []*pbBackup
 	backupResponseList := make([]*pbBackup.BackupResponse, 0, 5)
 	for _, backup := range backupList.Items {
 		backupResponse := pbBackup.BackupResponse{
-			Id:             string(backup.UID),
+			Id:             backup.Name,
 			StartTime:      backup.Status.StartTimestamp.String(),
 			EndTime:        backup.Status.CompletionTimestamp.String(),
 			Success:        backup.Status.Status == "completed",
@@ -70,7 +71,7 @@ func (s *DefaultBackupService) mapRestores(ctx context.Context, restoreList *v1.
 		}
 
 		restoreResponse := pbBackup.RestoreResponse{
-			BackupId:    string(backup.UID),
+			BackupId:    backup.Name,
 			StartTime:   backup.Status.StartTimestamp.String(),
 			EndTime:     backup.Status.CompletionTimestamp.String(),
 			Success:     restore.Status.Status == "completed",
