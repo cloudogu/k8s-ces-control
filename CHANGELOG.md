@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.7.3] - 2025-10-13
+### Changed
+- [#73] Update blueprint-lib to v2.0.0
+- [#73] Use Blueprint-Displayname to display the blueprint name in the UI
+
 ## [v1.7.2] - 2025-09-17
 ### Fixed
 - [#71] remove unused maintenance mode code.
