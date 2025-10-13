@@ -30,6 +30,8 @@ import (
 
 	certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
 
+	client "github.com/cloudogu/k8s-dogu-lib/v2/client"
+
 	coordinationv1 "k8s.io/client-go/kubernetes/typed/coordination/v1"
 
 	coordinationv1beta1 "k8s.io/client-go/kubernetes/typed/coordination/v1beta1"
@@ -41,8 +43,6 @@ import (
 	discoveryv1 "k8s.io/client-go/kubernetes/typed/discovery/v1"
 
 	discoveryv1beta1 "k8s.io/client-go/kubernetes/typed/discovery/v1beta1"
-
-	ecoSystem "github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
 
 	eventsv1 "k8s.io/client-go/kubernetes/typed/events/v1"
 
@@ -59,8 +59,6 @@ import (
 	mock "github.com/stretchr/testify/mock"
 
 	networkingv1 "k8s.io/client-go/kubernetes/typed/networking/v1"
-
-	networkingv1alpha1 "k8s.io/client-go/kubernetes/typed/networking/v1alpha1"
 
 	networkingv1beta1 "k8s.io/client-go/kubernetes/typed/networking/v1beta1"
 
@@ -79,6 +77,8 @@ import (
 	rbacv1alpha1 "k8s.io/client-go/kubernetes/typed/rbac/v1alpha1"
 
 	rbacv1beta1 "k8s.io/client-go/kubernetes/typed/rbac/v1beta1"
+
+	resourcev1 "k8s.io/client-go/kubernetes/typed/resource/v1"
 
 	resourcev1beta1 "k8s.io/client-go/kubernetes/typed/resource/v1beta1"
 
@@ -1402,19 +1402,19 @@ func (_c *mockClusterClientSet_DiscoveryV1beta1_Call) RunAndReturn(run func() di
 }
 
 // DoguRestarts provides a mock function with given fields: namespace
-func (_m *mockClusterClientSet) DoguRestarts(namespace string) ecoSystem.DoguRestartInterface {
+func (_m *mockClusterClientSet) DoguRestarts(namespace string) client.DoguRestartInterface {
 	ret := _m.Called(namespace)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DoguRestarts")
 	}
 
-	var r0 ecoSystem.DoguRestartInterface
-	if rf, ok := ret.Get(0).(func(string) ecoSystem.DoguRestartInterface); ok {
+	var r0 client.DoguRestartInterface
+	if rf, ok := ret.Get(0).(func(string) client.DoguRestartInterface); ok {
 		r0 = rf(namespace)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(ecoSystem.DoguRestartInterface)
+			r0 = ret.Get(0).(client.DoguRestartInterface)
 		}
 	}
 
@@ -1439,30 +1439,30 @@ func (_c *mockClusterClientSet_DoguRestarts_Call) Run(run func(namespace string)
 	return _c
 }
 
-func (_c *mockClusterClientSet_DoguRestarts_Call) Return(_a0 ecoSystem.DoguRestartInterface) *mockClusterClientSet_DoguRestarts_Call {
+func (_c *mockClusterClientSet_DoguRestarts_Call) Return(_a0 client.DoguRestartInterface) *mockClusterClientSet_DoguRestarts_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *mockClusterClientSet_DoguRestarts_Call) RunAndReturn(run func(string) ecoSystem.DoguRestartInterface) *mockClusterClientSet_DoguRestarts_Call {
+func (_c *mockClusterClientSet_DoguRestarts_Call) RunAndReturn(run func(string) client.DoguRestartInterface) *mockClusterClientSet_DoguRestarts_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Dogus provides a mock function with given fields: namespace
-func (_m *mockClusterClientSet) Dogus(namespace string) ecoSystem.DoguInterface {
+func (_m *mockClusterClientSet) Dogus(namespace string) client.DoguInterface {
 	ret := _m.Called(namespace)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Dogus")
 	}
 
-	var r0 ecoSystem.DoguInterface
-	if rf, ok := ret.Get(0).(func(string) ecoSystem.DoguInterface); ok {
+	var r0 client.DoguInterface
+	if rf, ok := ret.Get(0).(func(string) client.DoguInterface); ok {
 		r0 = rf(namespace)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(ecoSystem.DoguInterface)
+			r0 = ret.Get(0).(client.DoguInterface)
 		}
 	}
 
@@ -1487,12 +1487,12 @@ func (_c *mockClusterClientSet_Dogus_Call) Run(run func(namespace string)) *mock
 	return _c
 }
 
-func (_c *mockClusterClientSet_Dogus_Call) Return(_a0 ecoSystem.DoguInterface) *mockClusterClientSet_Dogus_Call {
+func (_c *mockClusterClientSet_Dogus_Call) Return(_a0 client.DoguInterface) *mockClusterClientSet_Dogus_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *mockClusterClientSet_Dogus_Call) RunAndReturn(run func(string) ecoSystem.DoguInterface) *mockClusterClientSet_Dogus_Call {
+func (_c *mockClusterClientSet_Dogus_Call) RunAndReturn(run func(string) client.DoguInterface) *mockClusterClientSet_Dogus_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1920,53 +1920,6 @@ func (_c *mockClusterClientSet_NetworkingV1_Call) RunAndReturn(run func() networ
 	return _c
 }
 
-// NetworkingV1alpha1 provides a mock function with no fields
-func (_m *mockClusterClientSet) NetworkingV1alpha1() networkingv1alpha1.NetworkingV1alpha1Interface {
-	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for NetworkingV1alpha1")
-	}
-
-	var r0 networkingv1alpha1.NetworkingV1alpha1Interface
-	if rf, ok := ret.Get(0).(func() networkingv1alpha1.NetworkingV1alpha1Interface); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(networkingv1alpha1.NetworkingV1alpha1Interface)
-		}
-	}
-
-	return r0
-}
-
-// mockClusterClientSet_NetworkingV1alpha1_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'NetworkingV1alpha1'
-type mockClusterClientSet_NetworkingV1alpha1_Call struct {
-	*mock.Call
-}
-
-// NetworkingV1alpha1 is a helper method to define mock.On call
-func (_e *mockClusterClientSet_Expecter) NetworkingV1alpha1() *mockClusterClientSet_NetworkingV1alpha1_Call {
-	return &mockClusterClientSet_NetworkingV1alpha1_Call{Call: _e.mock.On("NetworkingV1alpha1")}
-}
-
-func (_c *mockClusterClientSet_NetworkingV1alpha1_Call) Run(run func()) *mockClusterClientSet_NetworkingV1alpha1_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *mockClusterClientSet_NetworkingV1alpha1_Call) Return(_a0 networkingv1alpha1.NetworkingV1alpha1Interface) *mockClusterClientSet_NetworkingV1alpha1_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *mockClusterClientSet_NetworkingV1alpha1_Call) RunAndReturn(run func() networkingv1alpha1.NetworkingV1alpha1Interface) *mockClusterClientSet_NetworkingV1alpha1_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // NetworkingV1beta1 provides a mock function with no fields
 func (_m *mockClusterClientSet) NetworkingV1beta1() networkingv1beta1.NetworkingV1beta1Interface {
 	ret := _m.Called()
@@ -2386,6 +2339,53 @@ func (_c *mockClusterClientSet_RbacV1beta1_Call) Return(_a0 rbacv1beta1.RbacV1be
 }
 
 func (_c *mockClusterClientSet_RbacV1beta1_Call) RunAndReturn(run func() rbacv1beta1.RbacV1beta1Interface) *mockClusterClientSet_RbacV1beta1_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ResourceV1 provides a mock function with no fields
+func (_m *mockClusterClientSet) ResourceV1() resourcev1.ResourceV1Interface {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ResourceV1")
+	}
+
+	var r0 resourcev1.ResourceV1Interface
+	if rf, ok := ret.Get(0).(func() resourcev1.ResourceV1Interface); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(resourcev1.ResourceV1Interface)
+		}
+	}
+
+	return r0
+}
+
+// mockClusterClientSet_ResourceV1_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ResourceV1'
+type mockClusterClientSet_ResourceV1_Call struct {
+	*mock.Call
+}
+
+// ResourceV1 is a helper method to define mock.On call
+func (_e *mockClusterClientSet_Expecter) ResourceV1() *mockClusterClientSet_ResourceV1_Call {
+	return &mockClusterClientSet_ResourceV1_Call{Call: _e.mock.On("ResourceV1")}
+}
+
+func (_c *mockClusterClientSet_ResourceV1_Call) Run(run func()) *mockClusterClientSet_ResourceV1_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *mockClusterClientSet_ResourceV1_Call) Return(_a0 resourcev1.ResourceV1Interface) *mockClusterClientSet_ResourceV1_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *mockClusterClientSet_ResourceV1_Call) RunAndReturn(run func() resourcev1.ResourceV1Interface) *mockClusterClientSet_ResourceV1_Call {
 	_c.Call.Return(run)
 	return _c
 }

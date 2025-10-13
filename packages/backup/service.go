@@ -12,15 +12,19 @@ import (
 
 type DefaultBackupService struct {
 	pbBackup.UnimplementedBackupManagementServer
-	backupClient  backupInterface
-	restoreClient restoreInterface
+	backupClient         backupInterface
+	restoreClient        restoreInterface
+	backupScheduleClient backupScheduleClient
+	componentClient      componentClient
 }
 
 // NewBackupService returns an instance of defaultBackupService.
-func NewBackupService(backupClient backupInterface, restoreClient restoreInterface) *DefaultBackupService {
+func NewBackupService(backupClient backupInterface, restoreClient restoreInterface, backupScheduleClient backupScheduleClient, componentClient componentClient) *DefaultBackupService {
 	return &DefaultBackupService{
-		backupClient:  backupClient,
-		restoreClient: restoreClient,
+		backupClient:         backupClient,
+		restoreClient:        restoreClient,
+		backupScheduleClient: backupScheduleClient,
+		componentClient:      componentClient,
 	}
 }
 
@@ -87,7 +91,7 @@ func (s *DefaultBackupService) mapRestores(ctx context.Context, restoreList *v1.
 	for _, restore := range restoreList.Items {
 		backup, err := s.backupClient.Get(ctx, restore.Spec.BackupName, metav1.GetOptions{})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get backup for restore %s: %w", restore.Name, err)
 		}
 
 		restoreResponse := pbBackup.RestoreResponse{
@@ -101,4 +105,46 @@ func (s *DefaultBackupService) mapRestores(ctx context.Context, restoreList *v1.
 	}
 
 	return restoreResponseList, nil
+}
+
+func (s *DefaultBackupService) GetSchedule(ctx context.Context, _ *pbBackup.GetBackupScheduleRequest) (*pbBackup.GetBackupScheduleResponse, error) {
+	schedule, err := getBackupSchedule(ctx, s.backupScheduleClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get backup schedule: %w", err)
+	}
+
+	return &pbBackup.GetBackupScheduleResponse{Schedule: schedule}, nil
+}
+
+func (s *DefaultBackupService) SetSchedule(ctx context.Context, req *pbBackup.SetBackupScheduleRequest) (*pbBackup.SetBackupScheduleResponse, error) {
+	err := setBackupSchedule(ctx, s.backupScheduleClient, req.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("failed to set backup schedule: %w", err)
+	}
+
+	return &pbBackup.SetBackupScheduleResponse{}, nil
+}
+
+func (s *DefaultBackupService) GetRetentionPolicy(ctx context.Context, _ *pbBackup.GetRetentionPolicyRequest) (*pbBackup.GetRetentionPolicyResponse, error) {
+	policy, err := getRetentionPolicy(ctx, s.componentClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get retention policy: %w", err)
+	}
+
+	// map policy to protobuf enum
+	var retentionPolicy pbBackup.RetentionPolicy
+	switch policy {
+	case string(keepAllPolicy):
+		retentionPolicy = pbBackup.RetentionPolicy_RETENTION_POLICY_KEEP_ALL
+	case string(removeAllButKeepLatestPolicy):
+		retentionPolicy = pbBackup.RetentionPolicy_RETENTION_POLICY_REMOVE_ALL_BUT_KEEP_LATEST
+	case string(keepLastSevenDaysPolicy):
+		retentionPolicy = pbBackup.RetentionPolicy_RETENTION_POLICY_KEEP_LAST_SEVEN_DAYS
+	case string(keepLast7DaysOldestOf1Month1Quarter1HalfYear1YearPolicy):
+		retentionPolicy = pbBackup.RetentionPolicy_RETENTION_POLICY_KEEP_LAST_7_DAYS_OLDEST_OF_1_MONTH_1_QUARTER_1_HALF_YEAR_1_YEAR
+	default:
+		retentionPolicy = pbBackup.RetentionPolicy_RETENTION_POLICY_UNSPECIFIED
+	}
+
+	return &pbBackup.GetRetentionPolicyResponse{Policy: retentionPolicy}, nil
 }

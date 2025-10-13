@@ -3,8 +3,9 @@ package main
 import (
 	backupClientV1 "github.com/cloudogu/k8s-backup-lib/api/ecosystem"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
+	componentClientV1 "github.com/cloudogu/k8s-component-lib/client"
 	debugClientV1 "github.com/cloudogu/k8s-debug-mode-cr-lib/pkg/client/v1"
-	ecoSystemV2 "github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
+	ecoSystemV2 "github.com/cloudogu/k8s-dogu-lib/v2/client"
 	supClientV1 "github.com/cloudogu/k8s-support-archive-lib/client/v1"
 	"k8s.io/client-go/kubernetes"
 	appsV1 "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -39,4 +40,6 @@ type clusterClient interface {
 	debugClientV1.DebugModeV1Interface
 	backupClientV1.BackupsGetter
 	backupClientV1.RestoresGetter
+	backupClientV1.BackupSchedulesGetter
+	componentClientV1.ComponentV1Alpha1Interface
 }

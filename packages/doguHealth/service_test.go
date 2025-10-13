@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/cloudogu/ces-control-api/generated/health"
 	"github.com/cloudogu/k8s-ces-control/packages/config"
-	doguv2 "github.com/cloudogu/k8s-dogu-operator/v2/api/v2"
+	doguv2 "github.com/cloudogu/k8s-dogu-lib/v2/api/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
