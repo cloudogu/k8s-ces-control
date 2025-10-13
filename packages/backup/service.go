@@ -2,6 +2,7 @@ package backup
 
 import (
 	"context"
+	"fmt"
 
 	pbBackup "github.com/cloudogu/ces-control-api/generated/backup"
 	v1 "github.com/cloudogu/k8s-backup-lib/api/v1"
@@ -29,7 +30,7 @@ func NewBackupService(backupClient backupInterface, restoreClient restoreInterfa
 func (s *DefaultBackupService) AllBackups(ctx context.Context, _ *pbBackup.GetAllBackupsRequest) (*pbBackup.GetAllBackupsResponse, error) {
 	list, err := s.backupClient.List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list backups: %w", err)
 	}
 
 	return &pbBackup.GetAllBackupsResponse{Backups: s.mapBackups(list)}, nil
@@ -38,12 +39,12 @@ func (s *DefaultBackupService) AllBackups(ctx context.Context, _ *pbBackup.GetAl
 func (s *DefaultBackupService) AllRestores(ctx context.Context, _ *pbBackup.GetAllRestoresRequest) (*pbBackup.GetAllRestoresResponse, error) {
 	list, err := s.restoreClient.List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list restores: %w", err)
 	}
 
 	restores, err := s.mapRestores(ctx, list)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to map restores: %w", err)
 	}
 
 	return &pbBackup.GetAllRestoresResponse{Restores: restores}, nil
@@ -70,7 +71,7 @@ func (s *DefaultBackupService) mapRestores(ctx context.Context, restoreList *v1.
 	for _, restore := range restoreList.Items {
 		backup, err := s.backupClient.Get(ctx, restore.Spec.BackupName, metav1.GetOptions{})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get backup for restore %s: %w", restore.Name, err)
 		}
 
 		restoreResponse := pbBackup.RestoreResponse{
@@ -89,7 +90,7 @@ func (s *DefaultBackupService) mapRestores(ctx context.Context, restoreList *v1.
 func (s *DefaultBackupService) GetSchedule(ctx context.Context, _ *pbBackup.GetBackupScheduleRequest) (*pbBackup.GetBackupScheduleResponse, error) {
 	schedule, err := getBackupSchedule(ctx, s.backupScheduleClient)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get backup schedule: %w", err)
 	}
 
 	return &pbBackup.GetBackupScheduleResponse{Schedule: schedule}, nil
@@ -98,7 +99,7 @@ func (s *DefaultBackupService) GetSchedule(ctx context.Context, _ *pbBackup.GetB
 func (s *DefaultBackupService) SetSchedule(ctx context.Context, req *pbBackup.SetBackupScheduleRequest) (*pbBackup.SetBackupScheduleResponse, error) {
 	err := setBackupSchedule(ctx, s.backupScheduleClient, req.Schedule)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to set backup schedule: %w", err)
 	}
 
 	return &pbBackup.SetBackupScheduleResponse{}, nil
@@ -107,7 +108,7 @@ func (s *DefaultBackupService) SetSchedule(ctx context.Context, req *pbBackup.Se
 func (s *DefaultBackupService) GetRetentionPolicy(ctx context.Context, _ *pbBackup.GetRetentionPolicyRequest) (*pbBackup.GetRetentionPolicyResponse, error) {
 	policy, err := getRetentionPolicy(ctx, s.componentClient)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get retention policy: %w", err)
 	}
 
 	// map policy to protobuf enum
