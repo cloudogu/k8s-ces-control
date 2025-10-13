@@ -2,13 +2,14 @@ package config
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/bombsimon/logrusr/v2"
-	bpo_kubernetes "github.com/cloudogu/k8s-blueprint-lib/client"
+	bpo_kubernetes "github.com/cloudogu/k8s-blueprint-lib/v2/client"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
 	debugClientV1 "github.com/cloudogu/k8s-debug-mode-cr-lib/pkg/client/v1"
 	ecoSystemV2 "github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
 	supClientV1 "github.com/cloudogu/k8s-support-archive-lib/client/v1"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/sirupsen/logrus"
