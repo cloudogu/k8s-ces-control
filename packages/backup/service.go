@@ -79,13 +79,14 @@ func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList, blueprint *
 		if err != nil {
 			return nil, fmt.Errorf("failed to check if backup is restorable: %w", err)
 		}
+		success := backup.Status.Status == "completed"
 		backupResponse := pbBackup.BackupResponse{
 			Id:             backup.Name,
 			StartTime:      backup.Status.StartTimestamp.String(),
 			EndTime:        backup.Status.CompletionTimestamp.String(),
-			Success:        backup.Status.Status == "completed",
+			Success:        success,
 			CurrentVersion: true,
-			Restorable:     restorable,
+			Restorable:     restorable && success,
 		}
 		backupResponseList = append(backupResponseList, &backupResponse)
 	}
