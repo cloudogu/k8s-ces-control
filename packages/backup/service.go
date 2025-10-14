@@ -2,11 +2,19 @@ package backup
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"time"
 
 	pbBackup "github.com/cloudogu/ces-control-api/generated/backup"
 	v1 "github.com/cloudogu/k8s-backup-lib/api/v1"
+	v2 "github.com/cloudogu/k8s-blueprint-lib/v2/api/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	blueprintIdAnnotation = "backup.cloudogu.com/blueprintId"
+	dogusAnnotation       = "backup.cloudogu.com/dogus"
 )
 
 type DefaultBackupService struct {
@@ -15,15 +23,17 @@ type DefaultBackupService struct {
 	restoreClient        restoreInterface
 	backupScheduleClient backupScheduleClient
 	componentClient      componentClient
+	blueprintClient      blueprintInterface
 }
 
 // NewBackupService returns an instance of defaultBackupService.
-func NewBackupService(backupClient backupInterface, restoreClient restoreInterface, backupScheduleClient backupScheduleClient, componentClient componentClient) *DefaultBackupService {
+func NewBackupService(backupClient backupInterface, restoreClient restoreInterface, backupScheduleClient backupScheduleClient, componentClient componentClient, blueprintClient blueprintInterface) *DefaultBackupService {
 	return &DefaultBackupService{
 		backupClient:         backupClient,
 		restoreClient:        restoreClient,
 		backupScheduleClient: backupScheduleClient,
 		componentClient:      componentClient,
+		blueprintClient:      blueprintClient,
 	}
 }
 
@@ -127,4 +137,121 @@ func (s *DefaultBackupService) GetRetentionPolicy(ctx context.Context, _ *pbBack
 	}
 
 	return &pbBackup.GetRetentionPolicyResponse{Policy: retentionPolicy}, nil
+}
+
+// CreateRestore creates a restore for the given backup.
+// The restore is only created if the backup is restorable.
+func (s *DefaultBackupService) CreateRestore(ctx context.Context, request *pbBackup.CreateRestoreRequest) (*pbBackup.CreateRestoreResponse, error) {
+	backup, err := s.backupClient.Get(ctx, request.BackupId, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get backup: %w", err)
+	}
+	list, err := s.blueprintClient.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get blueprint: %w", err)
+	}
+	if len(list.Items) == 0 {
+		return nil, fmt.Errorf("failed to get blueprint: blueprint not found")
+	}
+
+	// only create restore if the backup is restorable
+	restorable, err := s.isBackupRestorable(ctx, backup, &list.Items[0])
+	if err != nil {
+		return nil, fmt.Errorf("failed to check if backup is restorable: %w", err)
+	}
+	if restorable {
+		timestamp := time.Now().Format("20060102-1504")
+		restoreName := fmt.Sprintf("restore-%s", timestamp)
+		restore := &v1.Restore{
+			TypeMeta: metav1.TypeMeta{},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: restoreName,
+			},
+			Spec: v1.RestoreSpec{
+				BackupName: request.BackupId,
+			},
+			Status: v1.RestoreStatus{},
+		}
+		_, err := s.restoreClient.Create(ctx, restore, metav1.CreateOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create restore: %w", err)
+		}
+	}
+
+	return &pbBackup.CreateRestoreResponse{}, nil
+}
+
+// GetRestorableBackups gets all backups that are restorable.
+// A backup is restorable if it is from the same blueprint and the same version of the same dogus.
+func (s *DefaultBackupService) GetRestorableBackups(ctx context.Context, _ *pbBackup.GetRestorableBackupsRequest) (*pbBackup.GetRestorableBackupsResponse, error) {
+	allBackups, err := s.backupClient.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list backups: %w", err)
+	}
+
+	list, err := s.blueprintClient.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get blueprint: %w", err)
+	}
+	if len(list.Items) == 0 {
+		return nil, fmt.Errorf("failed to get blueprint: blueprint not found")
+	}
+
+	filteredBackups := &v1.BackupList{
+		Items: make([]v1.Backup, 0, 5),
+	}
+
+	for _, backup := range allBackups.Items {
+		restorable, err := s.isBackupRestorable(ctx, &backup, &list.Items[0])
+		if err != nil {
+			return nil, fmt.Errorf("failed to check if backup is restorable: %w", err)
+		}
+		if restorable {
+			filteredBackups.Items = append(filteredBackups.Items, backup)
+		}
+	}
+
+	s.mapBackups(filteredBackups)
+	return &pbBackup.GetRestorableBackupsResponse{}, nil
+}
+
+func (s *DefaultBackupService) isBackupRestorable(_ context.Context, backup *v1.Backup, blueprint *v2.Blueprint) (bool, error) {
+	ans := backup.GetAnnotations()
+
+	// get all dogus from backup annotations
+	backupDogus := make([]v2.Dogu, 0, 5)
+	err := json.Unmarshal([]byte(ans[dogusAnnotation]), &backupDogus)
+	if err != nil {
+		return false, fmt.Errorf("failed to unmarshal dogus from backup: %w", err)
+	}
+
+	blueprintNameIsMatching := ans != nil && ans[blueprintIdAnnotation] == blueprint.Name
+
+	if blueprintNameIsMatching && s.isDoguListMatching(backupDogus, blueprint.Spec.Blueprint.Dogus) {
+		return true, nil
+	}
+	return false, nil
+}
+
+// doguListIsMatching checks if the given list of backup dogus is matching the given list of dogus from the blueprint.
+func (s *DefaultBackupService) isDoguListMatching(backupDogus []v2.Dogu, blueprintDogus []v2.Dogu) bool {
+	if len(backupDogus) != len(blueprintDogus) {
+		return false
+	}
+
+	backupDoguMap := make(map[string]v2.Dogu)
+	for _, v := range backupDogus {
+		backupDoguMap[v.Name] = v
+	}
+
+	for _, bpDogu := range blueprintDogus {
+		dogu, ok := backupDoguMap[bpDogu.Name]
+		if !ok {
+			return false
+		}
+		if dogu.Version != bpDogu.Version {
+			return false
+		}
+	}
+	return true
 }

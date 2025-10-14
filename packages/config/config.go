@@ -7,6 +7,7 @@ import (
 	"github.com/bombsimon/logrusr/v2"
 	backupClientV1 "github.com/cloudogu/k8s-backup-lib/api/ecosystem"
 	bpo_kubernetes "github.com/cloudogu/k8s-blueprint-lib/client"
+	blueprintv2 "github.com/cloudogu/k8s-blueprint-lib/v2/client"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
 	componentClientV1 "github.com/cloudogu/k8s-component-lib/client"
 	debugClientV1 "github.com/cloudogu/k8s-debug-mode-cr-lib/pkg/client/v1"
@@ -43,6 +44,7 @@ type clusterClient struct {
 	backupClientV1.RestoresGetter
 	backupClientV1.BackupSchedulesGetter
 	componentClientV1.ComponentV1Alpha1Interface
+	blueprintv2.BlueprintInterface
 }
 
 var currentStage = stageProduction
@@ -91,6 +93,12 @@ func CreateClusterClient() (*clusterClient, error) {
 		return nil, fmt.Errorf("unable to create component clientset: %w", err)
 	}
 
+	blueprintV2Client, err := blueprintv2.NewClientSet(clusterConfig, k8sClient)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create blueprint v2 clientset: %w", err)
+	}
+	blueprintv2Interface := blueprintV2Client.EcosystemV1Alpha1().Blueprints(CurrentNamespace)
+
 	return &clusterClient{
 		EcoSystemV2Interface:       doguClient,
 		BlueprintLister:            bluePrintLister,
@@ -101,6 +109,7 @@ func CreateClusterClient() (*clusterClient, error) {
 		RestoresGetter:             backupClient,
 		BackupSchedulesGetter:      backupClient,
 		ComponentV1Alpha1Interface: componentClient,
+		BlueprintInterface:         blueprintv2Interface,
 	}, nil
 }
 

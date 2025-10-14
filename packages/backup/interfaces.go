@@ -5,6 +5,7 @@ import (
 
 	backupClientV1 "github.com/cloudogu/k8s-backup-lib/api/ecosystem"
 	backupV1 "github.com/cloudogu/k8s-backup-lib/api/v1"
+	blueprintv2 "github.com/cloudogu/k8s-blueprint-lib/v2/client"
 	componentV1 "github.com/cloudogu/k8s-component-lib/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -15,6 +16,10 @@ type backupInterface interface {
 
 type restoreInterface interface {
 	backupClientV1.RestoreInterface
+}
+
+type blueprintInterface interface {
+	blueprintv2.BlueprintInterface
 }
 
 type backupScheduleClient interface {
