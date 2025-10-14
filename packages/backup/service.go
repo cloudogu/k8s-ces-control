@@ -43,7 +43,19 @@ func (s *DefaultBackupService) AllBackups(ctx context.Context, _ *pbBackup.GetAl
 		return nil, fmt.Errorf("failed to list backups: %w", err)
 	}
 
-	return &pbBackup.GetAllBackupsResponse{Backups: s.mapBackups(list)}, nil
+	blueprintList, err := s.blueprintClient.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get blueprint: %w", err)
+	}
+	if len(list.Items) == 0 {
+		return nil, fmt.Errorf("failed to get blueprint: blueprint not found")
+	}
+
+	backups, err := s.mapBackups(list, &blueprintList.Items[0])
+	if err != nil {
+		return nil, fmt.Errorf("failed to map backups to dto: %w", err)
+	}
+	return &pbBackup.GetAllBackupsResponse{Backups: backups}, nil
 }
 
 func (s *DefaultBackupService) AllRestores(ctx context.Context, _ *pbBackup.GetAllRestoresRequest) (*pbBackup.GetAllRestoresResponse, error) {
@@ -60,20 +72,25 @@ func (s *DefaultBackupService) AllRestores(ctx context.Context, _ *pbBackup.GetA
 	return &pbBackup.GetAllRestoresResponse{Restores: restores}, nil
 }
 
-func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList) []*pbBackup.BackupResponse {
+func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList, blueprint *v2.Blueprint) ([]*pbBackup.BackupResponse, error) {
 	backupResponseList := make([]*pbBackup.BackupResponse, 0, 5)
 	for _, backup := range backupList.Items {
+		restorable, err := s.isBackupRestorable(&backup, blueprint)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check if backup is restorable: %w", err)
+		}
 		backupResponse := pbBackup.BackupResponse{
 			Id:             backup.Name,
 			StartTime:      backup.Status.StartTimestamp.String(),
 			EndTime:        backup.Status.CompletionTimestamp.String(),
 			Success:        backup.Status.Status == "completed",
 			CurrentVersion: true,
+			Restorable:     restorable,
 		}
 		backupResponseList = append(backupResponseList, &backupResponse)
 	}
 
-	return backupResponseList
+	return backupResponseList, nil
 }
 
 func (s *DefaultBackupService) mapRestores(ctx context.Context, restoreList *v1.RestoreList) ([]*pbBackup.RestoreResponse, error) {
@@ -155,7 +172,7 @@ func (s *DefaultBackupService) CreateRestore(ctx context.Context, request *pbBac
 	}
 
 	// only create restore if the backup is restorable
-	restorable, err := s.isBackupRestorable(ctx, backup, &list.Items[0])
+	restorable, err := s.isBackupRestorable(backup, &list.Items[0])
 	if err != nil {
 		return nil, fmt.Errorf("failed to check if backup is restorable: %w", err)
 	}
@@ -181,41 +198,7 @@ func (s *DefaultBackupService) CreateRestore(ctx context.Context, request *pbBac
 	return &pbBackup.CreateRestoreResponse{}, nil
 }
 
-// GetRestorableBackups gets all backups that are restorable.
-// A backup is restorable if it is from the same blueprint and the same version of the same dogus.
-func (s *DefaultBackupService) GetRestorableBackups(ctx context.Context, _ *pbBackup.GetRestorableBackupsRequest) (*pbBackup.GetRestorableBackupsResponse, error) {
-	allBackups, err := s.backupClient.List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list backups: %w", err)
-	}
-
-	list, err := s.blueprintClient.List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get blueprint: %w", err)
-	}
-	if len(list.Items) == 0 {
-		return nil, fmt.Errorf("failed to get blueprint: blueprint not found")
-	}
-
-	filteredBackups := &v1.BackupList{
-		Items: make([]v1.Backup, 0, 5),
-	}
-
-	for _, backup := range allBackups.Items {
-		restorable, err := s.isBackupRestorable(ctx, &backup, &list.Items[0])
-		if err != nil {
-			return nil, fmt.Errorf("failed to check if backup is restorable: %w", err)
-		}
-		if restorable {
-			filteredBackups.Items = append(filteredBackups.Items, backup)
-		}
-	}
-
-	s.mapBackups(filteredBackups)
-	return &pbBackup.GetRestorableBackupsResponse{}, nil
-}
-
-func (s *DefaultBackupService) isBackupRestorable(_ context.Context, backup *v1.Backup, blueprint *v2.Blueprint) (bool, error) {
+func (s *DefaultBackupService) isBackupRestorable(backup *v1.Backup, blueprint *v2.Blueprint) (bool, error) {
 	ans := backup.GetAnnotations()
 
 	// get all dogus from backup annotations
