@@ -10,6 +10,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	backupStatusInProgress = "inProgress"
+	backupStatusCompleted  = "completed"
+	backupStatusFailed     = "failed"
+)
+
 type DefaultBackupService struct {
 	pbBackup.UnimplementedBackupManagementServer
 	backupClient         backupInterface
@@ -77,7 +83,7 @@ func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList) []*pbBackup
 			Id:             backup.Name,
 			StartTime:      backup.Status.StartTimestamp.String(),
 			EndTime:        backup.Status.CompletionTimestamp.String(),
-			Success:        backup.Status.Status == "completed",
+			Status:         backupStatus(&backup),
 			CurrentVersion: true,
 		}
 		backupResponseList = append(backupResponseList, &backupResponse)
@@ -147,4 +153,15 @@ func (s *DefaultBackupService) GetRetentionPolicy(ctx context.Context, _ *pbBack
 	}
 
 	return &pbBackup.GetRetentionPolicyResponse{Policy: retentionPolicy}, nil
+}
+
+func backupStatus(backup *v1.Backup) string {
+	switch backup.Status.Status {
+	case backupStatusCompleted:
+		return backupStatusCompleted
+	case backupStatusFailed:
+		return backupStatusFailed
+	default:
+		return backupStatusInProgress
+	}
 }
