@@ -34,6 +34,14 @@ func NewBackupService(backupClient backupInterface, restoreClient restoreInterfa
 	}
 }
 
+func (s *DefaultBackupService) DeleteBackup(ctx context.Context, req *pbBackup.DeleteBackupRequest) (*pbBackup.DeleteBackupResponse, error) {
+	err := s.backupClient.Delete(ctx, req.Name, metav1.DeleteOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return &pbBackup.DeleteBackupResponse{}, nil
+}
+
 func (s *DefaultBackupService) CreateBackup(ctx context.Context, _ *pbBackup.CreateBackupRequest) (*pbBackup.CreateBackupResponse, error) {
 	timestamp := time.Now().Format("20060102-1504")
 	backupName := fmt.Sprintf("backup-%s", timestamp)
