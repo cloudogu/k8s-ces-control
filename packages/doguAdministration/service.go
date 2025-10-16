@@ -3,10 +3,12 @@ package doguAdministration
 import (
 	"context"
 	"fmt"
+
+	v2 "github.com/cloudogu/k8s-blueprint-lib/v2/api/v2"
+
 	pb "github.com/cloudogu/ces-control-api/generated/doguAdministration"
 	"github.com/cloudogu/ces-control-api/generated/types"
 	"github.com/cloudogu/cesapp-lib/core"
-	v1bp "github.com/cloudogu/k8s-blueprint-lib/api/v1"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -131,22 +133,41 @@ func (s *server) GetBlueprintId(ctx context.Context, _ *pb.DoguBlueprinitIdReque
 	}
 
 	if len(bpList.Items) == 0 {
-		return nil, status.Errorf(codes.NotFound, "could not found blueprintID")
+		return nil, status.Errorf(codes.NotFound, "could not find blueprintID")
 	}
 
-	currentBlueprintID := getCurrentBlueprintID(bpList.Items)
+	if len(bpList.Items) >= 2 {
+		logrus.Warn("multiple blueprints found")
+	}
 
-	return &pb.DoguBlueprintIdResponse{BlueprintId: currentBlueprintID}, nil
+	currentBlueprint := getLatestBlueprint(bpList)
+
+	return &pb.DoguBlueprintIdResponse{BlueprintId: getResponseString(currentBlueprint)}, nil
 }
 
-func getCurrentBlueprintID(blueprintList []v1bp.Blueprint) string {
-	var latestBluePrint = blueprintList[0]
+func getResponseString(bp *v2.Blueprint) string {
+	var currentBlueprintId string
+	// For the rare case that the blueprint has an empty displayName, we return the name of the blueprint
+	if bp.Spec.DisplayName == "" {
+		currentBlueprintId = bp.Name
+	} else {
+		currentBlueprintId = bp.Spec.DisplayName
+	}
 
-	for _, bp := range blueprintList {
-		if bp.CreationTimestamp.Time.After(latestBluePrint.CreationTimestamp.Time) {
-			latestBluePrint = bp
+	return currentBlueprintId
+}
+
+func getLatestBlueprint(list *v2.BlueprintList) *v2.Blueprint {
+	var oldestBp *v2.Blueprint
+	for _, bp := range list.Items {
+		if oldestBp == nil {
+			oldestBp = &bp
+			continue
+		}
+		if bp.CreationTimestamp.Before(&oldestBp.CreationTimestamp) {
+			oldestBp = &bp
 		}
 	}
 
-	return latestBluePrint.Name
+	return oldestBp
 }
