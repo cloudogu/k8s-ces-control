@@ -2,7 +2,6 @@ package main
 
 import (
 	backupClientV1 "github.com/cloudogu/k8s-backup-lib/api/ecosystem"
-	blueprintv2 "github.com/cloudogu/k8s-blueprint-lib/v2/client"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
 	componentClientV1 "github.com/cloudogu/k8s-component-lib/client"
 	debugClientV1 "github.com/cloudogu/k8s-debug-mode-cr-lib/pkg/client/v1"
@@ -43,5 +42,4 @@ type clusterClient interface {
 	backupClientV1.RestoresGetter
 	backupClientV1.BackupSchedulesGetter
 	componentClientV1.ComponentV1Alpha1Interface
-	blueprintv2.V1Alpha1Interface
 }

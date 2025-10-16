@@ -23,17 +23,17 @@ type DefaultBackupService struct {
 	restoreClient        restoreInterface
 	backupScheduleClient backupScheduleClient
 	componentClient      componentClient
-	blueprintClient      blueprintInterface
+	blueprintLister      blueprintLister
 }
 
 // NewBackupService returns an instance of defaultBackupService.
-func NewBackupService(backupClient backupInterface, restoreClient restoreInterface, backupScheduleClient backupScheduleClient, componentClient componentClient, blueprintClient blueprintInterface) *DefaultBackupService {
+func NewBackupService(backupClient backupInterface, restoreClient restoreInterface, backupScheduleClient backupScheduleClient, componentClient componentClient, blueprintLister blueprintLister) *DefaultBackupService {
 	return &DefaultBackupService{
 		backupClient:         backupClient,
 		restoreClient:        restoreClient,
 		backupScheduleClient: backupScheduleClient,
 		componentClient:      componentClient,
-		blueprintClient:      blueprintClient,
+		blueprintLister:      blueprintLister,
 	}
 }
 
@@ -43,7 +43,7 @@ func (s *DefaultBackupService) AllBackups(ctx context.Context, _ *pbBackup.GetAl
 		return nil, fmt.Errorf("failed to list backups: %w", err)
 	}
 
-	blueprintList, err := s.blueprintClient.List(ctx, metav1.ListOptions{})
+	blueprintList, err := s.blueprintLister.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get blueprint: %w", err)
 	}
@@ -164,7 +164,7 @@ func (s *DefaultBackupService) CreateRestore(ctx context.Context, request *pbBac
 	if err != nil {
 		return nil, fmt.Errorf("failed to get backup: %w", err)
 	}
-	list, err := s.blueprintClient.List(ctx, metav1.ListOptions{})
+	list, err := s.blueprintLister.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get blueprint: %w", err)
 	}
