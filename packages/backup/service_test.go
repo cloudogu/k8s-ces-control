@@ -8,6 +8,7 @@ import (
 	backupV1 "github.com/cloudogu/k8s-backup-lib/api/v1"
 	componentV1 "github.com/cloudogu/k8s-component-lib/api/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -404,5 +405,47 @@ retention:
 		require.Error(t, err)
 		assert.ErrorIs(t, err, assert.AnError)
 		assert.ErrorContains(t, err, "failed to get backup-operator component:")
+	})
+}
+
+func Test_createBackups(t *testing.T) {
+	t.Run("should create backup", func(t *testing.T) {
+		// given
+		testCtx := context.TODO()
+		backupClientMock := newMockBackupInterface(t)
+		backupOne := backupV1.Backup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "backup_one",
+			},
+		}
+
+		backupClientMock.EXPECT().Create(testCtx, mock.Anything, metav1.CreateOptions{}).Return(&backupOne, nil)
+
+		sut := DefaultBackupService{
+			backupClient:  backupClientMock,
+			restoreClient: nil,
+		}
+
+		// when
+		_, err := sut.CreateBackup(testCtx, &backup.CreateBackupRequest{})
+		// then
+		require.NoError(t, err)
+	})
+	t.Run("should error on creating backup", func(t *testing.T) {
+		// given
+		testCtx := context.TODO()
+		backupClientMock := newMockBackupInterface(t)
+
+		backupClientMock.EXPECT().Create(testCtx, mock.Anything, metav1.CreateOptions{}).Return(nil, assert.AnError)
+
+		sut := DefaultBackupService{
+			backupClient:  backupClientMock,
+			restoreClient: nil,
+		}
+
+		// when
+		_, err := sut.CreateBackup(testCtx, &backup.CreateBackupRequest{})
+		// then
+		require.ErrorIs(t, err, assert.AnError)
 	})
 }
