@@ -187,6 +187,7 @@ func (s *DefaultBackupService) GetRetentionPolicy(ctx context.Context, _ *pbBack
 	return &pbBackup.GetRetentionPolicyResponse{Policy: retentionPolicy}, nil
 }
 
+// a backup is restorable if it is from the same blueprint and the dogus are matching
 func (s *DefaultBackupService) isBackupRestorable(backup *v1.Backup, blueprint *v2.Blueprint) (bool, error) {
 	ans := backup.GetAnnotations()
 
