@@ -187,6 +187,46 @@ func (s *DefaultBackupService) GetRetentionPolicy(ctx context.Context, _ *pbBack
 	return &pbBackup.GetRetentionPolicyResponse{Policy: retentionPolicy}, nil
 }
 
+func (s *DefaultBackupService) isBackupRestorable(backup *v1.Backup, blueprint *v2.Blueprint) (bool, error) {
+	ans := backup.GetAnnotations()
+
+	// get all dogus from backup annotations
+	backupDogus := make([]annotationDogus, 0, 5)
+	err := json.Unmarshal([]byte(ans[dogusAnnotation]), &backupDogus)
+	if err != nil {
+		return false, fmt.Errorf("failed to unmarshal dogus from backup: %w", err)
+	}
+
+	blueprintNameIsMatching := ans != nil && ans[blueprintIdAnnotation] == blueprint.Spec.DisplayName
+
+	if blueprintNameIsMatching && s.isDoguListMatching(backupDogus, blueprint.Spec.Blueprint.Dogus) {
+		return true, nil
+	}
+	return false, nil
+}
+
+// isDoguListMatching checks if the given list of backup dogus is matching the given list of dogus from the blueprint.
+func (s *DefaultBackupService) isDoguListMatching(backupDogus []annotationDogus, blueprintDogus []v2.Dogu) bool {
+	if len(backupDogus) != len(blueprintDogus) {
+		return false
+	}
+
+	backupDoguMap := make(map[string]annotationDogus)
+	for _, v := range backupDogus {
+		backupDoguMap[v.Name] = v
+	}
+	for _, bpDogu := range blueprintDogus {
+		dogu, ok := backupDoguMap[bpDogu.Name]
+		if !ok {
+			return false
+		}
+		if dogu.Version != *bpDogu.Version {
+			return false
+		}
+	}
+	return true
+}
+
 func backupStatus(backup *v1.Backup) string {
 	switch backup.Status.Status {
 	case backupStatusCompleted:
