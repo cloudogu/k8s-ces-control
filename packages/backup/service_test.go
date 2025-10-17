@@ -6,6 +6,7 @@ import (
 
 	"github.com/cloudogu/ces-control-api/generated/backup"
 	backupV1 "github.com/cloudogu/k8s-backup-lib/api/v1"
+	v2 "github.com/cloudogu/k8s-blueprint-lib/v2/api/v2"
 	componentV1 "github.com/cloudogu/k8s-component-lib/api/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -404,5 +405,49 @@ retention:
 		require.Error(t, err)
 		assert.ErrorIs(t, err, assert.AnError)
 		assert.ErrorContains(t, err, "failed to get backup-operator component:")
+	})
+}
+
+func TestIsDoguListMatching(t *testing.T) {
+	t.Run("should return true when both lists contain the same dogus", func(t *testing.T) {
+		version1 := "1.2.3"
+		version2 := "4.5.6"
+		dogu1 := v2.Dogu{Name: "test/1", Version: &version1}
+		dogu2 := v2.Dogu{Name: "test/2", Version: &version2}
+
+		annotationDogus := []annotationDogus{
+			{Name: "test/1", Version: "1.2.3"},
+			{Name: "test/2", Version: "4.5.6"},
+		}
+
+		bpDogus := []v2.Dogu{
+			dogu1, dogu2,
+		}
+
+		svc := &DefaultBackupService{}
+
+		ret := svc.isDoguListMatching(annotationDogus, bpDogus)
+		assert.True(t, ret)
+	})
+
+	t.Run("should return false when both lists are not matching", func(t *testing.T) {
+		version1 := "9.9.9"
+		version2 := "6.6.6"
+		dogu1 := v2.Dogu{Name: "test/1", Version: &version1}
+		dogu2 := v2.Dogu{Name: "test/2", Version: &version2}
+
+		annotationDogus := []annotationDogus{
+			{Name: "test/1", Version: "1.2.3"},
+			{Name: "test/2", Version: "4.5.6"},
+		}
+
+		bpDogus := []v2.Dogu{
+			dogu1, dogu2,
+		}
+
+		svc := &DefaultBackupService{}
+
+		ret := svc.isDoguListMatching(annotationDogus, bpDogus)
+		assert.False(t, ret)
 	})
 }

@@ -17,6 +17,18 @@ const (
 	dogusAnnotation       = "backup.cloudogu.com/dogus"
 )
 
+const (
+	backupStatusInProgress = "inProgress"
+	backupStatusCompleted  = "completed"
+	backupStatusFailed     = "failed"
+)
+
+// annotationDogus are found in the annotation "backup.cloudogu.com/dogus" of a backup
+type annotationDogus struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+}
+
 type DefaultBackupService struct {
 	pbBackup.UnimplementedBackupManagementServer
 	backupClient         backupInterface
@@ -47,8 +59,8 @@ func (s *DefaultBackupService) AllBackups(ctx context.Context, _ *pbBackup.GetAl
 	if err != nil {
 		return nil, fmt.Errorf("failed to get blueprint: %w", err)
 	}
-	if len(list.Items) == 0 {
-		return nil, fmt.Errorf("failed to get blueprint: blueprint not found")
+	if len(blueprintList.Items) == 0 {
+		return nil, fmt.Errorf("failed to get blueprint: no blueprints available")
 	}
 
 	backups, err := s.mapBackups(list, &blueprintList.Items[0])
@@ -79,14 +91,13 @@ func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList, blueprint *
 		if err != nil {
 			return nil, fmt.Errorf("failed to check if backup is restorable: %w", err)
 		}
-		success := backup.Status.Status == "completed"
 		backupResponse := pbBackup.BackupResponse{
 			Id:             backup.Name,
 			StartTime:      backup.Status.StartTimestamp.String(),
 			EndTime:        backup.Status.CompletionTimestamp.String(),
-			Success:        success,
+			Status:         s.mapBackupStatus(&backup),
 			CurrentVersion: true,
-			Restorable:     restorable && success,
+			Restorable:     restorable && backup.Status.Status == backupStatusCompleted,
 		}
 		backupResponseList = append(backupResponseList, &backupResponse)
 	}
@@ -164,6 +175,7 @@ func (s *DefaultBackupService) CreateRestore(ctx context.Context, request *pbBac
 	if err != nil {
 		return nil, fmt.Errorf("failed to get backup: %w", err)
 	}
+
 	list, err := s.blueprintLister.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get blueprint: %w", err)
@@ -194,6 +206,8 @@ func (s *DefaultBackupService) CreateRestore(ctx context.Context, request *pbBac
 		if err != nil {
 			return nil, fmt.Errorf("failed to create restore: %w", err)
 		}
+	} else {
+		return nil, fmt.Errorf("backup is not restorable")
 	}
 
 	return &pbBackup.CreateRestoreResponse{}, nil
@@ -203,13 +217,13 @@ func (s *DefaultBackupService) isBackupRestorable(backup *v1.Backup, blueprint *
 	ans := backup.GetAnnotations()
 
 	// get all dogus from backup annotations
-	backupDogus := make([]v2.Dogu, 0, 5)
+	backupDogus := make([]annotationDogus, 0, 5)
 	err := json.Unmarshal([]byte(ans[dogusAnnotation]), &backupDogus)
 	if err != nil {
 		return false, fmt.Errorf("failed to unmarshal dogus from backup: %w", err)
 	}
 
-	blueprintNameIsMatching := ans != nil && ans[blueprintIdAnnotation] == blueprint.Name
+	blueprintNameIsMatching := ans != nil && ans[blueprintIdAnnotation] == blueprint.Spec.DisplayName
 
 	if blueprintNameIsMatching && s.isDoguListMatching(backupDogus, blueprint.Spec.Blueprint.Dogus) {
 		return true, nil
@@ -217,13 +231,13 @@ func (s *DefaultBackupService) isBackupRestorable(backup *v1.Backup, blueprint *
 	return false, nil
 }
 
-// doguListIsMatching checks if the given list of backup dogus is matching the given list of dogus from the blueprint.
-func (s *DefaultBackupService) isDoguListMatching(backupDogus []v2.Dogu, blueprintDogus []v2.Dogu) bool {
+// isDoguListMatching checks if the given list of backup dogus is matching the given list of dogus from the blueprint.
+func (s *DefaultBackupService) isDoguListMatching(backupDogus []annotationDogus, blueprintDogus []v2.Dogu) bool {
 	if len(backupDogus) != len(blueprintDogus) {
 		return false
 	}
 
-	backupDoguMap := make(map[string]v2.Dogu)
+	backupDoguMap := make(map[string]annotationDogus)
 	for _, v := range backupDogus {
 		backupDoguMap[v.Name] = v
 	}
@@ -233,9 +247,21 @@ func (s *DefaultBackupService) isDoguListMatching(backupDogus []v2.Dogu, bluepri
 		if !ok {
 			return false
 		}
-		if dogu.Version != bpDogu.Version {
+		if dogu.Version != *bpDogu.Version {
 			return false
 		}
 	}
 	return true
+}
+
+// mapBackupStatus maps the status of a backup to a protobuf enum.
+func (s *DefaultBackupService) mapBackupStatus(backup *v1.Backup) string {
+	switch backup.Status.Status {
+	case backupStatusCompleted:
+		return backupStatusCompleted
+	case backupStatusFailed:
+		return backupStatusFailed
+	default:
+		return backupStatusInProgress
+	}
 }
