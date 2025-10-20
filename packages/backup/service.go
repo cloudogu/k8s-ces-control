@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	pbBackup "github.com/cloudogu/ces-control-api/generated/backup"
@@ -153,7 +154,9 @@ func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList, blueprint *
 	for _, backup := range backupList.Items {
 		restorable, err := s.isBackupRestorable(&backup, blueprint)
 		if err != nil {
-			return nil, fmt.Errorf("failed to check if backup is restorable: %w", err)
+			// There might be backups that do not have the annotations. In this case we just log the error and continue.
+			slog.Error(fmt.Sprintf("failed to check if backup is restorable: %v", err))
+			restorable = false
 		}
 		backupResponse := pbBackup.BackupResponse{
 			Id:             backup.Name,
