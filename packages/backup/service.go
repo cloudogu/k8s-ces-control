@@ -89,6 +89,51 @@ func (s *DefaultBackupService) AllBackups(ctx context.Context, _ *pbBackup.GetAl
 	return &pbBackup.GetAllBackupsResponse{Backups: backups}, nil
 }
 
+// CreateRestore creates a restore for the given backup.
+// The restore is only created if the backup is restorable.
+func (s *DefaultBackupService) CreateRestore(ctx context.Context, request *pbBackup.CreateRestoreRequest) (*pbBackup.CreateRestoreResponse, error) {
+	backup, err := s.backupClient.Get(ctx, request.BackupId, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get backup: %w", err)
+	}
+
+	list, err := s.blueprintLister.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get blueprint: %w", err)
+	}
+	if len(list.Items) == 0 {
+		return nil, fmt.Errorf("failed to get blueprint: blueprint not found")
+	}
+
+	// only create restore if the backup is restorable
+	restorable, err := s.isBackupRestorable(backup, &list.Items[0])
+	if err != nil {
+		return nil, fmt.Errorf("failed to check if backup is restorable: %w", err)
+	}
+	if restorable {
+		timestamp := time.Now().Format("20060102-1504")
+		restoreName := fmt.Sprintf("restore-%s", timestamp)
+		restore := &v1.Restore{
+			TypeMeta: metav1.TypeMeta{},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: restoreName,
+			},
+			Spec: v1.RestoreSpec{
+				BackupName: request.BackupId,
+			},
+			Status: v1.RestoreStatus{},
+		}
+		_, err := s.restoreClient.Create(ctx, restore, metav1.CreateOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create restore: %w", err)
+		}
+	} else {
+		return nil, fmt.Errorf("backup is not restorable")
+	}
+
+	return &pbBackup.CreateRestoreResponse{}, nil
+}
+
 func (s *DefaultBackupService) AllRestores(ctx context.Context, _ *pbBackup.GetAllRestoresRequest) (*pbBackup.GetAllRestoresResponse, error) {
 	list, err := s.restoreClient.List(ctx, metav1.ListOptions{})
 	if err != nil {
