@@ -37,7 +37,7 @@ func NewBackupService(backupClient backupInterface, restoreClient restoreInterfa
 func (s *DefaultBackupService) DeleteBackup(ctx context.Context, req *pbBackup.DeleteBackupRequest) (*pbBackup.DeleteBackupResponse, error) {
 	err := s.backupClient.Delete(ctx, req.Name, metav1.DeleteOptions{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to delete backup: %w", err)
 	}
 	return &pbBackup.DeleteBackupResponse{}, nil
 }
