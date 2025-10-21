@@ -14,6 +14,7 @@ const (
 	backupStatusInProgress = "inProgress"
 	backupStatusCompleted  = "completed"
 	backupStatusFailed     = "failed"
+	backupStatusDeleting   = "deleting"
 )
 
 type DefaultBackupService struct {
@@ -32,6 +33,14 @@ func NewBackupService(backupClient backupInterface, restoreClient restoreInterfa
 		backupScheduleClient: backupScheduleClient,
 		componentClient:      componentClient,
 	}
+}
+
+func (s *DefaultBackupService) DeleteBackup(ctx context.Context, req *pbBackup.DeleteBackupRequest) (*pbBackup.DeleteBackupResponse, error) {
+	err := s.backupClient.Delete(ctx, req.Name, metav1.DeleteOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete backup: %w", err)
+	}
+	return &pbBackup.DeleteBackupResponse{}, nil
 }
 
 func (s *DefaultBackupService) CreateBackup(ctx context.Context, _ *pbBackup.CreateBackupRequest) (*pbBackup.CreateBackupResponse, error) {
@@ -79,6 +88,10 @@ func (s *DefaultBackupService) AllRestores(ctx context.Context, _ *pbBackup.GetA
 func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList) []*pbBackup.BackupResponse {
 	backupResponseList := make([]*pbBackup.BackupResponse, 0, 5)
 	for _, backup := range backupList.Items {
+		// skip backups in deleting state
+		if backup.Status.Status == backupStatusDeleting {
+			continue
+		}
 		backupResponse := pbBackup.BackupResponse{
 			Id:             backup.Name,
 			StartTime:      backup.Status.StartTimestamp.String(),
