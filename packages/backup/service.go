@@ -14,6 +14,7 @@ const (
 	backupStatusInProgress = "inProgress"
 	backupStatusCompleted  = "completed"
 	backupStatusFailed     = "failed"
+	backupStatusDeleting   = "deleting"
 )
 
 type DefaultBackupService struct {
@@ -87,6 +88,10 @@ func (s *DefaultBackupService) AllRestores(ctx context.Context, _ *pbBackup.GetA
 func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList) []*pbBackup.BackupResponse {
 	backupResponseList := make([]*pbBackup.BackupResponse, 0, 5)
 	for _, backup := range backupList.Items {
+		// skip backups in deleting state
+		if backup.Status.Status == backupStatusDeleting {
+			continue
+		}
 		backupResponse := pbBackup.BackupResponse{
 			Id:             backup.Name,
 			StartTime:      backup.Status.StartTimestamp.String(),
