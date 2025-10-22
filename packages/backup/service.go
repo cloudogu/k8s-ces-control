@@ -165,6 +165,7 @@ func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList, blueprint *
 			Status:         backupStatus(&backup),
 			CurrentVersion: true,
 			Restorable:     restorable && backup.Status.Status == backupStatusCompleted,
+			BlueprintId:    backup.GetAnnotations()[blueprintIdAnnotation],
 		}
 		backupResponseList = append(backupResponseList, &backupResponse)
 	}
@@ -185,7 +186,7 @@ func (s *DefaultBackupService) mapRestores(ctx context.Context, restoreList *v1.
 			StartTime:   backup.Status.StartTimestamp.String(),
 			EndTime:     backup.Status.CompletionTimestamp.String(),
 			Success:     restore.Status.Status == "completed",
-			BlueprintId: "Unknown", // FIXME: fix once backup POC is completed and BlueprintId has been added in some shape or form.
+			BlueprintId: backup.GetAnnotations()[blueprintIdAnnotation],
 		}
 		restoreResponseList = append(restoreResponseList, &restoreResponse)
 	}
