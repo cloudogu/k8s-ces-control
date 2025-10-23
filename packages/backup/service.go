@@ -17,6 +17,7 @@ const (
 	backupStatusInProgress = "inProgress"
 	backupStatusCompleted  = "completed"
 	backupStatusFailed     = "failed"
+	backupStatusDeleting   = "deleting"
 )
 
 const (
@@ -48,6 +49,14 @@ func NewBackupService(backupClient backupInterface, restoreClient restoreInterfa
 		componentClient:      componentClient,
 		blueprintLister:      blueprintLister,
 	}
+}
+
+func (s *DefaultBackupService) DeleteBackup(ctx context.Context, req *pbBackup.DeleteBackupRequest) (*pbBackup.DeleteBackupResponse, error) {
+	err := s.backupClient.Delete(ctx, req.Name, metav1.DeleteOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete backup: %w", err)
+	}
+	return &pbBackup.DeleteBackupResponse{}, nil
 }
 
 func (s *DefaultBackupService) CreateBackup(ctx context.Context, _ *pbBackup.CreateBackupRequest) (*pbBackup.CreateBackupResponse, error) {
@@ -152,6 +161,10 @@ func (s *DefaultBackupService) AllRestores(ctx context.Context, _ *pbBackup.GetA
 func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList, blueprint *v2.Blueprint) ([]*pbBackup.BackupResponse, error) {
 	backupResponseList := make([]*pbBackup.BackupResponse, 0, 5)
 	for _, backup := range backupList.Items {
+		// skip backups in deleting state
+		if backup.Status.Status == backupStatusDeleting {
+			continue
+		}
 		restorable, err := s.isBackupRestorable(&backup, blueprint)
 		if err != nil {
 			// There might be backups that do not have the annotations. In this case we just log the error and continue.

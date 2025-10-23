@@ -611,3 +611,40 @@ func TestBackupStatus(t *testing.T) {
 		assert.Equal(t, backupOne.Status.Status, status)
 	})
 }
+
+func Test_deleteBackups(t *testing.T) {
+	t.Run("should delete backup", func(t *testing.T) {
+		// given
+		testCtx := context.TODO()
+		backupClientMock := newMockBackupInterface(t)
+
+		backupClientMock.EXPECT().Delete(testCtx, mock.Anything, metav1.DeleteOptions{}).Return(nil)
+
+		sut := DefaultBackupService{
+			backupClient:  backupClientMock,
+			restoreClient: nil,
+		}
+
+		// when
+		_, err := sut.DeleteBackup(testCtx, &backup.DeleteBackupRequest{Name: "backup_one"})
+		// then
+		require.NoError(t, err)
+	})
+	t.Run("should error on creating backup", func(t *testing.T) {
+		// given
+		testCtx := context.TODO()
+		backupClientMock := newMockBackupInterface(t)
+
+		backupClientMock.EXPECT().Delete(testCtx, mock.Anything, metav1.DeleteOptions{}).Return(assert.AnError)
+
+		sut := DefaultBackupService{
+			backupClient:  backupClientMock,
+			restoreClient: nil,
+		}
+
+		// when
+		_, err := sut.DeleteBackup(testCtx, &backup.DeleteBackupRequest{Name: "backup_one"})
+		// then
+		require.ErrorIs(t, err, assert.AnError)
+	})
+}
