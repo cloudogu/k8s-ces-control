@@ -3,10 +3,13 @@ package doguAdministration
 import (
 	"context"
 	"errors"
+	"testing"
+	"time"
+
 	"github.com/cloudogu/ces-control-api/generated/doguAdministration"
 	"github.com/cloudogu/ces-control-api/generated/types"
 	"github.com/cloudogu/cesapp-lib/core"
-	blueprintcrv1 "github.com/cloudogu/k8s-blueprint-lib/api/v1"
+	blueprintcrv2 "github.com/cloudogu/k8s-blueprint-lib/v2/api/v2"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -14,8 +17,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
-	"time"
 )
 
 var testCtx = context.TODO()
@@ -356,7 +357,7 @@ func Test_server_GetBlueprintId(t *testing.T) {
 	t.Run("client List returns empty list", func(t *testing.T) {
 		bluePrintListerMock := NewMockBlueprintLister(t)
 		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
-			Return(&blueprintcrv1.BlueprintList{Items: make([]blueprintcrv1.Blueprint, 0)}, nil)
+			Return(&blueprintcrv2.BlueprintList{Items: make([]blueprintcrv2.Blueprint, 0)}, nil)
 
 		sut := &server{
 			doguDescriptorGetter: newMockDoguDescriptorGetter(t),
@@ -374,13 +375,14 @@ func Test_server_GetBlueprintId(t *testing.T) {
 		require.Nil(t, actual)
 	})
 
-	t.Run("client List returns list with one element", func(t *testing.T) {
+	now := metav1.Now()
+	t.Run("client List returns one element without spec", func(t *testing.T) {
 		bluePrintListerMock := NewMockBlueprintLister(t)
 		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
-			Return(&blueprintcrv1.BlueprintList{Items: []blueprintcrv1.Blueprint{
+			Return(&blueprintcrv2.BlueprintList{Items: []blueprintcrv2.Blueprint{
 				{ObjectMeta: metav1.ObjectMeta{
 					Name:              "SIV1",
-					CreationTimestamp: metav1.Now(),
+					CreationTimestamp: now,
 				}},
 			}}, nil)
 
@@ -399,47 +401,15 @@ func Test_server_GetBlueprintId(t *testing.T) {
 		assert.Equal(t, "SIV1", actual.GetBlueprintId())
 	})
 
-	t.Run("client List returns list with two elements", func(t *testing.T) {
+	t.Run("client List returns one element with spec but with empty displayName", func(t *testing.T) {
 		bluePrintListerMock := NewMockBlueprintLister(t)
 		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
-			Return(&blueprintcrv1.BlueprintList{Items: []blueprintcrv1.Blueprint{
+			Return(&blueprintcrv2.BlueprintList{Items: []blueprintcrv2.Blueprint{
 				{ObjectMeta: metav1.ObjectMeta{
 					Name:              "SIV1",
-					CreationTimestamp: metav1.Now(),
-				}},
-				{ObjectMeta: metav1.ObjectMeta{
-					Name:              "SIV2",
-					CreationTimestamp: metav1.Now(),
-				}},
-			}}, nil)
-
-		sut := &server{
-			doguDescriptorGetter: newMockDoguDescriptorGetter(t),
-			blueprintLister:      bluePrintListerMock,
-			doguInterActor:       newMockDoguInterActor(t),
-		}
-
-		request := &doguAdministration.DoguBlueprinitIdRequest{}
-
-		// when
-		actual, err := sut.GetBlueprintId(testCtx, request)
-		assert.NoError(t, err)
-		assert.NotNil(t, actual)
-		assert.Equal(t, "SIV2", actual.GetBlueprintId())
-	})
-
-	t.Run("client List returns list with two elements (replace order)", func(t *testing.T) {
-		bluePrintListerMock := NewMockBlueprintLister(t)
-		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
-			Return(&blueprintcrv1.BlueprintList{Items: []blueprintcrv1.Blueprint{
-				{ObjectMeta: metav1.ObjectMeta{
-					Name:              "SIV1",
-					CreationTimestamp: metav1.Time{Time: time.Now().Add(1 * time.Hour)},
-				}},
-				{ObjectMeta: metav1.ObjectMeta{
-					Name:              "SIV2",
-					CreationTimestamp: metav1.Now(),
-				}},
+					CreationTimestamp: now,
+				},
+					Spec: blueprintcrv2.BlueprintSpec{}},
 			}}, nil)
 
 		sut := &server{
@@ -455,6 +425,66 @@ func Test_server_GetBlueprintId(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, actual)
 		assert.Equal(t, "SIV1", actual.GetBlueprintId())
+	})
+
+	t.Run("client List returns one element with spec", func(t *testing.T) {
+		bluePrintListerMock := NewMockBlueprintLister(t)
+		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
+			Return(&blueprintcrv2.BlueprintList{Items: []blueprintcrv2.Blueprint{
+				{ObjectMeta: metav1.ObjectMeta{
+					Name:              "SIV1",
+					CreationTimestamp: now,
+				},
+					Spec: blueprintcrv2.BlueprintSpec{
+						DisplayName: "SIV1-DisplayName",
+					},
+				},
+			}}, nil)
+
+		sut := &server{
+			doguDescriptorGetter: newMockDoguDescriptorGetter(t),
+			blueprintLister:      bluePrintListerMock,
+			doguInterActor:       newMockDoguInterActor(t),
+		}
+
+		request := &doguAdministration.DoguBlueprinitIdRequest{}
+
+		// when
+		actual, err := sut.GetBlueprintId(testCtx, request)
+		assert.NoError(t, err)
+		assert.NotNil(t, actual)
+		assert.Equal(t, "SIV1-DisplayName", actual.GetBlueprintId())
+	})
+	t.Run("should always return the id from the oldest blueprint", func(t *testing.T) {
+		bluePrintListerMock := NewMockBlueprintLister(t)
+		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
+			Return(&blueprintcrv2.BlueprintList{Items: []blueprintcrv2.Blueprint{
+				{ObjectMeta: metav1.ObjectMeta{
+					Name:              "SIV3",
+					CreationTimestamp: metav1.NewTime(now.Add(time.Second * 2)),
+				}},
+				{ObjectMeta: metav1.ObjectMeta{
+					Name:              "SIV2",
+					CreationTimestamp: metav1.NewTime(now.Add(time.Second)),
+				}},
+				{ObjectMeta: metav1.ObjectMeta{
+					Name:              "SIV1",
+					CreationTimestamp: now,
+				}},
+			}}, nil)
+
+		sut := &server{
+			doguDescriptorGetter: newMockDoguDescriptorGetter(t),
+			blueprintLister:      bluePrintListerMock,
+			doguInterActor:       newMockDoguInterActor(t),
+		}
+
+		request := &doguAdministration.DoguBlueprinitIdRequest{}
+
+		// when
+		actual, err := sut.GetBlueprintId(testCtx, request)
+		assert.NoError(t, err)
+		assert.Equal(t, "SIV1", actual.BlueprintId)
 	})
 
 }

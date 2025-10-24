@@ -6,6 +6,7 @@ import (
 
 	"github.com/cloudogu/ces-control-api/generated/backup"
 	backupV1 "github.com/cloudogu/k8s-backup-lib/api/v1"
+	v2 "github.com/cloudogu/k8s-blueprint-lib/v2/api/v2"
 	componentV1 "github.com/cloudogu/k8s-component-lib/api/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -16,25 +17,32 @@ import (
 )
 
 func Test_getAllBackups(t *testing.T) {
+	backupAnnotations := make(map[string]string)
+	backupAnnotations["backup.cloudogu.com/dogus"] = "[{\"name\": \"hallowelt/bluespice\", \"version\": \"4.5.5-3\"},{\"name\": \"official\", \"version\": \"7.2.6-3\"}]"
+	backupAnnotations["backup.cloudogu.com/blueprintId"] = "all-dogus-sample"
+
 	t.Run("should return all backups", func(t *testing.T) {
 		// given
 		testCtx := context.TODO()
 		backupClientMock := newMockBackupInterface(t)
 		backupOne := backupV1.Backup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "backup_one",
+				Name:        "backup_one",
+				Annotations: backupAnnotations,
 			},
 		}
 
 		backupTwo := backupV1.Backup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "backup_two",
+				Name:        "backup_two",
+				Annotations: backupAnnotations,
 			},
 		}
 
 		backupThree := backupV1.Backup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "backup_three",
+				Name:        "backup_three",
+				Annotations: backupAnnotations,
 			},
 		}
 
@@ -47,9 +55,22 @@ func Test_getAllBackups(t *testing.T) {
 			Items:    backups,
 		}, nil)
 
+		bps := v2.BlueprintList{
+			TypeMeta: metav1.TypeMeta{},
+			ListMeta: metav1.ListMeta{},
+			Items: []v2.Blueprint{{
+				TypeMeta:   metav1.TypeMeta{},
+				ObjectMeta: metav1.ObjectMeta{},
+			}},
+		}
+
+		lister := newMockBlueprintLister(t)
+		lister.EXPECT().List(testCtx, mock.Anything).Return(&bps, nil)
+
 		sut := DefaultBackupService{
-			backupClient:  backupClientMock,
-			restoreClient: nil,
+			backupClient:    backupClientMock,
+			blueprintLister: lister,
+			restoreClient:   nil,
 		}
 
 		// when
@@ -70,9 +91,22 @@ func Test_getAllBackups(t *testing.T) {
 			Items:    []backupV1.Backup{},
 		}, nil)
 
+		bps := v2.BlueprintList{
+			TypeMeta: metav1.TypeMeta{},
+			ListMeta: metav1.ListMeta{},
+			Items: []v2.Blueprint{{
+				TypeMeta:   metav1.TypeMeta{},
+				ObjectMeta: metav1.ObjectMeta{},
+			}},
+		}
+
+		lister := newMockBlueprintLister(t)
+		lister.EXPECT().List(testCtx, mock.Anything).Return(&bps, nil)
+
 		sut := DefaultBackupService{
-			backupClient:  backupClientMock,
-			restoreClient: nil,
+			backupClient:    backupClientMock,
+			restoreClient:   nil,
+			blueprintLister: lister,
 		}
 
 		// when
@@ -81,9 +115,48 @@ func Test_getAllBackups(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(allBackups.Backups))
 	})
+
+	t.Run("should error when blueprintclient is not available", func(t *testing.T) {
+		// given
+		testCtx := context.TODO()
+		backupClientMock := newMockBackupInterface(t)
+		backupOne := backupV1.Backup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        "backup_one",
+				Annotations: backupAnnotations,
+			},
+		}
+
+		backups := make([]backupV1.Backup, 0)
+		backups = append(backups, backupOne)
+
+		backupClientMock.EXPECT().List(testCtx, metav1.ListOptions{}).Return(&backupV1.BackupList{
+			TypeMeta: metav1.TypeMeta{},
+			ListMeta: metav1.ListMeta{},
+			Items:    backups,
+		}, nil)
+
+		lister := newMockBlueprintLister(t)
+		lister.EXPECT().List(testCtx, mock.Anything).Return(nil, assert.AnError)
+
+		sut := DefaultBackupService{
+			backupClient:    backupClientMock,
+			blueprintLister: lister,
+			restoreClient:   nil,
+		}
+
+		// when
+		_, err := sut.AllBackups(testCtx, &backup.GetAllBackupsRequest{})
+		// then
+		assert.ErrorIs(t, err, assert.AnError)
+	})
 }
 
 func Test_getAllRestores(t *testing.T) {
+	backupAnnotations := make(map[string]string)
+	backupAnnotations["backup.cloudogu.com/dogus"] = "[{\"name\": \"hallowelt/bluespice\", \"version\": \"4.5.5-3\"},{\"name\": \"official\", \"version\": \"7.2.6-3\"}]"
+	backupAnnotations["backup.cloudogu.com/blueprintId"] = "all-dogus-sample"
+
 	t.Run("should return all restores", func(t *testing.T) {
 		// given
 		testCtx := context.TODO()
@@ -92,19 +165,22 @@ func Test_getAllRestores(t *testing.T) {
 
 		backupOne := backupV1.Backup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "backup_one",
+				Name:        "backup_one",
+				Annotations: backupAnnotations,
 			},
 		}
 
 		backupTwo := backupV1.Backup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "backup_two",
+				Name:        "backup_two",
+				Annotations: backupAnnotations,
 			},
 		}
 
 		backupThree := backupV1.Backup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "backup_three",
+				Name:        "backup_three",
+				Annotations: backupAnnotations,
 			},
 		}
 
@@ -447,6 +523,92 @@ func Test_createBackups(t *testing.T) {
 		_, err := sut.CreateBackup(testCtx, &backup.CreateBackupRequest{})
 		// then
 		require.ErrorIs(t, err, assert.AnError)
+	})
+}
+
+func TestIsDoguListMatching(t *testing.T) {
+	t.Run("should return true when both lists contain the same dogus", func(t *testing.T) {
+		version1 := "1.2.3"
+		version2 := "4.5.6"
+		dogu1 := v2.Dogu{Name: "test/1", Version: &version1}
+		dogu2 := v2.Dogu{Name: "test/2", Version: &version2}
+
+		annotationDogus := []annotationDogus{
+			{Name: "test/1", Version: "1.2.3"},
+			{Name: "test/2", Version: "4.5.6"},
+		}
+
+		bpDogus := []v2.Dogu{
+			dogu1, dogu2,
+		}
+
+		svc := &DefaultBackupService{}
+
+		ret := svc.isDoguListMatching(annotationDogus, bpDogus)
+		assert.True(t, ret)
+	})
+
+	t.Run("should return false when both lists are not matching", func(t *testing.T) {
+		version1 := "9.9.9"
+		version2 := "6.6.6"
+		dogu1 := v2.Dogu{Name: "test/1", Version: &version1}
+		dogu2 := v2.Dogu{Name: "test/2", Version: &version2}
+
+		annotationDogus := []annotationDogus{
+			{Name: "test/1", Version: "1.2.3"},
+			{Name: "test/2", Version: "4.5.6"},
+		}
+
+		bpDogus := []v2.Dogu{
+			dogu1, dogu2,
+		}
+
+		svc := &DefaultBackupService{}
+
+		ret := svc.isDoguListMatching(annotationDogus, bpDogus)
+		assert.False(t, ret)
+	})
+}
+
+func TestBackupStatus(t *testing.T) {
+	t.Run("should return completed backup status", func(t *testing.T) {
+		backupOne := backupV1.Backup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "backup_one",
+			},
+			Status: backupV1.BackupStatus{
+				Status: "completed",
+			},
+		}
+
+		status := backupStatus(&backupOne)
+		assert.Equal(t, backupOne.Status.Status, status)
+	})
+	t.Run("should return failed backup status", func(t *testing.T) {
+		backupOne := backupV1.Backup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "backup_one",
+			},
+			Status: backupV1.BackupStatus{
+				Status: "failed",
+			},
+		}
+
+		status := backupStatus(&backupOne)
+		assert.Equal(t, backupOne.Status.Status, status)
+	})
+	t.Run("should return inProgress backup status", func(t *testing.T) {
+		backupOne := backupV1.Backup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "backup_one",
+			},
+			Status: backupV1.BackupStatus{
+				Status: "inProgress",
+			},
+		}
+
+		status := backupStatus(&backupOne)
+		assert.Equal(t, backupOne.Status.Status, status)
 	})
 }
 

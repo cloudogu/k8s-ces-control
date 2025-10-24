@@ -2,15 +2,16 @@ package doguAdministration
 
 import (
 	"context"
+
 	common "github.com/cloudogu/ces-commons-lib/dogu"
 	"github.com/cloudogu/cesapp-lib/core"
-	v1 "github.com/cloudogu/k8s-blueprint-lib/api/v1"
+	v2 "github.com/cloudogu/k8s-blueprint-lib/v2/api/v2"
 	"github.com/cloudogu/k8s-registry-lib/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type BlueprintLister interface {
-	List(ctx context.Context, opts metav1.ListOptions) (*v1.BlueprintList, error)
+	List(ctx context.Context, opts metav1.ListOptions) (*v2.BlueprintList, error)
 }
 
 type doguDescriptorGetter interface {
@@ -26,6 +27,8 @@ type doguInterActor interface {
 	RestartDogu(ctx context.Context, doguName string) error
 }
 
+//nolint:unused
+//goland:noinspection GoUnusedType
 type doguConfigRepository interface {
 	Get(context.Context, common.SimpleName) (config.DoguConfig, error)
 	Update(context.Context, config.DoguConfig) (config.DoguConfig, error)
