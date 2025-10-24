@@ -278,12 +278,12 @@ func (s *DefaultBackupService) isDoguListMatching(backupDogus []annotationDogus,
 	for _, v := range backupDogus {
 		backupDoguMap[v.Name] = v
 	}
-	for _, bpDogu := range blueprintDogus {
-		dogu, ok := backupDoguMap[bpDogu.Name]
+	for _, blueprintDogu := range blueprintDogus {
+		backupDogu, ok := backupDoguMap[blueprintDogu.Name]
 		if !ok {
 			return false
 		}
-		if dogu.Version != *bpDogu.Version {
+		if backupDogu.Version != *blueprintDogu.Version {
 			return false
 		}
 	}
