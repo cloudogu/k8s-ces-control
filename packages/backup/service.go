@@ -92,10 +92,7 @@ func (s *DefaultBackupService) AllBackups(ctx context.Context, _ *pbBackup.GetAl
 		return nil, fmt.Errorf("failed to get blueprint: no blueprints available")
 	}
 
-	backups, err := s.mapBackups(list, &blueprintList.Items[0])
-	if err != nil {
-		return nil, fmt.Errorf("failed to map backups to dto: %w", err)
-	}
+	backups := s.mapBackups(list, &blueprintList.Items[0])
 	return &pbBackup.GetAllBackupsResponse{Backups: backups}, nil
 }
 
@@ -158,7 +155,7 @@ func (s *DefaultBackupService) AllRestores(ctx context.Context, _ *pbBackup.GetA
 	return &pbBackup.GetAllRestoresResponse{Restores: restores}, nil
 }
 
-func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList, blueprint *v2.Blueprint) ([]*pbBackup.BackupResponse, error) {
+func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList, blueprint *v2.Blueprint) []*pbBackup.BackupResponse {
 	backupResponseList := make([]*pbBackup.BackupResponse, 0, 5)
 	for _, backup := range backupList.Items {
 		// skip backups in deleting state
@@ -183,7 +180,7 @@ func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList, blueprint *
 		backupResponseList = append(backupResponseList, &backupResponse)
 	}
 
-	return backupResponseList, nil
+	return backupResponseList
 }
 
 func (s *DefaultBackupService) mapRestores(ctx context.Context, restoreList *v1.RestoreList) ([]*pbBackup.RestoreResponse, error) {
