@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#77] Create backups in ui
 - [#80] Create restores in ui
 
+### Changed
+- [#80] Update blueprint-lib to v3.0.1
+
 ## [v1.7.3] - 2025-10-13
 ### Changed
 - [#73] Update blueprint-lib to v2.0.0

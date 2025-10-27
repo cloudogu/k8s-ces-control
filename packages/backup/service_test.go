@@ -6,7 +6,7 @@ import (
 
 	"github.com/cloudogu/ces-control-api/generated/backup"
 	backupV1 "github.com/cloudogu/k8s-backup-lib/api/v1"
-	v2 "github.com/cloudogu/k8s-blueprint-lib/v2/api/v2"
+	v3 "github.com/cloudogu/k8s-blueprint-lib/v3/api/v3"
 	componentV1 "github.com/cloudogu/k8s-component-lib/api/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -55,10 +55,10 @@ func Test_getAllBackups(t *testing.T) {
 			Items:    backups,
 		}, nil)
 
-		bps := v2.BlueprintList{
+		bps := v3.BlueprintList{
 			TypeMeta: metav1.TypeMeta{},
 			ListMeta: metav1.ListMeta{},
-			Items: []v2.Blueprint{{
+			Items: []v3.Blueprint{{
 				TypeMeta:   metav1.TypeMeta{},
 				ObjectMeta: metav1.ObjectMeta{},
 			}},
@@ -91,10 +91,10 @@ func Test_getAllBackups(t *testing.T) {
 			Items:    []backupV1.Backup{},
 		}, nil)
 
-		bps := v2.BlueprintList{
+		bps := v3.BlueprintList{
 			TypeMeta: metav1.TypeMeta{},
 			ListMeta: metav1.ListMeta{},
-			Items: []v2.Blueprint{{
+			Items: []v3.Blueprint{{
 				TypeMeta:   metav1.TypeMeta{},
 				ObjectMeta: metav1.ObjectMeta{},
 			}},
@@ -530,15 +530,15 @@ func TestIsDoguListMatching(t *testing.T) {
 	t.Run("should return true when both lists contain the same dogus", func(t *testing.T) {
 		version1 := "1.2.3"
 		version2 := "4.5.6"
-		dogu1 := v2.Dogu{Name: "test/1", Version: &version1}
-		dogu2 := v2.Dogu{Name: "test/2", Version: &version2}
+		dogu1 := v3.Dogu{Name: "test/1", Version: &version1}
+		dogu2 := v3.Dogu{Name: "test/2", Version: &version2}
 
 		annotationDogus := []annotationDogus{
 			{Name: "test/1", Version: "1.2.3"},
 			{Name: "test/2", Version: "4.5.6"},
 		}
 
-		bpDogus := []v2.Dogu{
+		bpDogus := []v3.Dogu{
 			dogu1, dogu2,
 		}
 
@@ -551,15 +551,15 @@ func TestIsDoguListMatching(t *testing.T) {
 	t.Run("should return false when both lists are not matching", func(t *testing.T) {
 		version1 := "9.9.9"
 		version2 := "6.6.6"
-		dogu1 := v2.Dogu{Name: "test/1", Version: &version1}
-		dogu2 := v2.Dogu{Name: "test/2", Version: &version2}
+		dogu1 := v3.Dogu{Name: "test/1", Version: &version1}
+		dogu2 := v3.Dogu{Name: "test/2", Version: &version2}
 
 		annotationDogus := []annotationDogus{
 			{Name: "test/1", Version: "1.2.3"},
 			{Name: "test/2", Version: "4.5.6"},
 		}
 
-		bpDogus := []v2.Dogu{
+		bpDogus := []v3.Dogu{
 			dogu1, dogu2,
 		}
 

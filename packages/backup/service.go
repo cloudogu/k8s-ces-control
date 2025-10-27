@@ -9,7 +9,7 @@ import (
 
 	pbBackup "github.com/cloudogu/ces-control-api/generated/backup"
 	v1 "github.com/cloudogu/k8s-backup-lib/api/v1"
-	v2 "github.com/cloudogu/k8s-blueprint-lib/v2/api/v2"
+	v3 "github.com/cloudogu/k8s-blueprint-lib/v3/api/v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -155,7 +155,7 @@ func (s *DefaultBackupService) AllRestores(ctx context.Context, _ *pbBackup.GetA
 	return &pbBackup.GetAllRestoresResponse{Restores: restores}, nil
 }
 
-func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList, blueprint *v2.Blueprint) []*pbBackup.BackupResponse {
+func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList, blueprint *v3.Blueprint) []*pbBackup.BackupResponse {
 	backupResponseList := make([]*pbBackup.BackupResponse, 0, 5)
 	for _, backup := range backupList.Items {
 		// skip backups in deleting state
@@ -247,7 +247,7 @@ func (s *DefaultBackupService) GetRetentionPolicy(ctx context.Context, _ *pbBack
 }
 
 // a backup is restorable if it is from the same blueprint and the dogus are matching
-func (s *DefaultBackupService) isBackupRestorable(backup *v1.Backup, blueprint *v2.Blueprint) (bool, error) {
+func (s *DefaultBackupService) isBackupRestorable(backup *v1.Backup, blueprint *v3.Blueprint) (bool, error) {
 	ans := backup.GetAnnotations()
 
 	// get all dogus from backup annotations
@@ -266,7 +266,7 @@ func (s *DefaultBackupService) isBackupRestorable(backup *v1.Backup, blueprint *
 }
 
 // isDoguListMatching checks if the given list of backup dogus is matching the given list of dogus from the blueprint.
-func (s *DefaultBackupService) isDoguListMatching(backupDogus []annotationDogus, blueprintDogus []v2.Dogu) bool {
+func (s *DefaultBackupService) isDoguListMatching(backupDogus []annotationDogus, blueprintDogus []v3.Dogu) bool {
 	if len(backupDogus) != len(blueprintDogus) {
 		return false
 	}

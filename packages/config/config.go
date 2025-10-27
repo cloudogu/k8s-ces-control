@@ -6,7 +6,7 @@ import (
 
 	"github.com/bombsimon/logrusr/v2"
 	backupClientV1 "github.com/cloudogu/k8s-backup-lib/api/ecosystem"
-	bpo_kubernetes "github.com/cloudogu/k8s-blueprint-lib/v2/client"
+	bpo_kubernetes "github.com/cloudogu/k8s-blueprint-lib/v3/client"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
 	componentClientV1 "github.com/cloudogu/k8s-component-lib/client"
 	debugClientV1 "github.com/cloudogu/k8s-debug-mode-cr-lib/pkg/client/v1"
