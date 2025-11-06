@@ -278,6 +278,40 @@ func Test_getAllRestores(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(allRestores.Restores))
 	})
+
+	t.Run("should not return error when backup for restore cannot befound", func(t *testing.T) {
+		// given
+		testCtx := context.TODO()
+		restoreClientMock := newMockRestoreInterface(t)
+		restoreOne := backupV1.Restore{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "restore_one",
+			},
+			Spec: backupV1.RestoreSpec{
+				BackupName: "backup_one",
+			},
+		}
+
+		restoreClientMock.EXPECT().List(testCtx, metav1.ListOptions{}).Return(&backupV1.RestoreList{
+			TypeMeta: metav1.TypeMeta{},
+			ListMeta: metav1.ListMeta{},
+			Items:    []backupV1.Restore{restoreOne},
+		}, nil)
+
+		backupClientMock := newMockBackupInterface(t)
+		backupClientMock.EXPECT().Get(testCtx, "backup_one", metav1.GetOptions{}).Return(nil, k8sErrors.NewNotFound(schema.GroupResource{}, "not found"))
+
+		sut := DefaultBackupService{
+			backupClient:  backupClientMock,
+			restoreClient: restoreClientMock,
+		}
+
+		// when
+		allRestores, err := sut.AllRestores(testCtx, &backup.GetAllRestoresRequest{})
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, 1, len(allRestores.Restores))
+	})
 }
 
 func TestDefaultBackupService_GetSchedule(t *testing.T) {
