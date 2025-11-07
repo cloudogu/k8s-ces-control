@@ -10,6 +10,7 @@ import (
 	pbBackup "github.com/cloudogu/ces-control-api/generated/backup"
 	v1 "github.com/cloudogu/k8s-backup-lib/api/v1"
 	v3 "github.com/cloudogu/k8s-blueprint-lib/v3/api/v3"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -186,17 +187,23 @@ func (s *DefaultBackupService) mapBackups(backupList *v1.BackupList, blueprint *
 func (s *DefaultBackupService) mapRestores(ctx context.Context, restoreList *v1.RestoreList) ([]*pbBackup.RestoreResponse, error) {
 	restoreResponseList := make([]*pbBackup.RestoreResponse, 0, 5)
 	for _, restore := range restoreList.Items {
+		blueprintId := ""
 		backup, err := s.backupClient.Get(ctx, restore.Spec.BackupName, metav1.GetOptions{})
 		if err != nil {
-			return nil, fmt.Errorf("failed to get backup for restore %s: %w", restore.Name, err)
+			if k8sErrors.IsNotFound(err) {
+				slog.Warn(fmt.Sprintf("could not find backup for restore: %v", err))
+			} else {
+				return nil, fmt.Errorf("failed to get backup for restore %s: %w", restore.Name, err)
+			}
+		} else {
+			blueprintId = backup.GetAnnotations()[blueprintIdAnnotation]
 		}
 
 		restoreResponse := pbBackup.RestoreResponse{
-			BackupId:    backup.Name,
-			StartTime:   backup.Status.StartTimestamp.String(),
-			EndTime:     backup.Status.CompletionTimestamp.String(),
+			BackupId:    restore.Spec.BackupName,
+			StartTime:   restore.CreationTimestamp.String(),
 			Success:     restore.Status.Status == "completed",
-			BlueprintId: backup.GetAnnotations()[blueprintIdAnnotation],
+			BlueprintId: blueprintId,
 		}
 		restoreResponseList = append(restoreResponseList, &restoreResponse)
 	}
