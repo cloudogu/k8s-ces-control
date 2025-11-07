@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	v2 "github.com/cloudogu/k8s-blueprint-lib/v2/api/v2"
+	v3 "github.com/cloudogu/k8s-blueprint-lib/v3/api/v3"
 
 	pb "github.com/cloudogu/ces-control-api/generated/doguAdministration"
 	"github.com/cloudogu/ces-control-api/generated/types"
@@ -145,7 +145,7 @@ func (s *server) GetBlueprintId(ctx context.Context, _ *pb.DoguBlueprinitIdReque
 	return &pb.DoguBlueprintIdResponse{BlueprintId: getResponseString(currentBlueprint)}, nil
 }
 
-func getResponseString(bp *v2.Blueprint) string {
+func getResponseString(bp *v3.Blueprint) string {
 	var currentBlueprintId string
 	// For the rare case that the blueprint has an empty displayName, we return the name of the blueprint
 	if bp.Spec.DisplayName == "" {
@@ -157,8 +157,8 @@ func getResponseString(bp *v2.Blueprint) string {
 	return currentBlueprintId
 }
 
-func getLatestBlueprint(list *v2.BlueprintList) *v2.Blueprint {
-	var oldestBp *v2.Blueprint
+func getLatestBlueprint(list *v3.BlueprintList) *v3.Blueprint {
+	var oldestBp *v3.Blueprint
 	for _, bp := range list.Items {
 		if oldestBp == nil {
 			oldestBp = &bp

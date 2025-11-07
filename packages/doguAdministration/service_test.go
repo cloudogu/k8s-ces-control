@@ -9,7 +9,7 @@ import (
 	"github.com/cloudogu/ces-control-api/generated/doguAdministration"
 	"github.com/cloudogu/ces-control-api/generated/types"
 	"github.com/cloudogu/cesapp-lib/core"
-	blueprintcrv2 "github.com/cloudogu/k8s-blueprint-lib/v2/api/v2"
+	blueprintcrv3 "github.com/cloudogu/k8s-blueprint-lib/v3/api/v3"
 	"github.com/cloudogu/k8s-ces-control/packages/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -357,7 +357,7 @@ func Test_server_GetBlueprintId(t *testing.T) {
 	t.Run("client List returns empty list", func(t *testing.T) {
 		bluePrintListerMock := NewMockBlueprintLister(t)
 		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
-			Return(&blueprintcrv2.BlueprintList{Items: make([]blueprintcrv2.Blueprint, 0)}, nil)
+			Return(&blueprintcrv3.BlueprintList{Items: make([]blueprintcrv3.Blueprint, 0)}, nil)
 
 		sut := &server{
 			doguDescriptorGetter: newMockDoguDescriptorGetter(t),
@@ -379,7 +379,7 @@ func Test_server_GetBlueprintId(t *testing.T) {
 	t.Run("client List returns one element without spec", func(t *testing.T) {
 		bluePrintListerMock := NewMockBlueprintLister(t)
 		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
-			Return(&blueprintcrv2.BlueprintList{Items: []blueprintcrv2.Blueprint{
+			Return(&blueprintcrv3.BlueprintList{Items: []blueprintcrv3.Blueprint{
 				{ObjectMeta: metav1.ObjectMeta{
 					Name:              "SIV1",
 					CreationTimestamp: now,
@@ -404,12 +404,12 @@ func Test_server_GetBlueprintId(t *testing.T) {
 	t.Run("client List returns one element with spec but with empty displayName", func(t *testing.T) {
 		bluePrintListerMock := NewMockBlueprintLister(t)
 		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
-			Return(&blueprintcrv2.BlueprintList{Items: []blueprintcrv2.Blueprint{
+			Return(&blueprintcrv3.BlueprintList{Items: []blueprintcrv3.Blueprint{
 				{ObjectMeta: metav1.ObjectMeta{
 					Name:              "SIV1",
 					CreationTimestamp: now,
 				},
-					Spec: blueprintcrv2.BlueprintSpec{}},
+					Spec: blueprintcrv3.BlueprintSpec{}},
 			}}, nil)
 
 		sut := &server{
@@ -430,12 +430,12 @@ func Test_server_GetBlueprintId(t *testing.T) {
 	t.Run("client List returns one element with spec", func(t *testing.T) {
 		bluePrintListerMock := NewMockBlueprintLister(t)
 		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
-			Return(&blueprintcrv2.BlueprintList{Items: []blueprintcrv2.Blueprint{
+			Return(&blueprintcrv3.BlueprintList{Items: []blueprintcrv3.Blueprint{
 				{ObjectMeta: metav1.ObjectMeta{
 					Name:              "SIV1",
 					CreationTimestamp: now,
 				},
-					Spec: blueprintcrv2.BlueprintSpec{
+					Spec: blueprintcrv3.BlueprintSpec{
 						DisplayName: "SIV1-DisplayName",
 					},
 				},
@@ -458,7 +458,7 @@ func Test_server_GetBlueprintId(t *testing.T) {
 	t.Run("should always return the id from the oldest blueprint", func(t *testing.T) {
 		bluePrintListerMock := NewMockBlueprintLister(t)
 		bluePrintListerMock.EXPECT().List(ctx, metav1.ListOptions{}).
-			Return(&blueprintcrv2.BlueprintList{Items: []blueprintcrv2.Blueprint{
+			Return(&blueprintcrv3.BlueprintList{Items: []blueprintcrv3.Blueprint{
 				{ObjectMeta: metav1.ObjectMeta{
 					Name:              "SIV3",
 					CreationTimestamp: metav1.NewTime(now.Add(time.Second * 2)),
