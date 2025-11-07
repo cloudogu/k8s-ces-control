@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added 
+- [#68] Get backups and restores from cluster
+- [#76] get & set backup-schedule
+- [#76] get retention-policy
+- [#77] Create backups in ui
+- [#80] Create restores in ui
+
+### Changed
+- [#80] Update blueprint-lib to v3.0.1
 
 ## [v1.7.3] - 2025-10-13
 ### Changed

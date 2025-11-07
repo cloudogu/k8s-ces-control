@@ -5,13 +5,13 @@ import (
 
 	common "github.com/cloudogu/ces-commons-lib/dogu"
 	"github.com/cloudogu/cesapp-lib/core"
-	v2 "github.com/cloudogu/k8s-blueprint-lib/v2/api/v2"
+	v3 "github.com/cloudogu/k8s-blueprint-lib/v3/api/v3"
 	"github.com/cloudogu/k8s-registry-lib/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type BlueprintLister interface {
-	List(ctx context.Context, opts metav1.ListOptions) (*v2.BlueprintList, error)
+	List(ctx context.Context, opts metav1.ListOptions) (*v3.BlueprintList, error)
 }
 
 type doguDescriptorGetter interface {

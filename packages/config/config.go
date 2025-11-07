@@ -5,10 +5,12 @@ import (
 	"os"
 
 	"github.com/bombsimon/logrusr/v2"
-	bpo_kubernetes "github.com/cloudogu/k8s-blueprint-lib/v2/client"
+	backupClientV1 "github.com/cloudogu/k8s-backup-lib/api/ecosystem"
+	bpo_kubernetes "github.com/cloudogu/k8s-blueprint-lib/v3/client"
 	"github.com/cloudogu/k8s-ces-control/packages/doguAdministration"
+	componentClientV1 "github.com/cloudogu/k8s-component-lib/client"
 	debugClientV1 "github.com/cloudogu/k8s-debug-mode-cr-lib/pkg/client/v1"
-	ecoSystemV2 "github.com/cloudogu/k8s-dogu-operator/v2/api/ecoSystem"
+	ecoSystemV2 "github.com/cloudogu/k8s-dogu-lib/v2/client"
 	supClientV1 "github.com/cloudogu/k8s-support-archive-lib/client/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -37,6 +39,10 @@ type clusterClient struct {
 	kubernetes.Interface
 	supClientV1.SupportArchiveV1Interface
 	debugClientV1.DebugModeV1Interface
+	backupClientV1.BackupsGetter
+	backupClientV1.RestoresGetter
+	backupClientV1.BackupSchedulesGetter
+	componentClientV1.ComponentV1Alpha1Interface
 }
 
 var currentStage = stageProduction
@@ -67,15 +73,35 @@ func CreateClusterClient() (*clusterClient, error) {
 
 	supportArchiveClient, err := supClientV1.NewForConfig(clusterConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create ecosystem clientset: %w", err)
+		return nil, fmt.Errorf("unable to create supportArchive clientset: %w", err)
 	}
 
 	debugModeClient, err := debugClientV1.NewForConfig(clusterConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create ecosystem clientset: %w", err)
+		return nil, fmt.Errorf("unable to create debugMode clientset: %w", err)
 	}
 
-	return &clusterClient{EcoSystemV2Interface: doguClient, BlueprintLister: bluePrintLister, Interface: k8sClient, SupportArchiveV1Interface: supportArchiveClient, DebugModeV1Interface: debugModeClient}, nil
+	backupClient, err := backupClientV1.NewForConfig(clusterConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create backup clientset: %w", err)
+	}
+
+	componentClient, err := componentClientV1.NewForConfig(clusterConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create component clientset: %w", err)
+	}
+
+	return &clusterClient{
+		EcoSystemV2Interface:       doguClient,
+		BlueprintLister:            bluePrintLister,
+		Interface:                  k8sClient,
+		SupportArchiveV1Interface:  supportArchiveClient,
+		DebugModeV1Interface:       debugModeClient,
+		BackupsGetter:              backupClient,
+		RestoresGetter:             backupClient,
+		BackupSchedulesGetter:      backupClient,
+		ComponentV1Alpha1Interface: componentClient,
+	}, nil
 }
 
 // ConfigureApplication performs the default configuration for the control app including configuring the logging and
