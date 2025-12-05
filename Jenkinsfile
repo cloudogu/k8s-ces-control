@@ -88,6 +88,9 @@ node('docker') {
             }
 
             stage('Setup') {
+                k3d.configureComponents([
+                        "k8s-prometheus": ["version": "latest", "valuesObject.kube-prometheus-stack.nodeExporter.enabled": "false"]
+                ])
                 k3d.setup("foo", ["enableMonitoring": true])
             }
 
