@@ -1,5 +1,5 @@
 #!groovy
-@Library('github.com/cloudogu/ces-build-lib@4.3.0')
+@Library('github.com/cloudogu/ces-build-lib@feature/151-use-ecosystem-core')
 import com.cloudogu.ces.cesbuildlib.*
 
 // Creating necessary git objects, object cannot be named 'git' as this conflicts with the method named 'git' from the library
@@ -94,7 +94,7 @@ node('docker') {
                                          "k8s-support-archive-operator-crd": ["version": "latest", "helmRepositoryNamespace": "k8s"],
                                          "k8s-support-archive-operator": ["version": "latest", "helmRepositoryNamespace": "k8s"]
                 ])
-                k3d.setup('4.2.0')
+                k3d.setup()
             }
 
             stage("Wait for Setup") {
