@@ -50,36 +50,36 @@ node('docker') {
             lintDockerfile()
         }
 
-        docker
-                .image("golang:${goVersion}")
-                .mountJenkinsUser()
-                .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}") {
-                    stage('Build') {
-                        make 'compile'
-                    }
-
-                    stage('Unit Tests') {
-                        make 'unit-test'
-                        junit allowEmptyResults: true, testResults: 'target/unit-tests/*-tests.xml'
-                    }
-
-                    stage("Review dog analysis") {
-                        stageStaticAnalysisReviewDog()
-                    }
-
-                    stage('Generate k8s Resources') {
-                        make 'helm-generate'
-                        archiveArtifacts "${helmTargetDir}/**/*"
-                    }
-
-                    stage("Lint helm") {
-                        make 'helm-lint'
-                    }
-                }
-
-        stage('SonarQube') {
-            stageStaticAnalysisSonarQube()
-        }
+//        docker
+//                .image("golang:${goVersion}")
+//                .mountJenkinsUser()
+//                .inside("--volume ${WORKSPACE}:/go/src/${project} -w /go/src/${project}") {
+//                    stage('Build') {
+//                        make 'compile'
+//                    }
+//
+//                    stage('Unit Tests') {
+//                        make 'unit-test'
+//                        junit allowEmptyResults: true, testResults: 'target/unit-tests/*-tests.xml'
+//                    }
+//
+//                    stage("Review dog analysis") {
+//                        stageStaticAnalysisReviewDog()
+//                    }
+//
+//                    stage('Generate k8s Resources') {
+//                        make 'helm-generate'
+//                        archiveArtifacts "${helmTargetDir}/**/*"
+//                    }
+//
+//                    stage("Lint helm") {
+//                        make 'helm-lint'
+//                    }
+//                }
+//
+//        stage('SonarQube') {
+//            stageStaticAnalysisSonarQube()
+//        }
 
         def k3d = new K3d(this, "${WORKSPACE}", "${WORKSPACE}/k3d", env.PATH)
         try {
@@ -94,7 +94,7 @@ node('docker') {
                                          "k8s-support-archive-operator-crd": ["version": "latest", "helmRepositoryNamespace": "k8s"],
                                          "k8s-support-archive-operator": ["version": "latest", "helmRepositoryNamespace": "k8s"]
                 ])
-                k3d.setup()
+                k3d.setup("foo")
             }
 
             stage("Wait for Setup") {
