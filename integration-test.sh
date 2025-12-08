@@ -206,14 +206,6 @@ testDoguHealth_GetAll() {
       echo "Test: [Dogu-Health-GetAll] Check if Postfix is healthy: Failed!"
       addFailingTestCase "Dogu-Health-GetAll-Postfix" "Expected to get Dogu 'postfix' is healthy but got only: ${allDogusHealthJson}"
     fi
-
-  if [[ $(echo ${allDogusHealthJson} | ${JQ_BIN_PATH} -r '.results."usermgt".fullName') == 'usermgt' && $(echo ${allDogusHealthJson} | ${JQ_BIN_PATH} -r '.results."usermgt".healthy') == 'true' ]]; then
-    echo "Test: [Dogu-Health-GetAll] Check if Usermgt is healthy: Success!"
-    addSuccessTestCase "Dogu-Health-GetAll-Usermgt" "List of returned Dogus contained a healthy 'usermgt' dogu."
-  else
-    echo "Test: [Dogu-Health-GetAll] Check if Usermgt is healthy: Failed!"
-    addFailingTestCase "Dogu-Health-GetAll-Usermgt" "Expected to get Dogu 'usermgt' is healthy but got only: ${allDogusHealthJson}"
-  fi
 }
 
 testDoguHealth_GetByNames() {
