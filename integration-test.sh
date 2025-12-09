@@ -199,26 +199,18 @@ testDoguHealth_GetAll() {
     addFailingTestCase "Dogu-Health-GetAll-Ldap" "Expected to get Dogu 'ldap' is healthy but got only: ${allDogusHealthJson}"
   fi
 
-  if [[ $(echo ${allDogusHealthJson} | ${JQ_BIN_PATH} -r '.results."nginx-static".fullName') == 'nginx-static' && $(echo ${allDogusHealthJson} | ${JQ_BIN_PATH} -r '.results."nginx-static".healthy') == 'true' ]]; then
-      echo "Test: [Dogu-Health-GetAll] Check if NginxStatic is healthy: Success!"
-      addSuccessTestCase "Dogu-Health-GetAll-NginxStatic" "List of returned Dogus contained a healthy 'nginx-static' dogu."
+  if [[ $(echo ${allDogusHealthJson} | ${JQ_BIN_PATH} -r '.results."postfix".fullName') == 'postfix' && $(echo ${allDogusHealthJson} | ${JQ_BIN_PATH} -r '.results."postfix".healthy') == 'true' ]]; then
+      echo "Test: [Dogu-Health-GetAll] Check if Postfix is healthy: Success!"
+      addSuccessTestCase "Dogu-Health-GetAll-Postfix" "List of returned Dogus contained a healthy 'postfix' dogu."
     else
-      echo "Test: [Dogu-Health-GetAll] Check if NginxStatic is healthy: Failed!"
-      addFailingTestCase "Dogu-Health-GetAll-NginxStatic" "Expected to get Dogu 'nginx-static' is healthy but got only: ${allDogusHealthJson}"
+      echo "Test: [Dogu-Health-GetAll] Check if Postfix is healthy: Failed!"
+      addFailingTestCase "Dogu-Health-GetAll-Postfix" "Expected to get Dogu 'postfix' is healthy but got only: ${allDogusHealthJson}"
     fi
-
-  if [[ $(echo ${allDogusHealthJson} | ${JQ_BIN_PATH} -r '.results."nginx-ingress".fullName') == 'nginx-ingress' && $(echo ${allDogusHealthJson} | ${JQ_BIN_PATH} -r '.results."nginx-ingress".healthy') == 'true' ]]; then
-    echo "Test: [Dogu-Health-GetAll] Check if NginxIngress is healthy: Success!"
-    addSuccessTestCase "Dogu-Health-GetAll-NginxIngress" "List of returned Dogus contained a healthy 'nginx-ingress' dogu."
-  else
-    echo "Test: [Dogu-Health-GetAll] Check if NginxIngress is healthy: Failed!"
-    addFailingTestCase "Dogu-Health-GetAll-NginxIngress" "Expected to get Dogu 'nginx-ingress' is healthy but got only: ${allDogusHealthJson}"
-  fi
 }
 
 testDoguHealth_GetByNames() {
   local dogusHealthJson
-  dogusHealthJson=$(${GRPCURL_BIN_PATH} -plaintext -d '{"dogus": ["nginx-static", "ldap"]}' localhost:"${GRPCURL_PORT}" health.DoguHealth.GetByNames)
+  dogusHealthJson=$(${GRPCURL_BIN_PATH} -plaintext -d '{"dogus": ["postfix", "ldap"]}' localhost:"${GRPCURL_PORT}" health.DoguHealth.GetByNames)
 
   if [[ $(echo ${dogusHealthJson} | ${JQ_BIN_PATH} -r '.results.ldap.fullName') == 'ldap' && $(echo ${dogusHealthJson} | ${JQ_BIN_PATH} -r '.results.ldap.healthy') == 'true' ]]; then
     echo "Test: [Dogu-Health-GetByNames] Check if Ldap is healthy: Success!"
@@ -228,12 +220,12 @@ testDoguHealth_GetByNames() {
     addFailingTestCase "Dogu-Health-GetByNames-Ldap" "Expected to get Dogu 'ldap' is healthy but got only: ${dogusHealthJson}"
   fi
 
-  if [[ $(echo ${dogusHealthJson} | ${JQ_BIN_PATH} -r '.results."nginx-static".fullName') == 'nginx-static' && $(echo ${dogusHealthJson} | ${JQ_BIN_PATH} -r '.results."nginx-static".healthy') == 'true' ]]; then
-    echo "Test: [Dogu-Health-GetByNames] Check if NginxStatic is healthy: Success!"
-    addSuccessTestCase "Dogu-Health-GetByNames-NginxStatic" "List of returned Dogus contained a healthy 'nginx-static' dogu."
+  if [[ $(echo ${dogusHealthJson} | ${JQ_BIN_PATH} -r '.results."postfix".fullName') == 'postfix' && $(echo ${dogusHealthJson} | ${JQ_BIN_PATH} -r '.results."postfix".healthy') == 'true' ]]; then
+    echo "Test: [Dogu-Health-GetByNames] Check if Postfix is healthy: Success!"
+    addSuccessTestCase "Dogu-Health-GetByNames-Postfix" "List of returned Dogus contained a healthy 'postfix' dogu."
   else
-    echo "Test: [Dogu-Health-GetByNames] Check if NginxStatic is healthy: Failed!"
-    addFailingTestCase "Dogu-Health-GetByNames-NginxStatic" "Expected to get Dogu 'nginx-static' is healthy but got only: ${dogusHealthJson}"
+    echo "Test: [Dogu-Health-GetByNames] Check if Postfix is healthy: Failed!"
+    addFailingTestCase "Dogu-Health-GetByNames-Postfix" "Expected to get Dogu 'postfix' is healthy but got only: ${dogusHealthJson}"
   fi
 
   if [[ $(echo ${dogusHealthJson} | ${JQ_BIN_PATH} -r '.results | length') == '2' ]]; then
@@ -247,43 +239,43 @@ testDoguHealth_GetByNames() {
 
 testDoguHealth_GetByName() {
   local doguHealthJson
-  doguHealthJson=$(${GRPCURL_BIN_PATH} -plaintext -d '{"dogu_name": "nginx-static"}' localhost:"${GRPCURL_PORT}" health.DoguHealth.GetByName)
+  doguHealthJson=$(${GRPCURL_BIN_PATH} -plaintext -d '{"dogu_name": "postfix"}' localhost:"${GRPCURL_PORT}" health.DoguHealth.GetByName)
 
-  if [[ $(echo ${doguHealthJson} | ${JQ_BIN_PATH} -r '.fullName') == 'nginx-static' && $(echo ${doguHealthJson} | ${JQ_BIN_PATH} -r '.healthy') == 'true' ]]; then
-    echo "Test: [Dogu-Health-GetByName] Check if NginxStatic is healthy: Success!"
-    addSuccessTestCase "Dogu-Health-GetByName-NginxStatic" "List of returned Dogus contained a healthy 'nginx-static' dogu."
+  if [[ $(echo ${doguHealthJson} | ${JQ_BIN_PATH} -r '.fullName') == 'postfix' && $(echo ${doguHealthJson} | ${JQ_BIN_PATH} -r '.healthy') == 'true' ]]; then
+    echo "Test: [Dogu-Health-GetByName] Check if Postfix is healthy: Success!"
+    addSuccessTestCase "Dogu-Health-GetByName-Postfix" "List of returned Dogus contained a healthy 'postfix' dogu."
   else
-    echo "Test: [Dogu-Health-GetByName] Check if NginxStatic is healthy: Failed!"
-    addFailingTestCase "Dogu-Health-GetByName-NginxStatic" "Expected to get Dogu 'nginx-static' is healthy but got only: ${doguHealthJson}"
+    echo "Test: [Dogu-Health-GetByName] Check if Postfix is healthy: Failed!"
+    addFailingTestCase "Dogu-Health-GetByName-Postfix" "Expected to get Dogu 'postfix' is healthy but got only: ${doguHealthJson}"
   fi
 
-  ${GRPCURL_BIN_PATH} -plaintext -d '{"doguName": "nginx-static"}' localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.StopDogu >/dev/null 2>&1
+  ${GRPCURL_BIN_PATH} -plaintext -d '{"doguName": "postfix"}' localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.StopDogu >/dev/null 2>&1
   # Wait for dogu to be terminated
   sleep 5s
 
-  doguHealthJson=$(${GRPCURL_BIN_PATH} -plaintext -d '{"dogu_name": "nginx-static"}' localhost:"${GRPCURL_PORT}" health.DoguHealth.GetByName)
+  doguHealthJson=$(${GRPCURL_BIN_PATH} -plaintext -d '{"dogu_name": "postfix"}' localhost:"${GRPCURL_PORT}" health.DoguHealth.GetByName)
 
-  if [[ $(echo ${doguHealthJson} | ${JQ_BIN_PATH} -r '.fullName') == 'nginx-static' && $(echo ${doguHealthJson} | ${JQ_BIN_PATH} -r 'has("healthy")') == 'false' ]]; then
-    echo "Test: [Dogu-Health-GetByName] Check if NginxStatic is not healthy: Success!"
-    addSuccessTestCase "Dogu-Health-GetByName-NginxStatic" "List of returned Dogus contained a not-healthy 'nginx-static' dogu."
+  if [[ $(echo ${doguHealthJson} | ${JQ_BIN_PATH} -r '.fullName') == 'postfix' && $(echo ${doguHealthJson} | ${JQ_BIN_PATH} -r 'has("healthy")') == 'false' ]]; then
+    echo "Test: [Dogu-Health-GetByName] Check if Postfix is not healthy: Success!"
+    addSuccessTestCase "Dogu-Health-GetByName-Postfix" "List of returned Dogus contained a not-healthy 'postfix' dogu."
   else
-    echo "Test: [Dogu-Health-GetByName] Check if NginxStatic is not healthy: Failed!"
-    addFailingTestCase "Dogu-Health-GetByName-NginxStatic" "Expected to get Dogu 'nginx-static' is not-healthy but got only: ${doguHealthJson}"
+    echo "Test: [Dogu-Health-GetByName] Check if Postfix is not healthy: Failed!"
+    addFailingTestCase "Dogu-Health-GetByName-Postfix" "Expected to get Dogu 'postfix' is not-healthy but got only: ${doguHealthJson}"
   fi
 
 
-  ${GRPCURL_BIN_PATH} -plaintext -d '{"doguName": "nginx-static"}' localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.StartDogu >/dev/null 2>&1
+  ${GRPCURL_BIN_PATH} -plaintext -d '{"doguName": "postfix"}' localhost:"${GRPCURL_PORT}" doguAdministration.DoguAdministration.StartDogu >/dev/null 2>&1
   # Wait for dogu to be started
   sleep 20s
 
-  doguHealthJson=$(${GRPCURL_BIN_PATH} -plaintext -d '{"dogu_name": "nginx-static"}' localhost:"${GRPCURL_PORT}" health.DoguHealth.GetByName)
+  doguHealthJson=$(${GRPCURL_BIN_PATH} -plaintext -d '{"dogu_name": "postfix"}' localhost:"${GRPCURL_PORT}" health.DoguHealth.GetByName)
 
-  if [[ $(echo ${doguHealthJson} | ${JQ_BIN_PATH} -r '.fullName') == 'nginx-static' && $(echo ${doguHealthJson} | ${JQ_BIN_PATH} -r '.healthy') == 'true' ]]; then
-    echo "Test: [Dogu-Health-GetByName] Check if NginxStatic is healthy: Success!"
-    addSuccessTestCase "Dogu-Health-GetByName-NginxStatic" "List of returned Dogus contained a healthy 'nginx-static' dogu."
+  if [[ $(echo ${doguHealthJson} | ${JQ_BIN_PATH} -r '.fullName') == 'postfix' && $(echo ${doguHealthJson} | ${JQ_BIN_PATH} -r '.healthy') == 'true' ]]; then
+    echo "Test: [Dogu-Health-GetByName] Check if Postfix is healthy: Success!"
+    addSuccessTestCase "Dogu-Health-GetByName-Postfix" "List of returned Dogus contained a healthy 'postfix' dogu."
   else
-    echo "Test: [Dogu-Health-GetByName] Check if NginxStatic is healthy: Failed!"
-    addFailingTestCase "Dogu-Health-GetByName-NginxStatic" "Expected to get Dogu 'nginx-static' is healthy but got only: ${doguHealthJson}"
+    echo "Test: [Dogu-Health-GetByName] Check if Postfix is healthy: Failed!"
+    addFailingTestCase "Dogu-Health-GetByName-Postfix" "Expected to get Dogu 'postfix' is healthy but got only: ${doguHealthJson}"
   fi
 }
 
