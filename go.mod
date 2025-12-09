@@ -5,7 +5,7 @@ go 1.25.1
 require (
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/cloudogu/ces-commons-lib v0.2.0
-	github.com/cloudogu/ces-control-api v1.6.0
+	github.com/cloudogu/ces-control-api v1.6.1-0.20251209122640-c06c349ce864
 	github.com/cloudogu/cesapp-lib v0.18.1
 	github.com/cloudogu/k8s-backup-lib v1.7.0
 	github.com/cloudogu/k8s-blueprint-lib/v3 v3.0.1
@@ -13,7 +13,7 @@ require (
 	github.com/cloudogu/k8s-debug-mode-cr-lib v0.2.3
 	github.com/cloudogu/k8s-dogu-lib/v2 v2.9.0
 	github.com/cloudogu/k8s-registry-lib v0.5.1
-	github.com/cloudogu/k8s-support-archive-lib v0.2.0
+	github.com/cloudogu/k8s-support-archive-lib v1.0.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.11.1
