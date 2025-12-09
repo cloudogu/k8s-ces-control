@@ -90,7 +90,7 @@ node('docker') {
             stage('Setup') {
                 k3d.setVersionEcosystemCore("2.0.2")
                 k3d.yqEvalYamlFile("k3d_values.yaml", ".monitoring.components.k8s-prometheus.valuesObject.kube-prometheus-stack.nodeExporter.enabled = false")
-                k3d.setup("foo", ["enableMonitoring": true])
+                k3d.setup(["enableMonitoring": true])
             }
 
             stage("Wait for Setup") {
