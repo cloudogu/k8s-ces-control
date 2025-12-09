@@ -1,5 +1,5 @@
 #!groovy
-@Library('github.com/cloudogu/ces-build-lib@4.3.0')
+@Library('github.com/cloudogu/ces-build-lib@5.0.0')
 import com.cloudogu.ces.cesbuildlib.*
 
 // Creating necessary git objects, object cannot be named 'git' as this conflicts with the method named 'git' from the library
@@ -88,13 +88,9 @@ node('docker') {
             }
 
             stage('Setup') {
-                k3d.configureComponents(["k8s-minio":    ["version": "latest", "helmRepositoryNamespace": "k8s"],
-                                         "k8s-loki":     ["version": "latest", "helmRepositoryNamespace": "k8s"],
-                                         "k8s-prometheus": ["version": "latest", "helmRepositoryNamespace": "k8s", "valuesYamlOverwrite": "kube-prometheus-stack:\n  nodeExporter:\n    enabled: false"],
-                                         "k8s-support-archive-operator-crd": ["version": "latest", "helmRepositoryNamespace": "k8s"],
-                                         "k8s-support-archive-operator": ["version": "latest", "helmRepositoryNamespace": "k8s"]
-                ])
-                k3d.setup('4.2.0')
+                k3d.setVersionEcosystemCore("2.0.2")
+                k3d.yqEvalYamlFile("k3d_values.yaml", ".monitoring.components.k8s-prometheus.valuesObject.kube-prometheus-stack.nodeExporter.enabled = false")
+                k3d.setup(["enableMonitoring": true])
             }
 
             stage("Wait for Setup") {
