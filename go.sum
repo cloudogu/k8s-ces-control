@@ -20,6 +20,8 @@ github.com/cloudogu/ces-control-api v1.6.1-0.20251209084914-508c7aa1880d h1:MxG6
 github.com/cloudogu/ces-control-api v1.6.1-0.20251209084914-508c7aa1880d/go.mod h1:4kKlQppOuNVka0R7Ce+7KBv75c4xgxKOkJTJVXsa6Gs=
 github.com/cloudogu/ces-control-api v1.6.1-0.20251209122640-c06c349ce864 h1:W9iYggH5RVk7/k6McW9fyq+yUbz97Bj29LX2racSu5c=
 github.com/cloudogu/ces-control-api v1.6.1-0.20251209122640-c06c349ce864/go.mod h1:4kKlQppOuNVka0R7Ce+7KBv75c4xgxKOkJTJVXsa6Gs=
+github.com/cloudogu/ces-control-api v1.6.1-0.20251210133318-056a1d9a7e24 h1:NRelB4o0QY9xlQOq807X30/ih1+mn3Arw6ZyQegRcnE=
+github.com/cloudogu/ces-control-api v1.6.1-0.20251210133318-056a1d9a7e24/go.mod h1:4kKlQppOuNVka0R7Ce+7KBv75c4xgxKOkJTJVXsa6Gs=
 github.com/cloudogu/cesapp-lib v0.18.1 h1:LMdGktIefm/PuhdPqpLTPvjY1smO06EEGBbRSAaYi7U=
 github.com/cloudogu/cesapp-lib v0.18.1/go.mod h1:J05eXFxnz4enZblABlmiVTZaUtJ+LIhlJ2UF6l9jpDw=
 github.com/cloudogu/k8s-backup-lib v1.7.0 h1:piu0+IK7IejeKTmdIMKuBHt0QKSdLVYzCALNewTDeF4=
