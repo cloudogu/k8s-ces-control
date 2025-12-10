@@ -87,7 +87,12 @@ func (d *supportArchiveService) DownloadSupportArchive(req *pbMaintenance.Downlo
 		log.Log.Info("Error in getDownloadFile", "err", err)
 		return fmt.Errorf("failed to download ZIP file: %w", err)
 	}
-	defer reader.Close()
+	defer func(reader io.ReadCloser) {
+		err := reader.Close()
+		if err != nil {
+			log.Log.Error(err, "Error closing reader")
+		}
+	}(reader)
 
 	err = stream.WriteReaderToStream(reader, server)
 	if err != nil {
@@ -177,7 +182,10 @@ func (d *supportArchiveService) getDownloadFile(url string) (io.ReadCloser, erro
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		resp.Body.Close()
+		err := resp.Body.Close()
+		if err != nil {
+			log.Log.Error(err, "Error closing response body")
+		}
 		return nil, fmt.Errorf("bad status: %s", resp.Status)
 	}
 
