@@ -1,9 +1,10 @@
 package supportArchive
 
 import (
+	"net/http"
+
 	"github.com/cloudogu/ces-control-api/generated/maintenance"
 	"github.com/cloudogu/k8s-support-archive-lib/client/v1"
-	"net/http"
 )
 
 type supportArchiveClient interface {
@@ -12,8 +13,8 @@ type supportArchiveClient interface {
 
 //nolint:unused
 //goland:noinspection GoUnusedType
-type supportArchiveCreateserver interface {
-	maintenance.SupportArchive_CreateServer
+type supportArchiveDownloadServer interface {
+	maintenance.SupportArchive_DownloadSupportArchiveServer
 }
 
 type httpClient interface {

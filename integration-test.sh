@@ -285,15 +285,10 @@ testSupportArchive_Create() {
 
   # Create a temporary file to store the downloaded archive
   local tempArchiveFile=$(mktemp /tmp/support-archive-XXXXXX.zip)
-
   echo "Downloading support archive to ${tempArchiveFile}..."
 
-  # Get the JSON response from grpcurl
-  local createSupportArchiveJson
-  createSupportArchiveJson=$(${GRPCURL_BIN_PATH} -plaintext -d '{"common": {"excluded_contents": {}, "content_timeframe": {}}}' localhost:"${GRPCURL_PORT}" maintenance.SupportArchive.Create)
-
-  # Extract the base64-encoded data and decode it to a file
-  echo ${createSupportArchiveJson} | ${JQ_BIN_PATH} -r '.data' | base64 --decode > "${tempArchiveFile}"
+  ${GRPCURL_BIN_PATH} -plaintext -d '{"excluded_contents": {}, "content_timeframe": {}}' localhost:"${GRPCURL_PORT}" maintenance.SupportArchive.Create >/dev/null 2>&1
+  sleep 5s
 
   # Wait for a new support-archive-cr and check if it is created
   local newSupportArchives=""
@@ -311,6 +306,16 @@ testSupportArchive_Create() {
     addFailingTestCase "Support-Archive-Create" "No new support archive was created after API call."
     return
   fi
+
+  # Use only the first new archive
+  local firstArchive="${newlyCapturedArchives[0]}"
+
+  # Get the JSON response from grpcurl
+  local createSupportArchiveJson
+  createSupportArchiveJson=$(${GRPCURL_BIN_PATH} -plaintext -d "{\"name\": \"${firstArchive}\"}" localhost:"${GRPCURL_PORT}" maintenance.SupportArchive.DownloadSupportArchive)
+
+  # Extract the base64-encoded data and decode it to a file
+  echo ${createSupportArchiveJson} | ${JQ_BIN_PATH} -r '.data' | base64 --decode > "${tempArchiveFile}"
 
   # Check if the file has been created and is not empty
   if [ -f "${tempArchiveFile}" ] && [ -s "${tempArchiveFile}" ]; then
