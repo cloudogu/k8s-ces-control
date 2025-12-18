@@ -1,6 +1,8 @@
 package stream
 
 import (
+	"io"
+
 	pbTypes "github.com/cloudogu/ces-control-api/generated/types"
 )
 
@@ -27,6 +29,29 @@ func WriteToStream(data []byte, server GRPCStreamServer) error {
 			resp.Data = data[currentByte : currentByte+chunkSize]
 		}
 		if err := server.Send(resp); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// WriteReaderToStream reads from an io.Reader and writes data to stream server in chunks.
+func WriteReaderToStream(reader io.Reader, server GRPCStreamServer) error {
+	buffer := make([]byte, chunkSize)
+	resp := &pbTypes.ChunkedDataResponse{}
+
+	for {
+		n, err := reader.Read(buffer)
+		if n > 0 {
+			resp.Data = buffer[:n]
+			if sendErr := server.Send(resp); sendErr != nil {
+				return sendErr
+			}
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
 			return err
 		}
 	}
