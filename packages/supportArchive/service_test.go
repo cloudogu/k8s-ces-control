@@ -3,20 +3,19 @@ package supportArchive
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"strings"
+	"testing"
+	"time"
+
 	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
-	pbTypes "github.com/cloudogu/ces-control-api/generated/types"
 	v1 "github.com/cloudogu/k8s-support-archive-lib/api/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"io"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
-	"net/http"
-	"strings"
-	"testing"
-	"time"
 )
 
 func TestNewSupportArchiveService(t *testing.T) {
@@ -43,20 +42,18 @@ func Test_defaultSupportArchive_mapRequestSettingsToSupportArchive(t *testing.T)
 			reqFn: func(t *testing.T) *pbMaintenance.CreateSupportArchiveRequest {
 
 				return &pbMaintenance.CreateSupportArchiveRequest{
-					Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
-						ExcludedContents: &pbMaintenance.ExcludedContents{
-							SystemState:   true,
-							SensitiveData: true,
-							Logs:          true,
-							Events:        true,
-							VolumeInfo:    true,
-							SystemInfo:    true,
-						},
-						ContentTimeframe: &pbMaintenance.ContentTimeframe{
-							EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
-							StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
-						},
-					}},
+					ExcludedContents: &pbMaintenance.ExcludedContents{
+						SystemState:   true,
+						SensitiveData: true,
+						Logs:          true,
+						Events:        true,
+						VolumeInfo:    true,
+						SystemInfo:    true,
+					},
+					ContentTimeframe: &pbMaintenance.ContentTimeframe{
+						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
+						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
+					},
 				}
 			},
 			wantFn: func(t *testing.T) *v1.SupportArchive {
@@ -86,20 +83,18 @@ func Test_defaultSupportArchive_mapRequestSettingsToSupportArchive(t *testing.T)
 			reqFn: func(t *testing.T) *pbMaintenance.CreateSupportArchiveRequest {
 
 				return &pbMaintenance.CreateSupportArchiveRequest{
-					Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
-						ExcludedContents: &pbMaintenance.ExcludedContents{
-							SystemState:   true,
-							SensitiveData: true,
-							Logs:          true,
-							Events:        true,
-							VolumeInfo:    true,
-							SystemInfo:    true,
-						},
-						ContentTimeframe: &pbMaintenance.ContentTimeframe{
-							EndDateTime:   &timestamppb.Timestamp{Seconds: int64(1600)},
-							StartDateTime: &timestamppb.Timestamp{Seconds: int64(32000)},
-						},
-					}},
+					ExcludedContents: &pbMaintenance.ExcludedContents{
+						SystemState:   true,
+						SensitiveData: true,
+						Logs:          true,
+						Events:        true,
+						VolumeInfo:    true,
+						SystemInfo:    true,
+					},
+					ContentTimeframe: &pbMaintenance.ContentTimeframe{
+						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(1600)},
+						StartDateTime: &timestamppb.Timestamp{Seconds: int64(32000)},
+					},
 				}
 			},
 			wantFn: func(t *testing.T) *v1.SupportArchive {
@@ -131,12 +126,10 @@ func Test_defaultSupportArchive_mapRequestSettingsToSupportArchive(t *testing.T)
 
 	t.Run("successfully take endtime of now, if not set", func(t *testing.T) {
 		request := &pbMaintenance.CreateSupportArchiveRequest{
-			Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
-				ExcludedContents: &pbMaintenance.ExcludedContents{},
-				ContentTimeframe: &pbMaintenance.ContentTimeframe{
-					StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
-				},
-			}},
+			ExcludedContents: &pbMaintenance.ExcludedContents{},
+			ContentTimeframe: &pbMaintenance.ContentTimeframe{
+				StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
+			},
 		}
 
 		supportArchiveClientMock := newMockSupportArchiveClient(t)
@@ -164,24 +157,37 @@ func assertArchiveName(t *testing.T, got *v1.SupportArchive, beforeTime metav1.T
 }
 
 func Test_defaultSupportArchive_Create(t *testing.T) {
+	testCtx := context.Background()
+
 	tests := []struct {
 		name                   string
 		supportArchiveClientFn func(t *testing.T) supportArchiveClient
-		supportArchiveServerFn func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc)
-		supportArchiveHttpFn   func(t *testing.T) httpClient
 		req                    *pbMaintenance.CreateSupportArchiveRequest
 		wantErrMessage         string
 	}{
 		{
+			name: "should fail to map request settings",
+			req: &pbMaintenance.CreateSupportArchiveRequest{
+				ExcludedContents: &pbMaintenance.ExcludedContents{},
+				ContentTimeframe: &pbMaintenance.ContentTimeframe{
+					EndDateTime:   &timestamppb.Timestamp{Seconds: int64(16000)},
+					StartDateTime: &timestamppb.Timestamp{Seconds: int64(32000)},
+				},
+			},
+			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
+				clientMock := newMockSupportArchiveClient(t)
+				return clientMock
+			},
+			wantErrMessage: "failed to map support archive settings: ",
+		},
+		{
 			name: "should fail to create support archive CR",
 			req: &pbMaintenance.CreateSupportArchiveRequest{
-				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
-					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					ContentTimeframe: &pbMaintenance.ContentTimeframe{
-						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
-						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
-					},
-				}},
+				ExcludedContents: &pbMaintenance.ExcludedContents{},
+				ContentTimeframe: &pbMaintenance.ContentTimeframe{
+					EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
+					StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
+				},
 			},
 			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
 				clientMock := newMockSupportArchiveClient(t)
@@ -189,489 +195,30 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 					Return(nil, assert.AnError)
 				return clientMock
 			},
-			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
-				serverMock := newMockSupportArchiveCreateserver(t)
-				serverMock.EXPECT().Context().Return(t.Context())
-				return serverMock, nil
-			},
-			supportArchiveHttpFn: func(t *testing.T) httpClient { return nil },
-			wantErrMessage:       "failed to create support archive: ",
-		},
-		{
-			name: "should fail to create watch interface",
-			req: &pbMaintenance.CreateSupportArchiveRequest{
-				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
-					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					ContentTimeframe: &pbMaintenance.ContentTimeframe{
-						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
-						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
-					},
-				}},
-			},
-			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
-				clientMock := newMockSupportArchiveClient(t)
-				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
-					Return(nil, nil)
-				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(nil, assert.AnError)
-				return clientMock
-			},
-			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
-				serverMock := newMockSupportArchiveCreateserver(t)
-				serverMock.EXPECT().Context().Return(t.Context())
-				return serverMock, nil
-			},
-			supportArchiveHttpFn: func(t *testing.T) httpClient { return nil },
-			wantErrMessage:       "failed to create watch interface:",
-		},
-		{
-			name: "should fail when watch stops without result",
-			req: &pbMaintenance.CreateSupportArchiveRequest{
-				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
-					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					ContentTimeframe: &pbMaintenance.ContentTimeframe{
-						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
-						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
-					},
-				}},
-			},
-			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
-				clientMock := newMockSupportArchiveClient(t)
-				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
-					Return(nil, nil)
-
-				watcher := watch.NewFake()
-				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(watcher, nil)
-
-				go func() {
-					time.Sleep(100 * time.Millisecond)
-					watcher.Stop()
-				}()
-				return clientMock
-			},
-			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
-				serverMock := newMockSupportArchiveCreateserver(t)
-				serverMock.EXPECT().Context().Return(t.Context())
-				return serverMock, nil
-			},
-			supportArchiveHttpFn: func(t *testing.T) httpClient { return nil },
-			wantErrMessage:       "failed to create or watch support archive:",
-		},
-		{
-			name: "should fail when watch returns nil",
-			req: &pbMaintenance.CreateSupportArchiveRequest{
-				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
-					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					ContentTimeframe: &pbMaintenance.ContentTimeframe{
-						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
-						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
-					},
-				}},
-			},
-			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
-				clientMock := newMockSupportArchiveClient(t)
-				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
-					Return(nil, nil)
-
-				watcher := watch.NewFake()
-				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(watcher, nil)
-
-				go func() {
-					time.Sleep(100 * time.Millisecond)
-					watcher.Action(watch.Modified, nil)
-				}()
-				return clientMock
-			},
-			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
-				serverMock := newMockSupportArchiveCreateserver(t)
-				serverMock.EXPECT().Context().Return(t.Context())
-				return serverMock, nil
-			},
-			supportArchiveHttpFn: func(t *testing.T) httpClient { return nil },
-			wantErrMessage:       "failed to create or watch support archive:",
-		},
-		{
-			name: "should fail when download path is not a url",
-			req: &pbMaintenance.CreateSupportArchiveRequest{
-				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
-					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					ContentTimeframe: &pbMaintenance.ContentTimeframe{
-						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
-						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
-					},
-				}},
-			},
-			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
-				clientMock := newMockSupportArchiveClient(t)
-				var archiveName string
-				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
-					RunAndReturn(func(ctx context.Context, archive *v1.SupportArchive, options metav1.CreateOptions) (*v1.SupportArchive, error) {
-						archiveName = archive.Name
-						return nil, nil
-					})
-				watcher := watch.NewFake()
-				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(watcher, nil)
-
-				go func() {
-					time.Sleep(100 * time.Millisecond)
-					watcher.Action(watch.Modified, &v1.SupportArchive{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: archiveName,
-						},
-						Status: v1.SupportArchiveStatus{
-							Conditions: []metav1.Condition{
-								{Type: v1.ConditionSupportArchiveCreated, Status: metav1.ConditionTrue},
-							},
-							DownloadPath: "§$(§/$$=§%)(",
-						},
-					})
-				}()
-				return clientMock
-			},
-			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
-				serverMock := newMockSupportArchiveCreateserver(t)
-				timeoutCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-				serverMock.EXPECT().Context().Return(timeoutCtx)
-				return serverMock, cancel
-			},
-			supportArchiveHttpFn: func(t *testing.T) httpClient { return nil },
-			wantErrMessage:       "failed to create request: ",
-		},
-		{
-			name: "should fail when http client throws error",
-			req: &pbMaintenance.CreateSupportArchiveRequest{
-				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
-					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					ContentTimeframe: &pbMaintenance.ContentTimeframe{
-						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
-						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
-					},
-				}},
-			},
-			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
-				clientMock := newMockSupportArchiveClient(t)
-				var archiveName string
-				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
-					RunAndReturn(func(ctx context.Context, archive *v1.SupportArchive, options metav1.CreateOptions) (*v1.SupportArchive, error) {
-						archiveName = archive.Name
-						return nil, nil
-					})
-				watcher := watch.NewFake()
-				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(watcher, nil)
-
-				go func() {
-					time.Sleep(100 * time.Millisecond)
-					watcher.Action(watch.Modified, &v1.SupportArchive{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: archiveName,
-						},
-						Status: v1.SupportArchiveStatus{
-							Conditions: []metav1.Condition{
-								{Type: v1.ConditionSupportArchiveCreated, Status: metav1.ConditionTrue},
-							},
-							DownloadPath: "testDownloadPath",
-						},
-					})
-				}()
-				return clientMock
-			},
-			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
-				serverMock := newMockSupportArchiveCreateserver(t)
-				timeoutCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-				serverMock.EXPECT().Context().Return(timeoutCtx)
-				return serverMock, cancel
-			},
-			supportArchiveHttpFn: func(t *testing.T) httpClient {
-				httpMock := newMockHttpClient(t)
-				httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).Return(nil, assert.AnError)
-				return httpMock
-			},
-			wantErrMessage: "failed to send request: ",
-		},
-		{
-			name: "should fail when http status code is not ok",
-			req: &pbMaintenance.CreateSupportArchiveRequest{
-				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
-					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					ContentTimeframe: &pbMaintenance.ContentTimeframe{
-						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
-						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
-					},
-				}},
-			},
-			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
-				clientMock := newMockSupportArchiveClient(t)
-				var archiveName string
-				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
-					RunAndReturn(func(ctx context.Context, archive *v1.SupportArchive, options metav1.CreateOptions) (*v1.SupportArchive, error) {
-						archiveName = archive.Name
-						return nil, nil
-					})
-				watcher := watch.NewFake()
-				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(watcher, nil)
-
-				go func() {
-					time.Sleep(100 * time.Millisecond)
-					watcher.Action(watch.Modified, &v1.SupportArchive{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: archiveName,
-						},
-						Status: v1.SupportArchiveStatus{
-							Conditions: []metav1.Condition{
-								{Type: v1.ConditionSupportArchiveCreated, Status: metav1.ConditionTrue},
-							},
-							DownloadPath: "testDownloadPath",
-						},
-					})
-				}()
-				return clientMock
-			},
-			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
-				serverMock := newMockSupportArchiveCreateserver(t)
-				timeoutCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-				serverMock.EXPECT().Context().Return(timeoutCtx)
-				return serverMock, cancel
-			},
-			supportArchiveHttpFn: func(t *testing.T) httpClient {
-				httpMock := newMockHttpClient(t)
-				httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).Return(
-					&http.Response{
-						StatusCode: http.StatusBadRequest,
-						Body:       io.NopCloser(strings.NewReader("myTest.zip")),
-					}, nil)
-				return httpMock
-			},
-			wantErrMessage: "bad status: ",
-		},
-		{
-			name: "should fail when download archive cannot be sent",
-			req: &pbMaintenance.CreateSupportArchiveRequest{
-				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
-					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					ContentTimeframe: &pbMaintenance.ContentTimeframe{
-						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
-						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
-					},
-				}},
-			},
-			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
-				clientMock := newMockSupportArchiveClient(t)
-				var archiveName string
-				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
-					RunAndReturn(func(ctx context.Context, archive *v1.SupportArchive, options metav1.CreateOptions) (*v1.SupportArchive, error) {
-						archiveName = archive.Name
-						return nil, nil
-					})
-				watcher := watch.NewFake()
-				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(watcher, nil)
-
-				go func() {
-					time.Sleep(100 * time.Millisecond)
-					watcher.Action(watch.Modified, &v1.SupportArchive{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: archiveName,
-						},
-						Status: v1.SupportArchiveStatus{
-							Conditions: []metav1.Condition{
-								{Type: v1.ConditionSupportArchiveCreated, Status: metav1.ConditionTrue},
-							},
-							DownloadPath: "testDownloadPath",
-						},
-					})
-				}()
-				return clientMock
-			},
-			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
-				serverMock := newMockSupportArchiveCreateserver(t)
-				timeoutCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-				serverMock.EXPECT().Context().Return(timeoutCtx)
-				resp := &pbTypes.ChunkedDataResponse{}
-				resp.Data = []byte("myTest.zip")
-				serverMock.EXPECT().Send(resp).Return(assert.AnError)
-
-				return serverMock, cancel
-			},
-			supportArchiveHttpFn: func(t *testing.T) httpClient {
-				httpMock := newMockHttpClient(t)
-				httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).Return(
-					&http.Response{
-						StatusCode: http.StatusOK,
-						Body:       io.NopCloser(strings.NewReader("myTest.zip")),
-					}, nil)
-				return httpMock
-			},
-			wantErrMessage: "failed to send response:",
-		},
-		{
-			name: "should fail on context timeout",
-			req: &pbMaintenance.CreateSupportArchiveRequest{
-				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
-					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					ContentTimeframe: &pbMaintenance.ContentTimeframe{},
-				}},
-			},
-			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
-				clientMock := newMockSupportArchiveClient(t)
-				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
-					Return(nil, nil)
-
-				watcher := watch.NewFake()
-				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(watcher, nil)
-				return clientMock
-			},
-			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
-				timeoutCtx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
-				serverMock := newMockSupportArchiveCreateserver(t)
-				serverMock.EXPECT().Context().Return(timeoutCtx)
-
-				return serverMock, cancel
-			},
-			supportArchiveHttpFn: func(t *testing.T) httpClient { return nil },
-			wantErrMessage:       "timed out waiting for support archive to be created",
-		},
-		{
-			name: "should ignore archives with different name",
-			req: &pbMaintenance.CreateSupportArchiveRequest{
-				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
-					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					ContentTimeframe: &pbMaintenance.ContentTimeframe{
-						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
-						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
-					},
-				}},
-			},
-			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
-				timestampStart := &timestamppb.Timestamp{Seconds: int64(16000)}
-				timestampEnd := &timestamppb.Timestamp{Seconds: int64(32000)}
-				clientMock := newMockSupportArchiveClient(t)
-				var archiveName string
-				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
-					RunAndReturn(func(ctx context.Context, archive *v1.SupportArchive, options metav1.CreateOptions) (*v1.SupportArchive, error) {
-						archiveName = archive.Name
-						assert.Equal(t, archive.Spec.ExcludedContents, v1.ExcludedContents{})
-						assert.Equal(t, archive.Spec.ContentTimeframe.StartTime, metav1.NewTime(timestampStart.AsTime()))
-						assert.Equal(t, archive.Spec.ContentTimeframe.EndTime, metav1.NewTime(timestampEnd.AsTime()))
-						return nil, nil
-					})
-
-				watcher := watch.NewFake()
-				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(watcher, nil)
-
-				go func() {
-					time.Sleep(100 * time.Millisecond)
-					watcher.Action(watch.Modified, &v1.SupportArchive{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "wrongName",
-						},
-						Status: v1.SupportArchiveStatus{
-							Conditions: []metav1.Condition{
-								{Type: v1.ConditionSupportArchiveCreated, Status: metav1.ConditionTrue},
-							},
-							DownloadPath: "differentPath", // this would let the Send-Mock fail
-						},
-					})
-					time.Sleep(500 * time.Millisecond)
-					watcher.Action(watch.Modified, &v1.SupportArchive{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: archiveName,
-						},
-						Status: v1.SupportArchiveStatus{
-							Conditions: []metav1.Condition{
-								{Type: v1.ConditionSupportArchiveCreated, Status: metav1.ConditionTrue},
-							},
-							DownloadPath: "testDownloadPath",
-						},
-					})
-				}()
-				return clientMock
-			},
-			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
-				timeoutCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-				serverMock := newMockSupportArchiveCreateserver(t)
-				serverMock.EXPECT().Context().Return(timeoutCtx)
-				resp := &pbTypes.ChunkedDataResponse{}
-				resp.Data = []byte("myTest.zip")
-				serverMock.EXPECT().Send(resp).Return(nil)
-
-				return serverMock, cancel
-			},
-			supportArchiveHttpFn: func(t *testing.T) httpClient {
-				httpMock := newMockHttpClient(t)
-				httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).RunAndReturn(func(request *http.Request) (*http.Response, error) {
-					assert.Equal(t, request.Method, "GET")
-					assert.Equal(t, request.URL.Path, "testDownloadPath")
-					return &http.Response{
-						StatusCode: http.StatusOK,
-						Body:       io.NopCloser(strings.NewReader("myTest.zip")),
-					}, nil
-				})
-				return httpMock
-			},
+			wantErrMessage: "failed to create support archive: ",
 		},
 		{
 			name: "should succeed",
 			req: &pbMaintenance.CreateSupportArchiveRequest{
-				Environment: &pbMaintenance.CreateSupportArchiveRequest_Common{Common: &pbMaintenance.CommonSupportArchiveRequest{
-					ExcludedContents: &pbMaintenance.ExcludedContents{},
-					ContentTimeframe: &pbMaintenance.ContentTimeframe{
-						EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
-						StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
-					},
-				}},
+				ExcludedContents: &pbMaintenance.ExcludedContents{},
+				ContentTimeframe: &pbMaintenance.ContentTimeframe{
+					EndDateTime:   &timestamppb.Timestamp{Seconds: int64(32000)},
+					StartDateTime: &timestamppb.Timestamp{Seconds: int64(16000)},
+				},
 			},
 			supportArchiveClientFn: func(t *testing.T) supportArchiveClient {
 				timestampStart := &timestamppb.Timestamp{Seconds: int64(16000)}
 				timestampEnd := &timestamppb.Timestamp{Seconds: int64(32000)}
 				clientMock := newMockSupportArchiveClient(t)
-				var archiveName string
 				clientMock.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1.SupportArchive"), metav1.CreateOptions{}).
 					RunAndReturn(func(ctx context.Context, archive *v1.SupportArchive, options metav1.CreateOptions) (*v1.SupportArchive, error) {
-						archiveName = archive.Name
 						assert.Equal(t, archive.Spec.ExcludedContents, v1.ExcludedContents{})
 						assert.Equal(t, archive.Spec.ContentTimeframe.StartTime, metav1.NewTime(timestampStart.AsTime()))
 						assert.Equal(t, archive.Spec.ContentTimeframe.EndTime, metav1.NewTime(timestampEnd.AsTime()))
 						return nil, nil
 					})
 
-				watcher := watch.NewFake()
-				clientMock.EXPECT().Watch(mock.Anything, metav1.ListOptions{}).Return(watcher, nil)
-
-				go func() {
-					time.Sleep(1 * time.Second)
-					watcher.Action(watch.Modified, &v1.SupportArchive{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: archiveName,
-						},
-						Status: v1.SupportArchiveStatus{
-							Conditions: []metav1.Condition{
-								{Type: v1.ConditionSupportArchiveCreated, Status: metav1.ConditionTrue},
-							},
-							DownloadPath: "testDownloadPath",
-						},
-					})
-				}()
 				return clientMock
-			},
-			supportArchiveServerFn: func(t *testing.T) (supportArchiveCreateserver, context.CancelFunc) {
-				timeoutCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-				serverMock := newMockSupportArchiveCreateserver(t)
-				serverMock.EXPECT().Context().Return(timeoutCtx)
-				resp := &pbTypes.ChunkedDataResponse{}
-				resp.Data = []byte(("myTest.zip"))
-				serverMock.EXPECT().Send(resp).Return(nil)
-
-				return serverMock, cancel
-			},
-			supportArchiveHttpFn: func(t *testing.T) httpClient {
-				httpMock := newMockHttpClient(t)
-				httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).RunAndReturn(func(request *http.Request) (*http.Response, error) {
-					assert.Equal(t, request.Method, "GET")
-					assert.Equal(t, request.URL.Path, "testDownloadPath")
-					return &http.Response{
-						StatusCode: http.StatusOK,
-						Body:       io.NopCloser(strings.NewReader("myTest.zip")),
-					}, nil
-				})
-				return httpMock
 			},
 		},
 	}
@@ -679,15 +226,12 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
 			clientmock := tt.supportArchiveClientFn(t)
-			serverMock, cancelWatch := tt.supportArchiveServerFn(t)
-			if cancelWatch != nil {
-				defer cancelWatch()
+			service := &supportArchiveService{
+				supportArchiveClient: clientmock,
 			}
-			httpmock := tt.supportArchiveHttpFn(t)
-			service := NewSupportArchiveService(clientmock, httpmock)
 
 			// when
-			err := service.Create(tt.req, serverMock)
+			resp, err := service.Create(testCtx, tt.req)
 
 			//then
 			if tt.wantErrMessage != "" {
@@ -695,7 +239,448 @@ func Test_defaultSupportArchive_Create(t *testing.T) {
 				assert.True(t, strings.Contains(err.Error(), tt.wantErrMessage))
 			} else {
 				require.NoError(t, err)
+				assert.NotNil(t, resp)
 			}
+		})
+	}
+}
+
+func Test_supportArchiveService_AllSupportArchives(t *testing.T) {
+	testCtx := context.Background()
+	t.Run("should return all support archives", func(t *testing.T) {
+		mSupportArchiveClient := newMockSupportArchiveClient(t)
+		mSupportArchiveClient.EXPECT().List(testCtx, metav1.ListOptions{}).Return(&v1.SupportArchiveList{
+			Items: []v1.SupportArchive{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "archive-1",
+						CreationTimestamp: metav1.Time{Time: time.Unix(16000, 0)},
+					},
+					Status: v1.SupportArchiveStatus{
+						Errors:       []string{},
+						DownloadPath: "",
+						Conditions:   []metav1.Condition{},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "archive-2",
+						CreationTimestamp: metav1.Time{Time: time.Unix(24000, 0)},
+					},
+					Status: v1.SupportArchiveStatus{
+						Errors:       []string{},
+						DownloadPath: "",
+						Conditions:   []metav1.Condition{},
+					},
+				},
+			},
+		}, nil)
+
+		sut := &supportArchiveService{
+			supportArchiveClient: mSupportArchiveClient,
+		}
+
+		archives, err := sut.AllSupportArchives(testCtx, nil)
+
+		require.NoError(t, err)
+		assert.Len(t, archives.SupportArchives, 2)
+
+		assert.Equal(t, "archive-1", archives.SupportArchives[0].Name)
+		assert.Equal(t, timestamppb.New(time.Unix(16000, 0)), archives.SupportArchives[0].CreatedDateTime)
+		assert.Equal(t, pbMaintenance.SupportArchiveStatus_SUPPORT_ARCHIVE_STATUS_IN_PROGRESS, archives.SupportArchives[0].Status)
+
+		assert.Equal(t, "archive-2", archives.SupportArchives[1].Name)
+		assert.Equal(t, timestamppb.New(time.Unix(24000, 0)), archives.SupportArchives[1].CreatedDateTime)
+		assert.Equal(t, pbMaintenance.SupportArchiveStatus_SUPPORT_ARCHIVE_STATUS_IN_PROGRESS, archives.SupportArchives[1].Status)
+	})
+
+	t.Run("should return error for error listing archives", func(t *testing.T) {
+		mSupportArchiveClient := newMockSupportArchiveClient(t)
+		mSupportArchiveClient.EXPECT().List(testCtx, metav1.ListOptions{}).Return(nil, assert.AnError)
+
+		sut := &supportArchiveService{
+			supportArchiveClient: mSupportArchiveClient,
+		}
+
+		_, err := sut.AllSupportArchives(testCtx, nil)
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to list support archives:")
+	})
+}
+
+func Test_supportArchiveService_DeleteSupportArchive(t *testing.T) {
+	testCtx := context.Background()
+	t.Run("should delete archive", func(t *testing.T) {
+		mSupportArchiveClient := newMockSupportArchiveClient(t)
+		mSupportArchiveClient.EXPECT().Delete(testCtx, "archive-1", metav1.DeleteOptions{}).Return(nil)
+
+		sut := &supportArchiveService{
+			supportArchiveClient: mSupportArchiveClient,
+		}
+
+		resp, err := sut.DeleteSupportArchive(testCtx, &pbMaintenance.DeleteSupportArchiveRequest{Name: "archive-1"})
+
+		require.NoError(t, err)
+		assert.NotNil(t, resp)
+	})
+
+	t.Run("should fail delete archive for error deleting", func(t *testing.T) {
+		mSupportArchiveClient := newMockSupportArchiveClient(t)
+		mSupportArchiveClient.EXPECT().Delete(testCtx, "archive-1", metav1.DeleteOptions{}).Return(assert.AnError)
+
+		sut := &supportArchiveService{
+			supportArchiveClient: mSupportArchiveClient,
+		}
+
+		_, err := sut.DeleteSupportArchive(testCtx, &pbMaintenance.DeleteSupportArchiveRequest{Name: "archive-1"})
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to delete support archive:")
+	})
+}
+
+func Test_supportArchiveService_DownloadSupportArchive(t *testing.T) {
+	testCtx := context.Background()
+	t.Run("should download archive", func(t *testing.T) {
+		mHttpClient := newMockHttpClient(t)
+		mHttpClient.EXPECT().Do(mock.AnythingOfType("*http.Request")).RunAndReturn(func(request *http.Request) (*http.Response, error) {
+			assert.Equal(t, request.Method, "GET")
+			assert.Equal(t, request.URL.Path, "/download/archive-1")
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader("myTest.zip")),
+			}, nil
+		})
+
+		mSupportArchiveClient := newMockSupportArchiveClient(t)
+		mSupportArchiveClient.EXPECT().Get(testCtx, "archive-1", metav1.GetOptions{}).Return(&v1.SupportArchive{
+			Status: v1.SupportArchiveStatus{
+				DownloadPath: "http://localhost:8080/download/archive-1",
+			},
+		}, nil)
+
+		mServer := newMockSupportArchiveDownloadServer(t)
+		mServer.EXPECT().Send(mock.Anything).Return(nil)
+		mServer.EXPECT().Context().Return(testCtx)
+
+		sut := &supportArchiveService{
+			supportArchiveClient: mSupportArchiveClient,
+			httpClient:           mHttpClient,
+			writeToStream:        nil,
+		}
+
+		err := sut.DownloadSupportArchive(&pbMaintenance.DownloadSupportArchiveRequest{Name: "archive-1"}, mServer)
+
+		require.NoError(t, err)
+	})
+
+	t.Run("should fail to download archive for error streaming", func(t *testing.T) {
+		mHttpClient := newMockHttpClient(t)
+		mHttpClient.EXPECT().Do(mock.AnythingOfType("*http.Request")).RunAndReturn(func(request *http.Request) (*http.Response, error) {
+			assert.Equal(t, request.Method, "GET")
+			assert.Equal(t, request.URL.Path, "/download/archive-1")
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader("myTest.zip")),
+			}, nil
+		})
+
+		mSupportArchiveClient := newMockSupportArchiveClient(t)
+		mSupportArchiveClient.EXPECT().Get(testCtx, "archive-1", metav1.GetOptions{}).Return(&v1.SupportArchive{
+			Status: v1.SupportArchiveStatus{
+				DownloadPath: "http://localhost:8080/download/archive-1",
+			},
+		}, nil)
+
+		mServer := newMockSupportArchiveDownloadServer(t)
+		mServer.EXPECT().Send(mock.Anything).Return(assert.AnError)
+		mServer.EXPECT().Context().Return(testCtx)
+
+		sut := &supportArchiveService{
+			supportArchiveClient: mSupportArchiveClient,
+			httpClient:           mHttpClient,
+			writeToStream:        nil,
+		}
+
+		err := sut.DownloadSupportArchive(&pbMaintenance.DownloadSupportArchiveRequest{Name: "archive-1"}, mServer)
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed stream support-archive file:")
+	})
+
+	t.Run("should fail to download archive for error getting file", func(t *testing.T) {
+		mHttpClient := newMockHttpClient(t)
+		mHttpClient.EXPECT().Do(mock.AnythingOfType("*http.Request")).RunAndReturn(func(request *http.Request) (*http.Response, error) {
+			assert.Equal(t, request.Method, "GET")
+			assert.Equal(t, request.URL.Path, "/download/archive-1")
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader("myTest.zip")),
+			}, assert.AnError
+		})
+
+		mSupportArchiveClient := newMockSupportArchiveClient(t)
+		mSupportArchiveClient.EXPECT().Get(testCtx, "archive-1", metav1.GetOptions{}).Return(&v1.SupportArchive{
+			Status: v1.SupportArchiveStatus{
+				DownloadPath: "http://localhost:8080/download/archive-1",
+			},
+		}, nil)
+
+		mServer := newMockSupportArchiveDownloadServer(t)
+		mServer.EXPECT().Context().Return(testCtx)
+
+		sut := &supportArchiveService{
+			supportArchiveClient: mSupportArchiveClient,
+			httpClient:           mHttpClient,
+			writeToStream:        nil,
+		}
+
+		err := sut.DownloadSupportArchive(&pbMaintenance.DownloadSupportArchiveRequest{Name: "archive-1"}, mServer)
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to download ZIP file:")
+	})
+
+	t.Run("should fail to download archive when archive has now downloadLink", func(t *testing.T) {
+		mHttpClient := newMockHttpClient(t)
+
+		mSupportArchiveClient := newMockSupportArchiveClient(t)
+		mSupportArchiveClient.EXPECT().Get(testCtx, "archive-1", metav1.GetOptions{}).Return(&v1.SupportArchive{
+			Status: v1.SupportArchiveStatus{},
+		}, nil)
+
+		mServer := newMockSupportArchiveDownloadServer(t)
+		mServer.EXPECT().Context().Return(testCtx)
+
+		sut := &supportArchiveService{
+			supportArchiveClient: mSupportArchiveClient,
+			httpClient:           mHttpClient,
+			writeToStream:        nil,
+		}
+
+		err := sut.DownloadSupportArchive(&pbMaintenance.DownloadSupportArchiveRequest{Name: "archive-1"}, mServer)
+
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "support archive is not ready yet")
+	})
+
+	t.Run("should fail to download archive for error getting archive", func(t *testing.T) {
+		mHttpClient := newMockHttpClient(t)
+		mSupportArchiveClient := newMockSupportArchiveClient(t)
+		mSupportArchiveClient.EXPECT().Get(testCtx, "archive-1", metav1.GetOptions{}).Return(nil, assert.AnError)
+
+		mServer := newMockSupportArchiveDownloadServer(t)
+		mServer.EXPECT().Context().Return(testCtx)
+
+		sut := &supportArchiveService{
+			supportArchiveClient: mSupportArchiveClient,
+			httpClient:           mHttpClient,
+			writeToStream:        nil,
+		}
+
+		err := sut.DownloadSupportArchive(&pbMaintenance.DownloadSupportArchiveRequest{Name: "archive-1"}, mServer)
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to get support archive:")
+	})
+}
+
+func Test_supportArchiveService_downloadFile(t *testing.T) {
+	t.Run("should successfully download file", func(t *testing.T) {
+		mHttpClient := newMockHttpClient(t)
+		mHttpClient.EXPECT().Do(mock.AnythingOfType("*http.Request")).RunAndReturn(func(request *http.Request) (*http.Response, error) {
+			assert.Equal(t, "GET", request.Method)
+			assert.Equal(t, "http://example.com/file.zip", request.URL.String())
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Status:     "200 OK",
+				Body:       io.NopCloser(strings.NewReader("file content")),
+			}, nil
+		})
+
+		sut := &supportArchiveService{
+			httpClient: mHttpClient,
+		}
+
+		reader, err := sut.getDownloadFile("http://example.com/file.zip")
+
+		require.NoError(t, err)
+		require.NotNil(t, reader)
+		defer reader.Close()
+
+		content, err := io.ReadAll(reader)
+		require.NoError(t, err)
+		assert.Equal(t, "file content", string(content))
+	})
+
+	t.Run("should fail when request creation fails", func(t *testing.T) {
+		mHttpClient := newMockHttpClient(t)
+
+		sut := &supportArchiveService{
+			httpClient: mHttpClient,
+		}
+
+		reader, err := sut.getDownloadFile(":")
+
+		require.Error(t, err)
+		assert.Nil(t, reader)
+		assert.ErrorContains(t, err, "failed to create request:")
+	})
+
+	t.Run("should fail when HTTP request fails", func(t *testing.T) {
+		mHttpClient := newMockHttpClient(t)
+		mHttpClient.EXPECT().Do(mock.AnythingOfType("*http.Request")).Return(nil, assert.AnError)
+
+		sut := &supportArchiveService{
+			httpClient: mHttpClient,
+		}
+
+		reader, err := sut.getDownloadFile("http://example.com/file.zip")
+
+		require.Error(t, err)
+		assert.Nil(t, reader)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to send request:")
+	})
+
+	t.Run("should fail when status code is not OK", func(t *testing.T) {
+		mHttpClient := newMockHttpClient(t)
+		mHttpClient.EXPECT().Do(mock.AnythingOfType("*http.Request")).Return(&http.Response{
+			StatusCode: http.StatusNotFound,
+			Status:     "404 Not Found",
+			Body:       io.NopCloser(strings.NewReader("")),
+		}, nil)
+
+		sut := &supportArchiveService{
+			httpClient: mHttpClient,
+		}
+
+		reader, err := sut.getDownloadFile("http://example.com/file.zip")
+
+		require.Error(t, err)
+		assert.Nil(t, reader)
+		assert.ErrorContains(t, err, "bad status: 404 Not Found")
+	})
+
+	t.Run("should fail when status code is 500", func(t *testing.T) {
+		mHttpClient := newMockHttpClient(t)
+		mHttpClient.EXPECT().Do(mock.AnythingOfType("*http.Request")).Return(&http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Status:     "500 Internal Server Error",
+			Body:       io.NopCloser(strings.NewReader("")),
+		}, nil)
+
+		sut := &supportArchiveService{
+			httpClient: mHttpClient,
+		}
+
+		reader, err := sut.getDownloadFile("http://example.com/file.zip")
+
+		require.Error(t, err)
+		assert.Nil(t, reader)
+		assert.ErrorContains(t, err, "bad status: 500 Internal Server Error")
+	})
+}
+
+func Test_getStatus(t *testing.T) {
+	tests := []struct {
+		name    string
+		archive v1.SupportArchive
+		want    pbMaintenance.SupportArchiveStatus
+	}{
+		{
+			name: "should return FAILED when archive has errors",
+			archive: v1.SupportArchive{
+				Status: v1.SupportArchiveStatus{
+					Errors: []string{"error 1", "error 2"},
+				},
+			},
+			want: pbMaintenance.SupportArchiveStatus_SUPPORT_ARCHIVE_STATUS_FAILED,
+		},
+		{
+			name: "should return COMPLETED when archive is created with download path",
+			archive: v1.SupportArchive{
+				Status: v1.SupportArchiveStatus{
+					Errors:       []string{},
+					DownloadPath: "http://localhost:8080/download/archive-1",
+					Conditions: []metav1.Condition{
+						{
+							Type:   v1.ConditionSupportArchiveCreated,
+							Status: metav1.ConditionTrue,
+						},
+					},
+				},
+			},
+			want: pbMaintenance.SupportArchiveStatus_SUPPORT_ARCHIVE_STATUS_COMPLETED,
+		},
+		{
+			name: "should return CREATED when archive is created without download path",
+			archive: v1.SupportArchive{
+				Status: v1.SupportArchiveStatus{
+					Errors:       []string{},
+					DownloadPath: "",
+					Conditions: []metav1.Condition{
+						{
+							Type:   v1.ConditionSupportArchiveCreated,
+							Status: metav1.ConditionTrue,
+						},
+					},
+				},
+			},
+			want: pbMaintenance.SupportArchiveStatus_SUPPORT_ARCHIVE_STATUS_CREATED,
+		},
+		{
+			name: "should return IN_PROGRESS when archive has no conditions",
+			archive: v1.SupportArchive{
+				Status: v1.SupportArchiveStatus{
+					Errors:     []string{},
+					Conditions: []metav1.Condition{},
+				},
+			},
+			want: pbMaintenance.SupportArchiveStatus_SUPPORT_ARCHIVE_STATUS_IN_PROGRESS,
+		},
+		{
+			name: "should return IN_PROGRESS when archive condition is not true",
+			archive: v1.SupportArchive{
+				Status: v1.SupportArchiveStatus{
+					Errors: []string{},
+					Conditions: []metav1.Condition{
+						{
+							Type:   v1.ConditionSupportArchiveCreated,
+							Status: metav1.ConditionFalse,
+						},
+					},
+				},
+			},
+			want: pbMaintenance.SupportArchiveStatus_SUPPORT_ARCHIVE_STATUS_IN_PROGRESS,
+		},
+		{
+			name: "should return FAILED when archive has errors even with completed condition",
+			archive: v1.SupportArchive{
+				Status: v1.SupportArchiveStatus{
+					Errors:       []string{"error"},
+					DownloadPath: "http://localhost:8080/download/archive-1",
+					Conditions: []metav1.Condition{
+						{
+							Type:   v1.ConditionSupportArchiveCreated,
+							Status: metav1.ConditionTrue,
+						},
+					},
+				},
+			},
+			want: pbMaintenance.SupportArchiveStatus_SUPPORT_ARCHIVE_STATUS_FAILED,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getStatus(tt.archive)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

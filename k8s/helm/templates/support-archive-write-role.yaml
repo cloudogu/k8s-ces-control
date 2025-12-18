@@ -15,5 +15,5 @@ rules:
       - get
       - create
       - update
-      - watch
+      - delete
 

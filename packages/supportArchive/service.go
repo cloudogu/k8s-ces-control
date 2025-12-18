@@ -1,15 +1,16 @@
 package supportArchive
 
 import (
+	"context"
 	"fmt"
+	"io"
+	"net/http"
+
 	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
 	"github.com/cloudogu/k8s-ces-control/packages/stream"
 	v1 "github.com/cloudogu/k8s-support-archive-lib/api/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"io"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
-	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -28,39 +29,102 @@ func NewSupportArchiveService(client supportArchiveClient, http httpClient) *sup
 	}
 }
 
-func (d *supportArchiveService) Create(req *pbMaintenance.CreateSupportArchiveRequest, server pbMaintenance.SupportArchive_CreateServer) error {
+func (d *supportArchiveService) Create(ctx context.Context, req *pbMaintenance.CreateSupportArchiveRequest) (*pbMaintenance.CreateSupportArchiveResponse, error) {
 	supportArchive, err := d.mapRequestSettingsToSupportArchive(req)
 	if err != nil {
-		return fmt.Errorf("failed to map support archive settings: %q", err)
+		return nil, fmt.Errorf("failed to map support archive settings: %q", err)
 	}
 
-	downloadPath, err := d.createAndWatchSupportArchive(supportArchive, server)
+	_, err = d.supportArchiveClient.Create(ctx, supportArchive, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to create or watch support archive: %q", err)
+		return nil, fmt.Errorf("failed to create support archive: %q", err)
 	}
 
-	// Download the ZIP file from the download path
-	zipContent, err := d.downloadFile(downloadPath)
+	return &pbMaintenance.CreateSupportArchiveResponse{}, nil
+}
+
+func (d *supportArchiveService) AllSupportArchives(ctx context.Context, _ *pbMaintenance.GetAllSupportArchivesRequest) (*pbMaintenance.GetAllSupportArchivesResponse, error) {
+	list, err := d.supportArchiveClient.List(ctx, metav1.ListOptions{})
 	if err != nil {
-		log.Log.Info("Error in downloadFile", "err", err)
-		return fmt.Errorf("failed to download ZIP file: %q", err)
+		return nil, fmt.Errorf("failed to list support archives: %w", err)
 	}
 
-	log.Log.Info("Write to Stream", "zipContent", zipContent)
-	err = d.writeToStream(zipContent, server)
+	archives := make([]*pbMaintenance.Archive, len(list.Items))
+	for i, item := range list.Items {
+		archives[i] = &pbMaintenance.Archive{
+			Name:            item.Name,
+			CreatedDateTime: timestamppb.New(item.CreationTimestamp.Time),
+			Status:          getStatus(item),
+		}
+	}
+
+	return &pbMaintenance.GetAllSupportArchivesResponse{SupportArchives: archives}, nil
+}
+
+func (d *supportArchiveService) DeleteSupportArchive(ctx context.Context, req *pbMaintenance.DeleteSupportArchiveRequest) (*pbMaintenance.DeleteSupportArchiveResponse, error) {
+	err := d.supportArchiveClient.Delete(ctx, req.Name, metav1.DeleteOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to send response: %q", err)
+		return nil, fmt.Errorf("failed to delete support archive: %w", err)
+	}
+
+	return &pbMaintenance.DeleteSupportArchiveResponse{}, nil
+}
+
+func (d *supportArchiveService) DownloadSupportArchive(req *pbMaintenance.DownloadSupportArchiveRequest, server pbMaintenance.SupportArchive_DownloadSupportArchiveServer) error {
+	ctx := server.Context()
+	archive, err := d.supportArchiveClient.Get(ctx, req.Name, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to get support archive: %w", err)
+	}
+
+	if archive.Status.DownloadPath == "" {
+		return fmt.Errorf("support archive is not ready yet")
+	}
+
+	// Download the ZIP file from the download path and stream it
+	reader, err := d.getDownloadFile(archive.Status.DownloadPath)
+	if err != nil {
+		log.Log.Info("Error in getDownloadFile", "err", err)
+		return fmt.Errorf("failed to download ZIP file: %w", err)
+	}
+	defer func(reader io.ReadCloser) {
+		err := reader.Close()
+		if err != nil {
+			log.Log.Error(err, "Error closing reader")
+		}
+	}(reader)
+
+	err = stream.WriteReaderToStream(reader, server)
+	if err != nil {
+		return fmt.Errorf("failed stream support-archive file: %w", err)
 	}
 
 	return nil
 }
 
-func (d *supportArchiveService) mapRequestSettingsToSupportArchive(req *pbMaintenance.CreateSupportArchiveRequest) (*v1.SupportArchive, error) {
-	if req.GetCommon() == nil {
-		return &v1.SupportArchive{}, fmt.Errorf("no request of type Common found")
+func getStatus(archive v1.SupportArchive) pbMaintenance.SupportArchiveStatus {
+	archiveStatus := archive.Status
+
+	if len(archiveStatus.Errors) > 0 {
+		return pbMaintenance.SupportArchiveStatus_SUPPORT_ARCHIVE_STATUS_FAILED
 	}
-	exclude := req.GetCommon().ExcludedContents
-	logConf := req.GetCommon().ContentTimeframe
+
+	for _, condition := range archiveStatus.Conditions {
+		if condition.Type == v1.ConditionSupportArchiveCreated && condition.Status == metav1.ConditionTrue {
+			if archiveStatus.DownloadPath == "" {
+				return pbMaintenance.SupportArchiveStatus_SUPPORT_ARCHIVE_STATUS_CREATED
+			}
+
+			return pbMaintenance.SupportArchiveStatus_SUPPORT_ARCHIVE_STATUS_COMPLETED
+		}
+	}
+
+	return pbMaintenance.SupportArchiveStatus_SUPPORT_ARCHIVE_STATUS_IN_PROGRESS
+}
+
+func (d *supportArchiveService) mapRequestSettingsToSupportArchive(req *pbMaintenance.CreateSupportArchiveRequest) (*v1.SupportArchive, error) {
+	exclude := req.ExcludedContents
+	logConf := req.ContentTimeframe
 
 	startTime := setDefaultTimeIfEmpty(logConf.StartDateTime, metav1.NewTime(metav1.Now().AddDate(0, 0, -4)))
 	endTime := setDefaultTimeIfEmpty(logConf.EndDateTime, metav1.Now())
@@ -102,49 +166,8 @@ func setDefaultTimeIfEmpty(timestamp *timestamppb.Timestamp, defaultTime metav1.
 	return timeObj
 }
 
-func (d *supportArchiveService) createAndWatchSupportArchive(supportArchive *v1.SupportArchive, server pbMaintenance.SupportArchive_CreateServer) (string, error) {
-	ctx := server.Context()
-	_, err := d.supportArchiveClient.Create(ctx, supportArchive, metav1.CreateOptions{})
-	if err != nil {
-		return "", fmt.Errorf("failed to create support archive: %q", err)
-	}
-
-	watchInterface, err := d.supportArchiveClient.Watch(ctx, metav1.ListOptions{})
-	if err != nil {
-		return "", fmt.Errorf("failed to create watch interface: %q", err)
-	}
-
-	for {
-		select {
-		case event, channelOk := <-watchInterface.ResultChan():
-			if !channelOk {
-				return "", fmt.Errorf("watch channel closed unexpectedly")
-			}
-
-			if event.Type == watch.Added || event.Type == watch.Modified {
-				eventSupportArchive, typeOk := event.Object.(*v1.SupportArchive)
-				if !typeOk {
-					return "", fmt.Errorf("unexpected type")
-				}
-				// ignore changes to other supportArchives
-				if eventSupportArchive.Name != supportArchive.Name {
-					continue
-				}
-
-				for _, condition := range eventSupportArchive.Status.Conditions {
-					if condition.Type == v1.ConditionSupportArchiveCreated && condition.Status == metav1.ConditionTrue {
-						return eventSupportArchive.Status.DownloadPath, nil
-					}
-				}
-			}
-		case <-server.Context().Done():
-			return "", fmt.Errorf("timed out waiting for support archive to be created")
-		}
-	}
-}
-
-// downloadFile downloads a file from the given URL and returns its content as a byte slice
-func (d *supportArchiveService) downloadFile(url string) ([]byte, error) {
+// getDownloadFile downloads a file from the given URL and returns its content as an io.ReadCloser for streaming
+func (d *supportArchiveService) getDownloadFile(url string) (io.ReadCloser, error) {
 	client := d.httpClient
 	// Create request
 	req, err := http.NewRequest("GET", url, nil)
@@ -157,20 +180,14 @@ func (d *supportArchiveService) downloadFile(url string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	log.Log.Info("Request send", "Response", resp)
 
-	defer func() {
-		closeErr := resp.Body.Close()
-		if closeErr != nil && err == nil {
-			err = fmt.Errorf("error closing response body: %w", closeErr)
-		}
-	}()
-
-	log.Log.Info("Check Status code", "status", resp.StatusCode)
 	if resp.StatusCode != http.StatusOK {
+		err := resp.Body.Close()
+		if err != nil {
+			log.Log.Error(err, "Error closing response body")
+		}
 		return nil, fmt.Errorf("bad status: %s", resp.Status)
 	}
 
-	log.Log.Info("Read Body", "body", resp.Body)
-	return io.ReadAll(resp.Body)
+	return resp.Body, nil
 }
