@@ -79,8 +79,3 @@ type doguConfigRepository interface {
 	Get(context.Context, common.SimpleName) (config.DoguConfig, error)
 	Update(context.Context, config.DoguConfig) (config.DoguConfig, error)
 }
-
-type globalConfigRepository interface {
-	Get(ctx context.Context) (config.GlobalConfig, error)
-	Update(ctx context.Context, globalConfig config.GlobalConfig) (config.GlobalConfig, error)
-}
