@@ -27,8 +27,6 @@ require (
 	sigs.k8s.io/controller-runtime v0.23.1
 )
 
-replace github.com/cloudogu/k8s-registry-lib v0.6.0 => github.com/cloudogu/k8s-registry-lib v0.2.2-0.20260209091716-0771dfdec9cb
-
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect

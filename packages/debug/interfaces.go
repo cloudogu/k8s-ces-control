@@ -2,6 +2,7 @@ package debug
 
 import (
 	"context"
+
 	common "github.com/cloudogu/ces-commons-lib/dogu"
 	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
 	"github.com/cloudogu/ces-control-api/generated/types"
@@ -58,13 +59,6 @@ type doguLogLevelRegistry interface {
 	MarshalFromCesRegistryToString(ctx context.Context) (string, error)
 	// UnMarshalFromStringToCesRegistry writes the log level string to the ces registry.
 	UnMarshalFromStringToCesRegistry(ctx context.Context, unmarshal string) error
-}
-
-type maintenanceModeSwitch interface {
-	// ActivateMaintenanceMode activates the maintenance mode
-	ActivateMaintenanceMode(ctx context.Context, title, text string) error
-	// DeactivateMaintenanceMode deactivates the maintenance mode.
-	DeactivateMaintenanceMode(ctx context.Context) error
 }
 
 type doguInterActor interface {

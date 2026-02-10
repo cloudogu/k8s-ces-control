@@ -34,6 +34,8 @@ github.com/cloudogu/k8s-dogu-lib/v2 v2.11.0 h1:Jk8vsCUPE7nqth51CZPhTjv4LDciiBWom
 github.com/cloudogu/k8s-dogu-lib/v2 v2.11.0/go.mod h1:2xkJ1TI7fuBRcqIpHUlmQ6CJAtzlOvyUbwPktIVq6K8=
 github.com/cloudogu/k8s-registry-lib v0.2.2-0.20260209091716-0771dfdec9cb h1:rTBziIFwGXLCzP0+kkPjACfUdLzLFkyP1TsZGrUICS8=
 github.com/cloudogu/k8s-registry-lib v0.2.2-0.20260209091716-0771dfdec9cb/go.mod h1:mWuwjoL/42P2OLR5f5YTAW//jwPKLlvFAafixR0x/RA=
+github.com/cloudogu/k8s-registry-lib v0.6.0 h1:+3gQoP2CVLuhTqRen49rvN0a0Jpa1qJ1cSZqu+J64CY=
+github.com/cloudogu/k8s-registry-lib v0.6.0/go.mod h1:NytbB2XBjc+gr5gOJFoPjCzyxs/TuhWpKSnDJzCLQ14=
 github.com/cloudogu/k8s-support-archive-lib v1.0.0 h1:dfkx1gLlc9NdhLhXrYE7aMIpevpaaQK3tpzEDgif51w=
 github.com/cloudogu/k8s-support-archive-lib v1.0.0/go.mod h1:WE1I+KrGcpnHSZDoQXuWVzVMnM6yte1OipKCAMrxkVQ=
 github.com/cloudogu/retry-lib v0.1.0 h1:gaAmtyjUqgHbxfCWMeUn0qnGbDH4TtZVSQkbZ1Nq6eI=
