@@ -13,6 +13,7 @@ SHELL = /usr/bin/env bash -o pipefail
 IMAGE?=cloudogu/${ARTIFACT_ID}:${VERSION}
 
 MAKEFILES_VERSION=10.6.0
+LINT_VERSION?=v2.9.0
 .DEFAULT_GOAL:=default
 GENERATION_TARGET_DIR=generated
 GENERATION_SOURCE_DIR=grpc-protobuf
@@ -32,8 +33,6 @@ include build/make/digital-signature.mk
 include build/make/self-update.mk
 include build/make/release.mk
 include build/make/bats.mk
-
-LINT_VERSION?=v2.9.0
 
 K8S_COMPONENT_SOURCE_VALUES = ${HELM_SOURCE_DIR}/values.yaml
 K8S_COMPONENT_TARGET_VALUES = ${HELM_TARGET_DIR}/values.yaml
