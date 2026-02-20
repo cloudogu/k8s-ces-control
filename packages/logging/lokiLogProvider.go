@@ -259,7 +259,7 @@ func (llp *LokiLogProvider) doLokiHttpQuery(lokiUrl string) (*lokiResponse, erro
 
 		return nil, fmt.Errorf("loki http error: status: %s, code: %d; response-body: %s", resp.Status, resp.StatusCode, responseData)
 	}
-	logrus.Debugf("auccessfully queried loki URL %s", lokiUrl)
+	logrus.Debugf("successfully queried loki URL %s", lokiUrl)
 
 	return parseLokiResponse(resp.Body)
 }
@@ -283,6 +283,8 @@ func parseLokiResponse(lokiResult io.Reader) (*lokiResponse, error) {
 }
 
 func extractLogLinesFromLokiResponse(lokiResponse *lokiResponse) ([]logLine, error) {
+	logrus.Debugf("extracting log lines from loki response")
+	logrus.Debugf("response contains %d streams", len(lokiResponse.Data.Result))
 	var logLines = make([]logLine, 0)
 	for _, lokiStream := range lokiResponse.Data.Result {
 		for _, value := range lokiStream.Values {
