@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"net/url"
@@ -12,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 const defaultQueryLimit = 1000
@@ -56,6 +57,8 @@ func (llp *LokiLogProvider) getLogs(doguName string, linesCount int) ([]logLine,
 	startDate := createQueryStartDateFromEndDate(endDate)
 
 	result := make([]logLine, 0)
+
+	logrus.Debugf("starting to load logs for linecount %d", linesCount)
 	for {
 		limit := calculateQueryLimit(linesCount, len(result))
 
@@ -112,6 +115,8 @@ func (llp *LokiLogProvider) queryLogs(doguName string, startDate time.Time, endD
 	if startDate.IsZero() {
 		startDate = createQueryStartDateFromEndDate(endDate)
 	}
+
+	logrus.Debugf("starting to query logs for startdate %s and enddate %s", startDate.Format(time.RFC3339), endDate.Format(time.RFC3339))
 
 	result := make([]logLine, 0)
 	limit := defaultQueryLimit
@@ -254,6 +259,7 @@ func (llp *LokiLogProvider) doLokiHttpQuery(lokiUrl string) (*lokiResponse, erro
 
 		return nil, fmt.Errorf("loki http error: status: %s, code: %d; response-body: %s", resp.Status, resp.StatusCode, responseData)
 	}
+	logrus.Debugf("auccessfully queried loki URL %s", lokiUrl)
 
 	return parseLokiResponse(resp.Body)
 }
@@ -266,7 +272,7 @@ func parseLokiResponse(lokiResult io.Reader) (*lokiResponse, error) {
 	}
 
 	if lokiResp.Status != "success" {
-		return lokiResp, fmt.Errorf("loki response status is not successfull; status is %s", lokiResp.Status)
+		return lokiResp, fmt.Errorf("loki response status is not successful; status is %s", lokiResp.Status)
 	}
 
 	if lokiResp.Data.ResultType != "streams" {
