@@ -251,6 +251,7 @@ func (llp *LokiLogProvider) doLokiHttpQuery(lokiUrl string) (*lokiResponse, erro
 		}
 	}(resp.Body)
 
+	logrus.Debugf("received loki response with status: %s and code: %d", resp.Status, resp.StatusCode)
 	if resp.StatusCode != http.StatusOK {
 		responseData, err := io.ReadAll(resp.Body)
 		if err != nil || len(responseData) == 0 {
@@ -271,6 +272,7 @@ func parseLokiResponse(lokiResult io.Reader) (*lokiResponse, error) {
 		return lokiResp, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
+	logrus.Debugf("successfully unmarshalled loki response")
 	if lokiResp.Status != "success" {
 		return lokiResp, fmt.Errorf("loki response status is not successful; status is %s", lokiResp.Status)
 	}
