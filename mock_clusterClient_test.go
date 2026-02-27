@@ -100,7 +100,7 @@ import (
 
 	schedulingv1beta1 "k8s.io/client-go/kubernetes/typed/scheduling/v1beta1"
 
-	storagemigrationv1alpha1 "k8s.io/client-go/kubernetes/typed/storagemigration/v1alpha1"
+	storagemigrationv1beta1 "k8s.io/client-go/kubernetes/typed/storagemigration/v1beta1"
 
 	storagev1 "k8s.io/client-go/kubernetes/typed/storage/v1"
 
@@ -3126,49 +3126,49 @@ func (_c *mockClusterClient_StorageV1beta1_Call) RunAndReturn(run func() storage
 	return _c
 }
 
-// StoragemigrationV1alpha1 provides a mock function with no fields
-func (_m *mockClusterClient) StoragemigrationV1alpha1() storagemigrationv1alpha1.StoragemigrationV1alpha1Interface {
+// StoragemigrationV1beta1 provides a mock function with no fields
+func (_m *mockClusterClient) StoragemigrationV1beta1() storagemigrationv1beta1.StoragemigrationV1beta1Interface {
 	ret := _m.Called()
 
 	if len(ret) == 0 {
-		panic("no return value specified for StoragemigrationV1alpha1")
+		panic("no return value specified for StoragemigrationV1beta1")
 	}
 
-	var r0 storagemigrationv1alpha1.StoragemigrationV1alpha1Interface
-	if rf, ok := ret.Get(0).(func() storagemigrationv1alpha1.StoragemigrationV1alpha1Interface); ok {
+	var r0 storagemigrationv1beta1.StoragemigrationV1beta1Interface
+	if rf, ok := ret.Get(0).(func() storagemigrationv1beta1.StoragemigrationV1beta1Interface); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(storagemigrationv1alpha1.StoragemigrationV1alpha1Interface)
+			r0 = ret.Get(0).(storagemigrationv1beta1.StoragemigrationV1beta1Interface)
 		}
 	}
 
 	return r0
 }
 
-// mockClusterClient_StoragemigrationV1alpha1_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StoragemigrationV1alpha1'
-type mockClusterClient_StoragemigrationV1alpha1_Call struct {
+// mockClusterClient_StoragemigrationV1beta1_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StoragemigrationV1beta1'
+type mockClusterClient_StoragemigrationV1beta1_Call struct {
 	*mock.Call
 }
 
-// StoragemigrationV1alpha1 is a helper method to define mock.On call
-func (_e *mockClusterClient_Expecter) StoragemigrationV1alpha1() *mockClusterClient_StoragemigrationV1alpha1_Call {
-	return &mockClusterClient_StoragemigrationV1alpha1_Call{Call: _e.mock.On("StoragemigrationV1alpha1")}
+// StoragemigrationV1beta1 is a helper method to define mock.On call
+func (_e *mockClusterClient_Expecter) StoragemigrationV1beta1() *mockClusterClient_StoragemigrationV1beta1_Call {
+	return &mockClusterClient_StoragemigrationV1beta1_Call{Call: _e.mock.On("StoragemigrationV1beta1")}
 }
 
-func (_c *mockClusterClient_StoragemigrationV1alpha1_Call) Run(run func()) *mockClusterClient_StoragemigrationV1alpha1_Call {
+func (_c *mockClusterClient_StoragemigrationV1beta1_Call) Run(run func()) *mockClusterClient_StoragemigrationV1beta1_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run()
 	})
 	return _c
 }
 
-func (_c *mockClusterClient_StoragemigrationV1alpha1_Call) Return(_a0 storagemigrationv1alpha1.StoragemigrationV1alpha1Interface) *mockClusterClient_StoragemigrationV1alpha1_Call {
+func (_c *mockClusterClient_StoragemigrationV1beta1_Call) Return(_a0 storagemigrationv1beta1.StoragemigrationV1beta1Interface) *mockClusterClient_StoragemigrationV1beta1_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *mockClusterClient_StoragemigrationV1alpha1_Call) RunAndReturn(run func() storagemigrationv1alpha1.StoragemigrationV1alpha1Interface) *mockClusterClient_StoragemigrationV1alpha1_Call {
+func (_c *mockClusterClient_StoragemigrationV1beta1_Call) RunAndReturn(run func() storagemigrationv1beta1.StoragemigrationV1beta1Interface) *mockClusterClient_StoragemigrationV1beta1_Call {
 	_c.Call.Return(run)
 	return _c
 }
