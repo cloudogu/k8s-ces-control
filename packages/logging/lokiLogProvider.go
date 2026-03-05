@@ -58,7 +58,6 @@ func (llp *LokiLogProvider) getLogs(doguName string, linesCount int) ([]logLine,
 
 	result := make([]logLine, 0)
 
-	logrus.Debugf("starting to load logs for linecount %d", linesCount)
 	for {
 		limit := calculateQueryLimit(linesCount, len(result))
 
@@ -115,8 +114,6 @@ func (llp *LokiLogProvider) queryLogs(doguName string, startDate time.Time, endD
 	if startDate.IsZero() {
 		startDate = createQueryStartDateFromEndDate(endDate)
 	}
-
-	logrus.Debugf("starting to query logs for startdate %s and enddate %s", startDate.Format(time.RFC3339), endDate.Format(time.RFC3339))
 
 	result := make([]logLine, 0)
 	limit := defaultQueryLimit
@@ -234,7 +231,6 @@ func buildLokiQueryUrl(lokiBaseUrl string, query string, startDate time.Time, en
 }
 
 func (llp *LokiLogProvider) doLokiHttpQuery(lokiUrl string) (*lokiResponse, error) {
-	logrus.Debugf("running loki query with URL: %s", lokiUrl)
 	req, err := http.NewRequest(http.MethodGet, lokiUrl, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request with url [%s]: %w", lokiUrl, err)
@@ -260,7 +256,6 @@ func (llp *LokiLogProvider) doLokiHttpQuery(lokiUrl string) (*lokiResponse, erro
 
 		return nil, fmt.Errorf("loki http error: status: %s, code: %d; response-body: %s", resp.Status, resp.StatusCode, responseData)
 	}
-	logrus.Debugf("successfully queried loki URL %s", lokiUrl)
 
 	return parseLokiResponse(resp.Body)
 }
@@ -272,7 +267,6 @@ func parseLokiResponse(lokiResult io.Reader) (*lokiResponse, error) {
 		return lokiResp, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	logrus.Debugf("successfully unmarshalled loki response")
 	if lokiResp.Status != "success" {
 		return lokiResp, fmt.Errorf("loki response status is not successful; status is %s", lokiResp.Status)
 	}
@@ -285,7 +279,6 @@ func parseLokiResponse(lokiResult io.Reader) (*lokiResponse, error) {
 }
 
 func extractLogLinesFromLokiResponse(lokiResponse *lokiResponse) ([]logLine, error) {
-	logrus.Debugf("extracting log lines from loki response")
 	logrus.Debugf("response contains %d streams", len(lokiResponse.Data.Result))
 	var logLines = make([]logLine, 0)
 	for _, lokiStream := range lokiResponse.Data.Result {

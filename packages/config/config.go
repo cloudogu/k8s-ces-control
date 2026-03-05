@@ -214,19 +214,16 @@ func configureLokiGateway() error {
 	if !ok || url == "" {
 		logrus.Errorf("No loki gateway url was set via the environment variable [%s]. A loki gateway url is required.", lokiGatewayUrlEnvironmentVariable)
 	}
-	logrus.Debugf("Using loki gateway url from environment variable [%s].", url)
 
 	username, ok := os.LookupEnv(lokiGatewayUsernameEnvironmentVariable)
 	if !ok || username == "" {
 		logrus.Errorf("No loki gateway username was set via the environment variable [%s]. A loki gateway username is required.", lokiGatewayUsernameEnvironmentVariable)
 	}
-	logrus.Debugf("Using loki gateway username from environment variable.")
 
 	password, ok := os.LookupEnv(lokiGatewayPasswordEnvironmentVariable)
 	if !ok || password == "" {
 		logrus.Errorf("No loki gateway password was set via the environment variable [%s]. A loki gateway password is required.", lokiGatewayPasswordEnvironmentVariable)
 	}
-	logrus.Debugf("Using loki gateway password from environment variable.")
 
 	CurrentLokiGatewayConfig = &LokiGatewayConfig{
 		Url:      url,
