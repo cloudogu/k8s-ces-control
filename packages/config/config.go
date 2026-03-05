@@ -230,6 +230,7 @@ func configureLokiGateway() error {
 		Username: username,
 		Password: password,
 	}
+	logrus.Info("Loki gateway configuration loaded successfully")
 
 	return nil
 }
