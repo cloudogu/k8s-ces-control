@@ -57,7 +57,6 @@ func (llp *LokiLogProvider) getLogs(doguName string, linesCount int) ([]logLine,
 	startDate := createQueryStartDateFromEndDate(endDate)
 
 	result := make([]logLine, 0)
-
 	for {
 		limit := calculateQueryLimit(linesCount, len(result))
 
@@ -231,6 +230,7 @@ func buildLokiQueryUrl(lokiBaseUrl string, query string, startDate time.Time, en
 }
 
 func (llp *LokiLogProvider) doLokiHttpQuery(lokiUrl string) (*lokiResponse, error) {
+	logrus.Debugf("running loki query with URL: %s", lokiUrl)
 	req, err := http.NewRequest(http.MethodGet, lokiUrl, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request with url [%s]: %w", lokiUrl, err)
