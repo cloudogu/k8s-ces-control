@@ -4,12 +4,13 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 //go:embed testdata/loki-response.json
@@ -830,7 +831,7 @@ func TestLokiLogProvider_parseLokiResponse(t *testing.T) {
 
 		// then
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "loki response status is not successfull; status is error")
+		assert.ErrorContains(t, err, "loki response status is not successful; status is error")
 	})
 
 	t.Run("should fail on non stream response", func(t *testing.T) {

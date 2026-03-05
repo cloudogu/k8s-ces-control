@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.10.1] - 2026-03-05
+### Removed
+- [#96] remove monitoring stack from ces-control
+
 ## [v1.10.0] - 2026-02-27
 ### Removed
 - [#92] Adapter to trigger the maintenance mode

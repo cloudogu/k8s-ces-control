@@ -1,6 +1,6 @@
 # Set these to the desired values
 ARTIFACT_ID=k8s-ces-control
-VERSION=1.10.0
+VERSION=1.10.1
 GOTAG=1.26.0
 LINT_VERSION=v2.9.0
 STAGE?=production
@@ -45,7 +45,6 @@ include build/make/k8s-component.mk
 MOCKERY_IGNORED=vendor,build,docs,generated
 include build/make/mocks.mk
 include build/make/clean.mk
-include makefiles/monitoring.mk
 include makefiles/integration.mk
 
 default: build

@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"net/url"
@@ -12,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 const defaultQueryLimit = 1000
@@ -246,6 +247,7 @@ func (llp *LokiLogProvider) doLokiHttpQuery(lokiUrl string) (*lokiResponse, erro
 		}
 	}(resp.Body)
 
+	logrus.Debugf("received loki response with status: %s and code: %d", resp.Status, resp.StatusCode)
 	if resp.StatusCode != http.StatusOK {
 		responseData, err := io.ReadAll(resp.Body)
 		if err != nil || len(responseData) == 0 {
@@ -266,7 +268,7 @@ func parseLokiResponse(lokiResult io.Reader) (*lokiResponse, error) {
 	}
 
 	if lokiResp.Status != "success" {
-		return lokiResp, fmt.Errorf("loki response status is not successfull; status is %s", lokiResp.Status)
+		return lokiResp, fmt.Errorf("loki response status is not successful; status is %s", lokiResp.Status)
 	}
 
 	if lokiResp.Data.ResultType != "streams" {
@@ -277,6 +279,7 @@ func parseLokiResponse(lokiResult io.Reader) (*lokiResponse, error) {
 }
 
 func extractLogLinesFromLokiResponse(lokiResponse *lokiResponse) ([]logLine, error) {
+	logrus.Debugf("response contains %d streams", len(lokiResponse.Data.Result))
 	var logLines = make([]logLine, 0)
 	for _, lokiStream := range lokiResponse.Data.Result {
 		for _, value := range lokiStream.Values {
