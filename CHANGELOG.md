@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.10.1] - 2026-03-05
+### Removed
+- [#96] remove monitoring stack from ces-control
+
+## [v1.10.0] - 2026-02-27
+### Removed
+- [#92] Adapter to trigger the maintenance mode
+  - This functionality was not used anymore and therefore unnecessary.
+
 ## [v1.9.0] - 2025-12-18
 ### Changed
 - [#90] extend support-archive GRPC-API to allow asynchronous handling of support archives

@@ -16,20 +16,18 @@ import (
 
 type defaultDebugModeService struct {
 	pbMaintenance.UnimplementedDebugModeServer
-	debugModeClient       debugModeInterface
-	debugModeRegistry     debugModeRegistry
-	maintenanceModeSwitch maintenanceModeSwitch
-	doguInterActor        doguInterActor
+	debugModeClient   debugModeInterface
+	debugModeRegistry debugModeRegistry
+	doguInterActor    doguInterActor
 }
 
 // NewDebugModeService returns an instance of debugModeService.
-func NewDebugModeService(debugMode debugModeInterface, doguInterActor doguInterActor, doguConfigRepository doguConfigRepository, globalConfigRepository globalConfigRepository, doguDescriptorGetter doguDescriptorGetter, clusterClient clusterClientSet, namespace string) *defaultDebugModeService {
+func NewDebugModeService(debugMode debugModeInterface, doguInterActor doguInterActor, doguConfigRepository doguConfigRepository, doguDescriptorGetter doguDescriptorGetter, clusterClient clusterClientSet, namespace string) *defaultDebugModeService {
 	cmDebugModeRegistry := NewConfigMapDebugModeRegistry(doguConfigRepository, doguDescriptorGetter, clusterClient, namespace)
 	return &defaultDebugModeService{
-		debugModeClient:       debugMode,
-		debugModeRegistry:     cmDebugModeRegistry,
-		maintenanceModeSwitch: NewDefaultMaintenanceModeSwitch(globalConfigRepository),
-		doguInterActor:        doguInterActor,
+		debugModeClient:   debugMode,
+		debugModeRegistry: cmDebugModeRegistry,
+		doguInterActor:    doguInterActor,
 	}
 }
 

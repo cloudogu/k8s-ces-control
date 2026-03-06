@@ -2,6 +2,7 @@ package debug
 
 import (
 	"context"
+
 	common "github.com/cloudogu/ces-commons-lib/dogu"
 	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
 	"github.com/cloudogu/ces-control-api/generated/types"
@@ -60,13 +61,6 @@ type doguLogLevelRegistry interface {
 	UnMarshalFromStringToCesRegistry(ctx context.Context, unmarshal string) error
 }
 
-type maintenanceModeSwitch interface {
-	// ActivateMaintenanceMode activates the maintenance mode
-	ActivateMaintenanceMode(ctx context.Context, title, text string) error
-	// DeactivateMaintenanceMode deactivates the maintenance mode.
-	DeactivateMaintenanceMode(ctx context.Context) error
-}
-
 type doguInterActor interface {
 	// StopAllDogus stops all dogus.
 	StopAllDogus(ctx context.Context) error
@@ -84,9 +78,4 @@ type debugModeServer interface {
 type doguConfigRepository interface {
 	Get(context.Context, common.SimpleName) (config.DoguConfig, error)
 	Update(context.Context, config.DoguConfig) (config.DoguConfig, error)
-}
-
-type globalConfigRepository interface {
-	Get(ctx context.Context) (config.GlobalConfig, error)
-	Update(ctx context.Context, globalConfig config.GlobalConfig) (config.GlobalConfig, error)
 }

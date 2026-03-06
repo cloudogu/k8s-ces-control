@@ -45,7 +45,6 @@ include build/make/k8s-component.mk
 MOCKERY_IGNORED=vendor,build,docs,generated
 include build/make/mocks.mk
 include build/make/clean.mk
-include makefiles/monitoring.mk
 include makefiles/integration.mk
 
 default: build

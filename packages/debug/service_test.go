@@ -25,7 +25,7 @@ func TestNewdefaultDebugModeService(t *testing.T) {
 		coreV1Mock.EXPECT().ConfigMaps(testNamespace).Return(configMapClientMock)
 
 		// when
-		service := NewDebugModeService(debugModeClientMock, doguInterActorMock, repository.DoguConfigRepository{}, repository.GlobalConfigRepository{}, doguDescriptionGetterMock, clientSetMock, testNamespace)
+		service := NewDebugModeService(debugModeClientMock, doguInterActorMock, repository.DoguConfigRepository{}, doguDescriptionGetterMock, clientSetMock, testNamespace)
 
 		// then
 		require.NotNil(t, service)
@@ -37,9 +37,8 @@ func Test_defaultDebugModeService_Disable(t *testing.T) {
 		// given
 		debugModeClientMock := newMockDebugModeInterface(t)
 		doguInterActorMock := newMockDoguInterActor(t)
-		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
-		sut := defaultDebugModeService{debugModeClient: debugModeClientMock, maintenanceModeSwitch: maintenanceModeSwitchMock, debugModeRegistry: debugModeRegistryMock, doguInterActor: doguInterActorMock}
+		sut := defaultDebugModeService{debugModeClient: debugModeClientMock, debugModeRegistry: debugModeRegistryMock, doguInterActor: doguInterActorMock}
 
 		debugMode := &debugModeV1.DebugMode{}
 		debugModeClientMock.EXPECT().Get(testCtx, "debug-mode", metav1.GetOptions{}).Return(debugMode, nil)
@@ -55,11 +54,10 @@ func Test_defaultDebugModeService_Disable(t *testing.T) {
 	t.Run("should return error on error enable maintenance mode", func(t *testing.T) {
 		// given
 		debugModeClientMock := newMockDebugModeInterface(t)
-		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
 		debugMode := &debugModeV1.DebugMode{}
 		debugModeClientMock.EXPECT().Get(testCtx, "debug-mode", metav1.GetOptions{}).Return(debugMode, assert.AnError)
 
-		sut := defaultDebugModeService{debugModeClient: debugModeClientMock, maintenanceModeSwitch: maintenanceModeSwitchMock}
+		sut := defaultDebugModeService{debugModeClient: debugModeClientMock}
 
 		// when
 		_, err := sut.Disable(testCtx, &maintenance.ToggleDebugModeRequest{})
@@ -76,7 +74,6 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 		// given
 		debugModeClientMock := newMockDebugModeInterface(t)
 		doguInterActorMock := newMockDoguInterActor(t)
-		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
 
 		debugModeRegistryMock := newMockDebugModeRegistry(t)
 
@@ -84,7 +81,7 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 		debugModeClientMock.EXPECT().Get(testCtx, "debug-mode", metav1.GetOptions{}).Return(debugMode, nil)
 		debugModeClientMock.EXPECT().Update(testCtx, debugMode, metav1.UpdateOptions{}).Return(debugMode, nil)
 
-		sut := defaultDebugModeService{debugModeClient: debugModeClientMock, maintenanceModeSwitch: maintenanceModeSwitchMock, debugModeRegistry: debugModeRegistryMock, doguInterActor: doguInterActorMock}
+		sut := defaultDebugModeService{debugModeClient: debugModeClientMock, debugModeRegistry: debugModeRegistryMock, doguInterActor: doguInterActorMock}
 
 		// when
 		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
@@ -95,11 +92,10 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 	t.Run("should return error on error enable maintenance mode", func(t *testing.T) {
 		// given
 		debugModeClientMock := newMockDebugModeInterface(t)
-		maintenanceModeSwitchMock := newMockMaintenanceModeSwitch(t)
 		debugMode := &debugModeV1.DebugMode{}
 		debugModeClientMock.EXPECT().Get(testCtx, "debug-mode", metav1.GetOptions{}).Return(debugMode, assert.AnError)
 
-		sut := defaultDebugModeService{debugModeClient: debugModeClientMock, maintenanceModeSwitch: maintenanceModeSwitchMock}
+		sut := defaultDebugModeService{debugModeClient: debugModeClientMock}
 
 		// when
 		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{})

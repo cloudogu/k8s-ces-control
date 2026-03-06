@@ -107,7 +107,6 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 		dogu.NewLocalDoguDescriptorRepository(configMapClient),
 	)
 
-	globalConfig := repository.NewGlobalConfigRepository(configMapClient)
 	doguConfig := repository.NewDoguConfigRepository(configMapClient)
 
 	doguClient := client.Dogus(config.CurrentNamespace)
@@ -137,7 +136,7 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 	pbLogging.RegisterDoguLogMessagesServer(grpcServer, loggingService)
 	pbDoguAdministration.RegisterDoguAdministrationServer(grpcServer, doguAdministrationServer)
 	pgHealth.RegisterDoguHealthServer(grpcServer, doguHealth.NewDoguHealthService(client.Dogus(config.CurrentNamespace)))
-	debugModeService := pbDebug.NewDebugModeService(debugModeClient, doguInterActor, doguConfig, globalConfig, doguDescriptorGetter, client, config.CurrentNamespace)
+	debugModeService := pbDebug.NewDebugModeService(debugModeClient, doguInterActor, doguConfig, doguDescriptorGetter, client, config.CurrentNamespace)
 	pbMaintenance.RegisterDebugModeServer(grpcServer, debugModeService)
 	supportArchiveService := supportArchive.NewSupportArchiveService(supportArchiveClient, &http.Client{})
 	pbMaintenance.RegisterSupportArchiveServer(grpcServer, supportArchiveService)
