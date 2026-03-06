@@ -31,12 +31,11 @@ WORKDIR ${WORKDIR}
 
 LABEL maintainer="hello@cloudogu.com" \
     NAME="k8s-ces-control" \
-    VERSION="1.10.1"
+    VERSION="1.10.2"
 
 COPY --from=backendbuilder /k8s-ces-control/target/k8s-ces-control ${WORKDIR}/k8s-ces-control
 
-ENV USER=k8s-ces-control \
-    GRPC_HEALTH_PROBE_VERSION=0.4.36
+ENV USER=k8s-ces-control
 
 RUN set -eux -o pipefail \
     && apk update \
@@ -46,16 +45,11 @@ RUN set -eux -o pipefail \
     && chown -R ${USER}:${USER} ${WORKDIR} /etc/ssl/certs \
     && rm -rf /var/cache/apk/*
 
-# Install grpc health probe cli tool to be used to verify the readiness of our app
-RUN wget -O /grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 \
-    && chmod +x /grpc_health_probe
-
 # Create folder for k8s-ces-control files.
 RUN mkdir /etc/k8s-ces-control \
     && chown -R ${USER}:${USER} /etc/k8s-ces-control
 
 EXPOSE 50051
-#HEALTHCHECK CMD /grpc_health_probe -tls -tulpn | grep LISTEN | grep 50051
 
 WORKDIR ${WORKDIR}
 USER k8s-ces-control

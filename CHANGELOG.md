@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.10.2] - 2026-03-06
+### Security
+- [#94] Replace legacy grpc health probe binary with builtin kubernetes grpc health probes to avoid CVE-2025-68121
+
 ## [v1.10.1] - 2026-03-05
 ### Removed
 - [#96] remove monitoring stack from ces-control
