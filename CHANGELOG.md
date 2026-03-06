@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Security
+- [#94] Replace legacy grpc health probe binary with builtin kubernetes grpc health probes to avoid CVE-2025-68121
 
 ## [v1.10.1] - 2026-03-05
 ### Removed
