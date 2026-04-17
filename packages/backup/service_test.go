@@ -529,6 +529,20 @@ func Test_createBackups(t *testing.T) {
 			},
 		}
 
+		backupTwo := backupV1.Backup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "backup_two",
+			},
+			Status: backupV1.BackupStatus{
+				Status: "completed",
+			},
+		}
+
+		backlist := &backupV1.BackupList{
+			Items: []backupV1.Backup{backupTwo},
+		}
+
+		backupClientMock.EXPECT().List(testCtx, metav1.ListOptions{}).Return(backlist, nil)
 		backupClientMock.EXPECT().Create(testCtx, mock.Anything, metav1.CreateOptions{}).Return(&backupOne, nil)
 
 		sut := DefaultBackupService{
@@ -545,6 +559,21 @@ func Test_createBackups(t *testing.T) {
 		// given
 		testCtx := context.TODO()
 		backupClientMock := newMockBackupInterface(t)
+
+		backupTwo := backupV1.Backup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "backup_two",
+			},
+			Status: backupV1.BackupStatus{
+				Status: "completed",
+			},
+		}
+
+		backlist := &backupV1.BackupList{
+			Items: []backupV1.Backup{backupTwo},
+		}
+
+		backupClientMock.EXPECT().List(testCtx, metav1.ListOptions{}).Return(backlist, nil)
 
 		backupClientMock.EXPECT().Create(testCtx, mock.Anything, metav1.CreateOptions{}).Return(nil, assert.AnError)
 
