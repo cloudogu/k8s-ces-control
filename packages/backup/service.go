@@ -15,10 +15,11 @@ import (
 )
 
 const (
-	backupStatusInProgress = "inProgress"
-	backupStatusCompleted  = "completed"
-	backupStatusFailed     = "failed"
-	backupStatusDeleting   = "deleting"
+	backupStatusInProgress  = "inProgress"
+	backupStatusCompleted   = "completed"
+	backupStatusFailed      = "failed"
+	backupStatusDeleting    = "deleting"
+	restoreStatusInProgress = "inProgress"
 )
 
 const (
@@ -61,6 +62,18 @@ func (s *DefaultBackupService) DeleteBackup(ctx context.Context, req *pbBackup.D
 }
 
 func (s *DefaultBackupService) CreateBackup(ctx context.Context, _ *pbBackup.CreateBackupRequest) (*pbBackup.CreateBackupResponse, error) {
+	allBackups, err := s.backupClient.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list all backups: %w", err)
+	}
+	for _, backup := range allBackups.Items {
+
+		// do not create a new backup if another one is still in progress or was just created
+		if backup.Status.Status == backupStatusInProgress || backup.Status.Status == "" {
+			return nil, fmt.Errorf("could not create backup, backup %s is already in progress", backup.Name)
+		}
+	}
+
 	timestamp := time.Now().Format("20060102-1504")
 	backupName := fmt.Sprintf("backup-%s", timestamp)
 	backup := &v1.Backup{
@@ -71,7 +84,7 @@ func (s *DefaultBackupService) CreateBackup(ctx context.Context, _ *pbBackup.Cre
 			SyncedFromProvider: false,
 		},
 	}
-	_, err := s.backupClient.Create(ctx, backup, metav1.CreateOptions{})
+	_, err = s.backupClient.Create(ctx, backup, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -111,6 +124,17 @@ func (s *DefaultBackupService) CreateRestore(ctx context.Context, request *pbBac
 	}
 	if len(list.Items) == 0 {
 		return nil, fmt.Errorf("failed to get blueprint: blueprint not found")
+	}
+
+	allRestores, err := s.restoreClient.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list all restores: %w", err)
+	}
+	for _, restore := range allRestores.Items {
+		// do not create a new restore if another one is still in progress or was just created
+		if restore.Status.Status == restoreStatusInProgress || restore.Status.Status == "" {
+			return nil, fmt.Errorf("could not create backup, backup %s is already in progress", restore.Name)
+		}
 	}
 
 	// only create restore if the backup is restorable
