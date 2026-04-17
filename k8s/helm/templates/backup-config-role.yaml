@@ -22,3 +22,9 @@ rules:
       - k8s-backup-operator
     verbs:
       - get
+  - apiGroups:
+      - batch
+    resources:
+      - cronjobs
+    verbs:
+      - get
