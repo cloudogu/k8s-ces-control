@@ -3,6 +3,7 @@ package backup
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/cloudogu/k8s-component-lib/api/v1"
@@ -44,8 +45,9 @@ func getRetentionPolicy(ctx context.Context, client componentClient, cronjobclie
 	// nothing configured but no errors on reading objects
 	if policy == "" {
 		policy, err = getDefaultRetentionPolicy(ctx, cronjobclient)
+		slog.Warn(fmt.Sprintf("failed to get default retention policy: %v", err))
 		if err != nil {
-			return "", fmt.Errorf("failed to get default retention policy: %w", err)
+			return "", nil
 		}
 	}
 

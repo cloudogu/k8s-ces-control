@@ -43,6 +43,7 @@ func Test_registerServices(tt *testing.T) {
 		config.CurrentNamespace = "ecosystem"
 		clientSetMock := newMockClusterClient(t)
 		coreV1Mock := newMockCoreV1Interface(t)
+		batchV1Mock := newMockBatchV1Interface(t)
 		clientSetMock.EXPECT().CoreV1().Return(coreV1Mock)
 		clientSetMock.EXPECT().Dogus(config.CurrentNamespace).Return(nil)
 		clientSetMock.EXPECT().DoguRestarts(config.CurrentNamespace).Return(nil)
@@ -52,6 +53,7 @@ func Test_registerServices(tt *testing.T) {
 		clientSetMock.EXPECT().Restores(config.CurrentNamespace).Return(nil)
 		clientSetMock.EXPECT().BackupSchedules(config.CurrentNamespace).Return(nil)
 		clientSetMock.EXPECT().Components(config.CurrentNamespace).Return(nil)
+		clientSetMock.EXPECT().BatchV1().Return(nil)
 
 		configMapInterfaceMock := newMockConfigMapInterface(t)
 		coreV1Mock.EXPECT().ConfigMaps(config.CurrentNamespace).Return(configMapInterfaceMock)

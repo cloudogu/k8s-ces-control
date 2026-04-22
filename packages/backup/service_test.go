@@ -391,6 +391,7 @@ func TestDefaultBackupService_GetRetentionPolicy(t *testing.T) {
 	testCtx := context.Background()
 
 	t.Run("should get default policy", func(t *testing.T) {
+		mCronJobClient := newMockCronJobClient(t)
 		mComponentClient := newMockComponentClient(t)
 		mComponentClient.EXPECT().Get(testCtx, "k8s-backup-operator", metav1.GetOptions{}).Return(&componentV1.Component{
 			Spec: componentV1.ComponentSpec{},
@@ -398,7 +399,10 @@ func TestDefaultBackupService_GetRetentionPolicy(t *testing.T) {
 
 		svc := &DefaultBackupService{
 			componentClient: mComponentClient,
+			cronJobClient:   mCronJobClient,
 		}
+
+		mCronJobClient.EXPECT().Get(testCtx, backupGarbageCollectorCronJobName, metav1.GetOptions{}).Return(nil, assert.AnError)
 
 		response, err := svc.GetRetentionPolicy(testCtx, nil)
 
