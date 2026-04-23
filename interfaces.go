@@ -9,6 +9,7 @@ import (
 	supClientV1 "github.com/cloudogu/k8s-support-archive-lib/client/v1"
 	"k8s.io/client-go/kubernetes"
 	appsV1 "k8s.io/client-go/kubernetes/typed/apps/v1"
+	batchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	coreV1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
@@ -28,6 +29,12 @@ type coreV1Interface interface {
 //goland:noinspection GoUnusedType
 type appsV1Interface interface {
 	appsV1.AppsV1Interface
+}
+
+//nolint:unused
+//goland:noinspection GoUnusedType
+type batchV1Interface interface {
+	batchv1.BatchV1Interface
 }
 
 //nolint:unused
