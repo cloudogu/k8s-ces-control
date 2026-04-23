@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.10.4] - 2026-04-23
+- [#100] Read default retention policy from garbage collector cronjob
+
 ## [v1.10.3] - 2026-03-25
 ### Security
 - [#98] Update `google.golang.org/grpc` to fix CVE-2026-33186

@@ -7,6 +7,7 @@ import (
 	backupV1 "github.com/cloudogu/k8s-backup-lib/api/v1"
 	v3 "github.com/cloudogu/k8s-blueprint-lib/v3/api/v3"
 	componentV1 "github.com/cloudogu/k8s-component-lib/api/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -36,4 +37,8 @@ type backupScheduleClient interface {
 type componentClient interface {
 	// Get takes name of the component, and returns the corresponding component object, and an error if there is any.
 	Get(ctx context.Context, name string, opts metav1.GetOptions) (*componentV1.Component, error)
+}
+
+type cronJobClient interface {
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*batchv1.CronJob, error)
 }
