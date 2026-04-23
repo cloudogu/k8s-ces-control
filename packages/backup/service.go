@@ -39,16 +39,18 @@ type DefaultBackupService struct {
 	backupScheduleClient backupScheduleClient
 	componentClient      componentClient
 	blueprintLister      blueprintLister
+	cronJobClient        cronJobClient
 }
 
 // NewBackupService returns an instance of defaultBackupService.
-func NewBackupService(backupClient backupInterface, restoreClient restoreInterface, backupScheduleClient backupScheduleClient, componentClient componentClient, blueprintLister blueprintLister) *DefaultBackupService {
+func NewBackupService(backupClient backupInterface, restoreClient restoreInterface, backupScheduleClient backupScheduleClient, componentClient componentClient, blueprintLister blueprintLister, cronJobClient cronJobClient) *DefaultBackupService {
 	return &DefaultBackupService{
 		backupClient:         backupClient,
 		restoreClient:        restoreClient,
 		backupScheduleClient: backupScheduleClient,
 		componentClient:      componentClient,
 		blueprintLister:      blueprintLister,
+		cronJobClient:        cronJobClient,
 	}
 }
 
@@ -230,7 +232,7 @@ func (s *DefaultBackupService) SetSchedule(ctx context.Context, req *pbBackup.Se
 }
 
 func (s *DefaultBackupService) GetRetentionPolicy(ctx context.Context, _ *pbBackup.GetRetentionPolicyRequest) (*pbBackup.GetRetentionPolicyResponse, error) {
-	policy, err := getRetentionPolicy(ctx, s.componentClient)
+	policy, err := getRetentionPolicy(ctx, s.componentClient, s.cronJobClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get retention policy: %w", err)
 	}
