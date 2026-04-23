@@ -1,6 +1,6 @@
 # Set these to the desired values
 ARTIFACT_ID=k8s-ces-control
-VERSION=1.10.3
+VERSION=1.10.4
 GOTAG=1.26.0
 STAGE?=production
 LOG_LEVEL?=info
