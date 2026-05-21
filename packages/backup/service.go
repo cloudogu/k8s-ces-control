@@ -251,7 +251,7 @@ func (s *DefaultBackupService) SetTimeout(ctx context.Context, req *pbBackup.Set
 
 	err = setBackupTimeout(ctx, s.configmapClient, retryLimit)
 	if err != nil {
-		return nil, fmt.Errorf("failed to set backup schedule: %w", err)
+		return nil, fmt.Errorf("failed to set backup timeout: %w", err)
 	}
 
 	return &pbBackup.SetBackupTimeoutResponse{}, nil

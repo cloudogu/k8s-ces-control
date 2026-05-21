@@ -30,7 +30,7 @@ func getBackupTimeout(ctx context.Context, client configmapClient) (int, error) 
 func setBackupTimeout(ctx context.Context, client configmapClient, retryLimit int) error {
 	cm, err := client.Get(ctx, configMapName, metav1.GetOptions{})
 	if err != nil {
-		fmt.Errorf("failed to get configmap [%s]: %w", configMapName, err)
+		return fmt.Errorf("failed to get configmap [%s]: %w", configMapName, err)
 	}
 	cm.Data[retryTimeLimitKey] = fmt.Sprintf("%d", retryLimit)
 
