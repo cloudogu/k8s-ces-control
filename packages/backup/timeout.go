@@ -22,7 +22,7 @@ func getBackupTimeout(ctx context.Context, client configmapClient) (int, error) 
 
 	retryLimit, err := strconv.Atoi(backupRetryTimeLimitStr)
 	if err != nil {
-		return 0, fmt.Errorf("failed to convert [%s]: %w", retryLimit, err)
+		return 0, fmt.Errorf("failed to convert [%s]: %w", backupRetryTimeLimitStr, err)
 	}
 	return retryLimit, nil
 }

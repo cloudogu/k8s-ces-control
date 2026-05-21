@@ -246,7 +246,7 @@ func (s *DefaultBackupService) GetTimeout(ctx context.Context, _ *pbBackup.GetBa
 func (s *DefaultBackupService) SetTimeout(ctx context.Context, req *pbBackup.SetBackupTimeoutRequest) (*pbBackup.SetBackupTimeoutResponse, error) {
 	retryLimit, err := strconv.Atoi(req.Timeout)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert [%s]: %w", retryLimit, err)
+		return nil, fmt.Errorf("failed to convert [%s]: %w", req.Timeout, err)
 	}
 
 	err = setBackupTimeout(ctx, s.configmapClient, retryLimit)
