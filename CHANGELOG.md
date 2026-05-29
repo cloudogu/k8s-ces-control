@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- [#104] Implement timeout functions for backup api
 
 ## [v1.10.4] - 2026-04-23
 - [#100] Read default retention policy from garbage collector cronjob

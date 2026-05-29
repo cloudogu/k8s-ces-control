@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -384,6 +385,85 @@ func TestDefaultBackupService_SetSchedule(t *testing.T) {
 		require.Error(t, err)
 		assert.ErrorIs(t, err, assert.AnError)
 		assert.ErrorContains(t, err, "failed to get existing backup schedule:")
+	})
+}
+
+func TestDefaultBackupService_GetTimeout(t *testing.T) {
+	testCtx := context.Background()
+
+	t.Run("should get timeout", func(t *testing.T) {
+		mConfigmapClient := newMockConfigmapClient(t)
+		cm := &corev1.ConfigMap{Data: map[string]string{retryTimeLimitKey: "10"}}
+		mConfigmapClient.EXPECT().Get(testCtx, configMapName, metav1.GetOptions{}).Return(cm, nil)
+
+		svc := &DefaultBackupService{
+			configmapClient: mConfigmapClient,
+		}
+
+		response, err := svc.GetTimeout(testCtx, nil)
+
+		require.NoError(t, err)
+		assert.Equal(t, "10", response.Timeout)
+	})
+
+	t.Run("should fail to get config map with error", func(t *testing.T) {
+		mConfigmapClient := newMockConfigmapClient(t)
+		mConfigmapClient.EXPECT().Get(testCtx, configMapName, metav1.GetOptions{}).Return(nil, assert.AnError)
+
+		svc := &DefaultBackupService{
+			configmapClient: mConfigmapClient,
+		}
+
+		_, err := svc.GetTimeout(testCtx, nil)
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "ailed to get backup timeout:")
+	})
+}
+
+func TestDefaultBackupService_SetTimeout(t *testing.T) {
+	testCtx := context.Background()
+
+	t.Run("should set schedule", func(t *testing.T) {
+		mConfigmapClient := newMockConfigmapClient(t)
+		cm := &corev1.ConfigMap{Data: map[string]string{retryTimeLimitKey: "10"}}
+		mConfigmapClient.EXPECT().Get(testCtx, configMapName, metav1.GetOptions{}).Return(cm, nil)
+		cm2 := &corev1.ConfigMap{Data: map[string]string{retryTimeLimitKey: "20"}}
+		mConfigmapClient.EXPECT().Update(testCtx, cm2, metav1.UpdateOptions{}).Return(cm2, nil)
+
+		svc := &DefaultBackupService{
+			configmapClient: mConfigmapClient,
+		}
+
+		response, err := svc.SetTimeout(testCtx, &backup.SetBackupTimeoutRequest{Timeout: "20"})
+
+		require.NoError(t, err)
+		assert.Equal(t, &backup.SetBackupTimeoutResponse{}, response)
+	})
+
+	t.Run("should fail to set timeout", func(t *testing.T) {
+		mConfigmapClient := newMockConfigmapClient(t)
+		mConfigmapClient.EXPECT().Get(testCtx, configMapName, metav1.GetOptions{}).Return(nil, assert.AnError)
+
+		svc := &DefaultBackupService{
+			configmapClient: mConfigmapClient,
+		}
+
+		_, err := svc.SetTimeout(testCtx, &backup.SetBackupTimeoutRequest{Timeout: "10"})
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, assert.AnError)
+		assert.ErrorContains(t, err, "failed to set backup timeout:")
+	})
+	t.Run("should fail to convert timeout", func(t *testing.T) {
+
+		svc := &DefaultBackupService{}
+
+		_, err := svc.SetTimeout(testCtx, &backup.SetBackupTimeoutRequest{Timeout: "invalid"})
+
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "failed to convert [invalid]: strconv.Atoi:")
 	})
 }
 

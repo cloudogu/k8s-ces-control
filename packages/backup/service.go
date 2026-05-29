@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 
 	pbBackup "github.com/cloudogu/ces-control-api/generated/backup"
@@ -40,10 +41,11 @@ type DefaultBackupService struct {
 	componentClient      componentClient
 	blueprintLister      blueprintLister
 	cronJobClient        cronJobClient
+	configmapClient      configmapClient
 }
 
 // NewBackupService returns an instance of defaultBackupService.
-func NewBackupService(backupClient backupInterface, restoreClient restoreInterface, backupScheduleClient backupScheduleClient, componentClient componentClient, blueprintLister blueprintLister, cronJobClient cronJobClient) *DefaultBackupService {
+func NewBackupService(backupClient backupInterface, restoreClient restoreInterface, backupScheduleClient backupScheduleClient, componentClient componentClient, blueprintLister blueprintLister, cronJobClient cronJobClient, configmapClient configmapClient) *DefaultBackupService {
 	return &DefaultBackupService{
 		backupClient:         backupClient,
 		restoreClient:        restoreClient,
@@ -51,6 +53,7 @@ func NewBackupService(backupClient backupInterface, restoreClient restoreInterfa
 		componentClient:      componentClient,
 		blueprintLister:      blueprintLister,
 		cronJobClient:        cronJobClient,
+		configmapClient:      configmapClient,
 	}
 }
 
@@ -229,6 +232,29 @@ func (s *DefaultBackupService) SetSchedule(ctx context.Context, req *pbBackup.Se
 	}
 
 	return &pbBackup.SetBackupScheduleResponse{}, nil
+}
+
+func (s *DefaultBackupService) GetTimeout(ctx context.Context, _ *pbBackup.GetBackupTimeoutRequest) (*pbBackup.GetBackupTimeoutResponse, error) {
+	timeout, err := getBackupTimeout(ctx, s.configmapClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get backup timeout: %w", err)
+	}
+
+	return &pbBackup.GetBackupTimeoutResponse{Timeout: fmt.Sprintf("%d", timeout)}, nil
+}
+
+func (s *DefaultBackupService) SetTimeout(ctx context.Context, req *pbBackup.SetBackupTimeoutRequest) (*pbBackup.SetBackupTimeoutResponse, error) {
+	retryLimit, err := strconv.Atoi(req.Timeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert [%s]: %w", req.Timeout, err)
+	}
+
+	err = setBackupTimeout(ctx, s.configmapClient, retryLimit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to set backup timeout: %w", err)
+	}
+
+	return &pbBackup.SetBackupTimeoutResponse{}, nil
 }
 
 func (s *DefaultBackupService) GetRetentionPolicy(ctx context.Context, _ *pbBackup.GetRetentionPolicyRequest) (*pbBackup.GetRetentionPolicyResponse, error) {

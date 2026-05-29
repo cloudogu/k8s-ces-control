@@ -143,7 +143,7 @@ func registerServices(client clusterClient, grpcServer grpc.ServiceRegistrar) er
 	pbMaintenance.RegisterSupportArchiveServer(grpcServer, supportArchiveService)
 	watcher := pbDebug.NewDefaultConfigMapRegistryWatcher(configMapClient, debugModeService)
 	watcher.StartWatch(context.Background())
-	backupService := backup.NewBackupService(backupClient, restoreClient, backupScheduleClient, componentClient, client, cronJobClient)
+	backupService := backup.NewBackupService(backupClient, restoreClient, backupScheduleClient, componentClient, client, cronJobClient, configMapClient)
 
 	pbBackup.RegisterBackupManagementServer(grpcServer, backupService)
 	// health endpoint used to determine the healthiness of the app
