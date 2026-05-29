@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.11.0] - 2026-05-29
+### Added
+- [#104] Implement timeout functions for backup api
+
 ## [v1.10.4] - 2026-04-23
 - [#100] Read default retention policy from garbage collector cronjob
 
