@@ -20,6 +20,7 @@ manager:
     cpu: 50m
     memory: 105M
 lokiGateway:
+  scheme: "http"
   serviceRef:
     name: "k8s-loki-gateway"
     #namespace: "ecosystem"

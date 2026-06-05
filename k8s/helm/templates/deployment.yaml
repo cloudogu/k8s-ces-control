@@ -38,7 +38,7 @@ spec:
             - name: STAGE
               value: '{{ .Values.manager.env.stage | default "production" }}'
             - name: LOKI_GATEWAY_URL
-              value: "http://{{ .Values.lokiGateway.serviceRef.name }}.{{ $lokiServiceNamespace }}"
+              value: "{{ .Values.lokiGateway.scheme }}://{{ .Values.lokiGateway.serviceRef.name }}.{{ $lokiServiceNamespace }}"
             - name: LOKI_GATEWAY_USERNAME
               valueFrom:
                 secretKeyRef:
