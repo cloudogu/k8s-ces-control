@@ -24,8 +24,6 @@ lokiGateway:
   serviceRef:
     name: "k8s-loki-gateway"
     #namespace: "ecosystem"
-  # Deprecated use serviceRef instead
-  url: "http://k8s-loki-gateway.ecosystem.svc.cluster.local"
   secretName: "k8s-loki-gateway-secret"
   usernameKey: "username"
   passwordKey: "password"
