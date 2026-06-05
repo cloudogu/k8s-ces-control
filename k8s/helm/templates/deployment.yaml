@@ -1,7 +1,4 @@
-{{- $lokiServiceNamespace := .Release.Namespace -}}
-{{- if .Values.lokiGateway.serviceRef.namespace -}}
-{{- $lokiServiceNamespace = .Values.lokiGateway.serviceRef.namespace -}}
-{{- end -}}
+{{- $lokiServiceNamespace := .Values.lokiGateway.serviceRef.namespace | default .Release.Namespace -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
