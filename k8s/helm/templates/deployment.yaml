@@ -1,3 +1,4 @@
+{{- $lokiServiceNamespace := .Values.lokiGateway.serviceRef.namespace | default .Release.Namespace -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -34,7 +35,7 @@ spec:
             - name: STAGE
               value: '{{ .Values.manager.env.stage | default "production" }}'
             - name: LOKI_GATEWAY_URL
-              value: "{{ .Values.lokiGateway.url }}"
+              value: "{{ .Values.lokiGateway.scheme }}://{{ .Values.lokiGateway.serviceRef.name }}.{{ $lokiServiceNamespace }}"
             - name: LOKI_GATEWAY_USERNAME
               valueFrom:
                 secretKeyRef:

@@ -20,7 +20,10 @@ manager:
     cpu: 50m
     memory: 105M
 lokiGateway:
-  url: "http://k8s-loki-gateway.ecosystem.svc.cluster.local"
+  scheme: "http"
+  serviceRef:
+    name: "k8s-loki-gateway"
+    #namespace: "ecosystem"
   secretName: "k8s-loki-gateway-secret"
   usernameKey: "username"
   passwordKey: "password"
