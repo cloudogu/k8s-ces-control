@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.11.1] - 2026-06-05
+### Fixed
+- [#106] Remove hardcoded cluster domain for loki-gateway url
+
 ## [v1.11.0] - 2026-05-29
 ### Added
 - [#104] Implement timeout functions for backup api

@@ -8,7 +8,7 @@ manager:
   image:
     registry: docker.io
     repository: cloudogu/k8s-ces-control
-    tag: 1.11.0
+    tag: 1.11.1
   imagePullPolicy: IfNotPresent
   replicas: 1
   env:
@@ -20,7 +20,10 @@ manager:
     cpu: 50m
     memory: 105M
 lokiGateway:
-  url: "http://k8s-loki-gateway.ecosystem.svc.cluster.local"
+  scheme: "http"
+  serviceRef:
+    name: "k8s-loki-gateway"
+    #namespace: "ecosystem"
   secretName: "k8s-loki-gateway-secret"
   usernameKey: "username"
   passwordKey: "password"
