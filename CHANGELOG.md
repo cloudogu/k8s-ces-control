@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- [#110] Avoid updating the debug mode with an invalid resource version if the debug mode resource was not found when activating it.
 
 ## [v1.11.1] - 2026-06-05
 ### Fixed
