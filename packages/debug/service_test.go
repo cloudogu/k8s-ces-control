@@ -1,13 +1,17 @@
 package debug
 
 import (
+	"testing"
+
 	"github.com/cloudogu/ces-control-api/generated/maintenance"
 	debugModeV1 "github.com/cloudogu/k8s-debug-mode-cr-lib/api/v1"
 	"github.com/cloudogu/k8s-registry-lib/repository"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func TestNewdefaultDebugModeService(t *testing.T) {
@@ -89,6 +93,26 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 		// then
 		require.NoError(t, err)
 	})
+
+	t.Run("should return and do not call update if the debug mode is not existent before", func(t *testing.T) {
+		// given
+		debugModeClientMock := newMockDebugModeInterface(t)
+		doguInterActorMock := newMockDoguInterActor(t)
+
+		debugModeRegistryMock := newMockDebugModeRegistry(t)
+
+		debugModeClientMock.EXPECT().Get(testCtx, "debug-mode", metav1.GetOptions{}).Return(nil, errors.NewNotFound(schema.GroupResource{}, "debug-mode"))
+		debugModeClientMock.EXPECT().Create(testCtx, mock.Anything, metav1.CreateOptions{}).Return(nil, nil)
+
+		sut := defaultDebugModeService{debugModeClient: debugModeClientMock, debugModeRegistry: debugModeRegistryMock, doguInterActor: doguInterActorMock}
+
+		// when
+		_, err := sut.Enable(testCtx, &maintenance.ToggleDebugModeRequest{WithMaintenanceMode: true, Timer: 15})
+
+		// then
+		require.NoError(t, err)
+	})
+
 	t.Run("should return error on error enable maintenance mode", func(t *testing.T) {
 		// given
 		debugModeClientMock := newMockDebugModeInterface(t)

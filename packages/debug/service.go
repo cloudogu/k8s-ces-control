@@ -54,6 +54,7 @@ func (s *defaultDebugModeService) Enable(ctx context.Context, req *pbMaintenance
 			logrus.Errorf("ERROR: failed to create debug-mode: %v", err)
 			return nil, fmt.Errorf("ERROR: failed to create debug-mode: %q", err)
 		}
+		return &types.BasicResponse{}, nil
 	} else if err != nil {
 		logrus.Errorf("ERROR: failed to get debug-mode: %v", err)
 		return nil, fmt.Errorf("ERROR: failed to get debug-mode: %q", err)
