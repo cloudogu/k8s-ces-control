@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.11.2] - 2026-07-16
+### Fixed
+- [#110] Avoid updating the debug mode with an invalid resource version if the debug mode resource was not found when activating it.
+
 ## [v1.11.1] - 2026-06-05
 ### Fixed
 - [#106] Remove hardcoded cluster domain for loki-gateway url
