@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/cloudogu/ces-commons-lib v0.3.0
-	github.com/cloudogu/ces-control-api v1.8.0
+	github.com/cloudogu/ces-control-api v1.6.1-0.20260706102023-5ab89a034d02
 	github.com/cloudogu/cesapp-lib v0.18.2
 	github.com/cloudogu/k8s-backup-lib v1.8.0
 	github.com/cloudogu/k8s-blueprint-lib/v3 v3.2.0
