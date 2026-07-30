@@ -100,9 +100,13 @@ func (s *defaultDebugModeService) Status(ctx context.Context, _ *types.BasicRequ
 	}
 
 	errormsg := ""
-	cond := meta.FindStatusCondition(debugMode.Status.Conditions, string(v1.DebugModeStatusFailed))
-	if cond != nil {
-		errormsg = cond.Message
+	if debugMode.Status.Phase == v1.DebugModeStatusFailed {
+		cond := meta.FindStatusCondition(debugMode.Status.Conditions, v1.ConditionLogLevelSet)
+		if cond != nil {
+			errormsg = cond.Message
+		} else {
+			errormsg = ""
+		}
 	}
 
 	return &pbMaintenance.DebugModeStatusResponse{IsEnabled: debugMode.Status.Phase != v1.DebugModeStatusCompleted, DisableAtTimestamp: debugMode.Spec.DeactivateTimestamp.UnixMilli(), Err: errormsg}, nil
