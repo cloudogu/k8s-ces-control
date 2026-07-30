@@ -101,7 +101,7 @@ func (s *defaultDebugModeService) Status(ctx context.Context, _ *types.BasicRequ
 
 	errormsg := ""
 	if debugMode.Status.Phase == v1.DebugModeStatusFailed {
-		cond := meta.FindStatusCondition(debugMode.Status.Conditions, v1.ConditionLogLevelSet)
+		cond := meta.FindStatusCondition(debugMode.Status.Conditions, string(v1.DebugModeStatusFailed))
 		if cond != nil {
 			errormsg = cond.Message
 		} else {
