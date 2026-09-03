@@ -2,6 +2,7 @@ package debug
 
 import (
 	"testing"
+	"time"
 
 	"github.com/cloudogu/ces-control-api/generated/maintenance"
 	debugModeV1 "github.com/cloudogu/k8s-debug-mode-cr-lib/api/v1"
@@ -130,33 +131,80 @@ func Test_defaultDebugModeService_Enable(t *testing.T) {
 	})
 }
 
-// func Test_defaultDebugModeService_Status(t *testing.T) {
-//	t.Run("success", func(t *testing.T) {
-//		// given
-//		debugModeRegistryMock := newMockDebugModeRegistry(t)
-//		debugModeRegistryMock.EXPECT().Status(testCtx).Return(true, 15, nil)
-//		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock}
-//
-//		// when
-//		response, err := sut.Status(context.TODO(), nil)
-//
-//		// then
-//		require.NoError(t, err)
-//		assert.Equal(t, true, response.IsEnabled)
-//		assert.Equal(t, int64(15), response.DisableAtTimestamp)
-//	})
-//
-//	t.Run("should return error on status error", func(t *testing.T) {
-//		// given
-//		debugModeRegistryMock := newMockDebugModeRegistry(t)
-//		debugModeRegistryMock.EXPECT().Status(testCtx).Return(false, 0, assert.AnError)
-//		sut := defaultDebugModeService{debugModeRegistry: debugModeRegistryMock}
-//
-//		// when
-//		_, err := sut.Status(context.TODO(), nil)
-//
-//		// then
-//		require.Error(t, err)
-//		assert.ErrorContains(t, err, "rpc error: code = Internal desc = failed to get status of debug mode registry")
-//	})
-// }
+func Test_defaultDebugModeService_Status(t *testing.T) {
+	deactivateTimestamp := metav1.NewTime(time.Date(2026, time.September, 3, 12, 34, 56, 0, time.UTC))
+
+	t.Run("should return active debug mode with failed condition message", func(t *testing.T) {
+		// given
+		debugModeClientMock := newMockDebugModeInterface(t)
+		debugMode := &debugModeV1.DebugMode{
+			Spec: debugModeV1.DebugModeSpec{DeactivateTimestamp: deactivateTimestamp},
+			Status: debugModeV1.DebugModeStatus{
+				Phase: debugModeV1.DebugModeStatusSet,
+				Conditions: []metav1.Condition{{
+					Type:    debugModeV1.ConditionFailed,
+					Status:  metav1.ConditionTrue,
+					Message: "failed to set log level",
+				}},
+			},
+		}
+		debugModeClientMock.EXPECT().Get(testCtx, "debug-mode", metav1.GetOptions{}).Return(debugMode, nil)
+		sut := defaultDebugModeService{debugModeClient: debugModeClientMock}
+
+		// when
+		response, err := sut.Status(testCtx, nil)
+
+		// then
+		require.NoError(t, err)
+		assert.True(t, response.IsEnabled)
+		assert.Equal(t, deactivateTimestamp.UnixMilli(), response.DisableAtTimestamp)
+		assert.Equal(t, "failed to set log level", response.Error)
+	})
+
+	t.Run("should return completed debug mode without error for false failed condition", func(t *testing.T) {
+		// given
+		debugModeClientMock := newMockDebugModeInterface(t)
+		debugMode := &debugModeV1.DebugMode{
+			Spec: debugModeV1.DebugModeSpec{DeactivateTimestamp: deactivateTimestamp},
+			Status: debugModeV1.DebugModeStatus{
+				Phase: debugModeV1.DebugModeStatusCompleted,
+				Conditions: []metav1.Condition{{
+					Type:    debugModeV1.ConditionFailed,
+					Status:  metav1.ConditionFalse,
+					Message: "obsolete error",
+				}},
+			},
+		}
+		debugModeClientMock.EXPECT().Get(testCtx, "debug-mode", metav1.GetOptions{}).Return(debugMode, nil)
+		sut := defaultDebugModeService{debugModeClient: debugModeClientMock}
+
+		// when
+		response, err := sut.Status(testCtx, nil)
+
+		// then
+		require.NoError(t, err)
+		assert.False(t, response.IsEnabled)
+		assert.Equal(t, deactivateTimestamp.UnixMilli(), response.DisableAtTimestamp)
+		assert.Empty(t, response.Error)
+	})
+
+	t.Run("should return no error if failed condition is missing", func(t *testing.T) {
+		// given
+		debugModeClientMock := newMockDebugModeInterface(t)
+		debugMode := &debugModeV1.DebugMode{
+			Spec:   debugModeV1.DebugModeSpec{DeactivateTimestamp: deactivateTimestamp},
+			Status: debugModeV1.DebugModeStatus{Phase: debugModeV1.DebugModeStatusRollback},
+		}
+		debugModeClientMock.EXPECT().Get(testCtx, "debug-mode", metav1.GetOptions{}).Return(debugMode, nil)
+		sut := defaultDebugModeService{debugModeClient: debugModeClientMock}
+
+		// when
+		response, err := sut.Status(testCtx, nil)
+
+		// then
+		require.NoError(t, err)
+		assert.True(t, response.IsEnabled)
+		assert.Equal(t, deactivateTimestamp.UnixMilli(), response.DisableAtTimestamp)
+		assert.Empty(t, response.Error)
+	})
+}

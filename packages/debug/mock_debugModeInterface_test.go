@@ -85,6 +85,68 @@ func (_c *mockDebugModeInterface_AddFinalizer_Call) RunAndReturn(run func(contex
 	return _c
 }
 
+// AddOrUpdateFailed provides a mock function with given fields: ctx, debugMode, set, msg, reason
+func (_m *mockDebugModeInterface) AddOrUpdateFailed(ctx context.Context, debugMode *v1.DebugMode, set bool, msg string, reason string) (*v1.DebugMode, error) {
+	ret := _m.Called(ctx, debugMode, set, msg, reason)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AddOrUpdateFailed")
+	}
+
+	var r0 *v1.DebugMode
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *v1.DebugMode, bool, string, string) (*v1.DebugMode, error)); ok {
+		return rf(ctx, debugMode, set, msg, reason)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *v1.DebugMode, bool, string, string) *v1.DebugMode); ok {
+		r0 = rf(ctx, debugMode, set, msg, reason)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*v1.DebugMode)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *v1.DebugMode, bool, string, string) error); ok {
+		r1 = rf(ctx, debugMode, set, msg, reason)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// mockDebugModeInterface_AddOrUpdateFailed_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddOrUpdateFailed'
+type mockDebugModeInterface_AddOrUpdateFailed_Call struct {
+	*mock.Call
+}
+
+// AddOrUpdateFailed is a helper method to define mock.On call
+//   - ctx context.Context
+//   - debugMode *v1.DebugMode
+//   - set bool
+//   - msg string
+//   - reason string
+func (_e *mockDebugModeInterface_Expecter) AddOrUpdateFailed(ctx interface{}, debugMode interface{}, set interface{}, msg interface{}, reason interface{}) *mockDebugModeInterface_AddOrUpdateFailed_Call {
+	return &mockDebugModeInterface_AddOrUpdateFailed_Call{Call: _e.mock.On("AddOrUpdateFailed", ctx, debugMode, set, msg, reason)}
+}
+
+func (_c *mockDebugModeInterface_AddOrUpdateFailed_Call) Run(run func(ctx context.Context, debugMode *v1.DebugMode, set bool, msg string, reason string)) *mockDebugModeInterface_AddOrUpdateFailed_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*v1.DebugMode), args[2].(bool), args[3].(string), args[4].(string))
+	})
+	return _c
+}
+
+func (_c *mockDebugModeInterface_AddOrUpdateFailed_Call) Return(_a0 *v1.DebugMode, _a1 error) *mockDebugModeInterface_AddOrUpdateFailed_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *mockDebugModeInterface_AddOrUpdateFailed_Call) RunAndReturn(run func(context.Context, *v1.DebugMode, bool, string, string) (*v1.DebugMode, error)) *mockDebugModeInterface_AddOrUpdateFailed_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // AddOrUpdateLogLevelsSet provides a mock function with given fields: ctx, debugMode, set, msg, reason
 func (_m *mockDebugModeInterface) AddOrUpdateLogLevelsSet(ctx context.Context, debugMode *v1.DebugMode, set bool, msg string, reason string) (*v1.DebugMode, error) {
 	ret := _m.Called(ctx, debugMode, set, msg, reason)

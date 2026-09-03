@@ -107,7 +107,7 @@ func (s *defaultDebugModeService) Status(ctx context.Context, _ *types.BasicRequ
 		errormsg = ""
 	}
 
-	return &pbMaintenance.DebugModeStatusResponse{IsEnabled: debugMode.Status.Phase != v1.DebugModeStatusCompleted, DisableAtTimestamp: debugMode.Spec.DeactivateTimestamp.UnixMilli(), Err: errormsg}, nil
+	return &pbMaintenance.DebugModeStatusResponse{IsEnabled: debugMode.Status.Phase != v1.DebugModeStatusCompleted, DisableAtTimestamp: debugMode.Spec.DeactivateTimestamp.UnixMilli(), Error: errormsg}, nil
 }
 
 func noInheritCancel(_ context.Context) (context.Context, context.CancelFunc) {
