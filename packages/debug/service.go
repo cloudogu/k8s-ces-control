@@ -8,6 +8,7 @@ import (
 	v1 "github.com/cloudogu/k8s-debug-mode-cr-lib/api/v1"
 	"github.com/sirupsen/logrus"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	pbMaintenance "github.com/cloudogu/ces-control-api/generated/maintenance"
@@ -98,7 +99,15 @@ func (s *defaultDebugModeService) Status(ctx context.Context, _ *types.BasicRequ
 		return nil, fmt.Errorf("ERROR: failed to get debug-mode: %q", err)
 	}
 
-	return &pbMaintenance.DebugModeStatusResponse{IsEnabled: debugMode.Status.Phase != v1.DebugModeStatusCompleted, DisableAtTimestamp: debugMode.Spec.DeactivateTimestamp.UnixMilli()}, nil
+	errormsg := ""
+	cond := meta.FindStatusCondition(debugMode.Status.Conditions, v1.ConditionFailed)
+	if cond != nil && cond.Status == metav1.ConditionTrue {
+		errormsg = cond.Message
+	} else {
+		errormsg = ""
+	}
+
+	return &pbMaintenance.DebugModeStatusResponse{IsEnabled: debugMode.Status.Phase != v1.DebugModeStatusCompleted, DisableAtTimestamp: debugMode.Spec.DeactivateTimestamp.UnixMilli(), Error: errormsg}, nil
 }
 
 func noInheritCancel(_ context.Context) (context.Context, context.CancelFunc) {
