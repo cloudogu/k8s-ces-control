@@ -454,6 +454,65 @@ func (_c *mockDebugModeInterface_Patch_Call) RunAndReturn(run func(context.Conte
 	return _c
 }
 
+// RemoveFailed provides a mock function with given fields: ctx, debugMode
+func (_m *mockDebugModeInterface) RemoveFailed(ctx context.Context, debugMode *v1.DebugMode) (*v1.DebugMode, error) {
+	ret := _m.Called(ctx, debugMode)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RemoveFailed")
+	}
+
+	var r0 *v1.DebugMode
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *v1.DebugMode) (*v1.DebugMode, error)); ok {
+		return rf(ctx, debugMode)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *v1.DebugMode) *v1.DebugMode); ok {
+		r0 = rf(ctx, debugMode)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*v1.DebugMode)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *v1.DebugMode) error); ok {
+		r1 = rf(ctx, debugMode)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// mockDebugModeInterface_RemoveFailed_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RemoveFailed'
+type mockDebugModeInterface_RemoveFailed_Call struct {
+	*mock.Call
+}
+
+// RemoveFailed is a helper method to define mock.On call
+//   - ctx context.Context
+//   - debugMode *v1.DebugMode
+func (_e *mockDebugModeInterface_Expecter) RemoveFailed(ctx interface{}, debugMode interface{}) *mockDebugModeInterface_RemoveFailed_Call {
+	return &mockDebugModeInterface_RemoveFailed_Call{Call: _e.mock.On("RemoveFailed", ctx, debugMode)}
+}
+
+func (_c *mockDebugModeInterface_RemoveFailed_Call) Run(run func(ctx context.Context, debugMode *v1.DebugMode)) *mockDebugModeInterface_RemoveFailed_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*v1.DebugMode))
+	})
+	return _c
+}
+
+func (_c *mockDebugModeInterface_RemoveFailed_Call) Return(_a0 *v1.DebugMode, _a1 error) *mockDebugModeInterface_RemoveFailed_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *mockDebugModeInterface_RemoveFailed_Call) RunAndReturn(run func(context.Context, *v1.DebugMode) (*v1.DebugMode, error)) *mockDebugModeInterface_RemoveFailed_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // RemoveFinalizer provides a mock function with given fields: ctx, debugMode, finalizer
 func (_m *mockDebugModeInterface) RemoveFinalizer(ctx context.Context, debugMode *v1.DebugMode, finalizer string) (*v1.DebugMode, error) {
 	ret := _m.Called(ctx, debugMode, finalizer)
