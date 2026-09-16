@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - [#114] Add Category as part of the Dogu-Response
 
+## [v1.12.0] - 2026-09-15
+### Added
+- [#112] pass debug-mode errormessage to client
+
 ## [v1.11.2] - 2026-07-16
 ### Fixed
 - [#110] Avoid updating the debug mode with an invalid resource version if the debug mode resource was not found when activating it.

@@ -10,7 +10,7 @@ require (
 	github.com/cloudogu/k8s-backup-lib v1.8.0
 	github.com/cloudogu/k8s-blueprint-lib/v3 v3.2.0
 	github.com/cloudogu/k8s-component-lib v1.14.0
-	github.com/cloudogu/k8s-debug-mode-cr-lib v1.0.0
+	github.com/cloudogu/k8s-debug-mode-cr-lib v1.1.0
 	github.com/cloudogu/k8s-dogu-lib/v2 v2.12.0
 	github.com/cloudogu/k8s-registry-lib v1.0.0
 	github.com/cloudogu/k8s-support-archive-lib v1.0.0
