@@ -118,6 +118,7 @@ func (s *server) createDoguListResponse(ctx context.Context, dogus []*core.Dogu)
 			Description: dogu.Description,
 			Tags:        dogu.Tags,
 			LogLevel:    logLevel.String(),
+			Category:    dogu.Category,
 		})
 	}
 
