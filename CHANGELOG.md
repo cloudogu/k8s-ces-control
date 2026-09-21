@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.13.0] - 2026-09-21
+### Added
+ - [#114] Add Category as part of the Dogu-Response
+
 ## [v1.12.0] - 2026-09-15
 ### Added
 - [#112] pass debug-mode errormessage to client
